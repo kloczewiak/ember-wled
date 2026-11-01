@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { send, setPeek, toast, useStore } from '../store'
 import { stockCfg, useUi } from '../ui'
 import { cx, Icon, IconButton, Slider } from './controls'
@@ -42,6 +42,31 @@ export function toggleSync() {
   send({ udpn: { send: !udpn.send } })
 }
 
+// Estimated current (WLED's own estimate, reported in /json/info) and the timer's remaining time.
+function DeviceStatus({ lead = '' }: { lead?: string }) {
+  const pwr = useStore((s) => s.info?.leds.pwr ?? 0)
+  const nl = useStore((s) => s.state?.nl)
+  const left = useCountdown(nl?.on ? nl.rem : -1)
+  const parts: string[] = []
+  if (pwr > 0) parts.push(pwr >= 1000 ? `${(pwr / 1000).toFixed(1)} A` : `${pwr} mA`)
+  if (left > 0) parts.push(`timer ${left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`}`)
+  if (!parts.length) return null
+  return <span title="Estimated current · nightlight timer remaining">{lead}{parts.join(' · ')}</span>
+}
+
+// Counts down locally from the seconds the light last reported (-1 = not running).
+function useCountdown(reported: number) {
+  const [since, setSince] = useState(() => ({ reported, at: Date.now() }))
+  const [now, setNow] = useState(() => Date.now())
+  if (since.reported !== reported) setSince({ reported, at: Date.now() })
+  useEffect(() => {
+    if (reported < 0) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [reported])
+  return reported < 0 ? -1 : Math.max(0, reported - Math.floor((now - since.at) / 1000))
+}
+
 function ConnDot() {
   const conn = useStore((s) => s.conn)
   const color = conn === 'ok' ? 'bg-ok' : conn === 'error' ? 'bg-danger' : 'bg-primary'
@@ -81,7 +106,7 @@ export function Header({ wide }: { wide: boolean }) {
           <ConnDot />
           <div className="min-w-0">
             <div className="truncate text-[15px] font-semibold">{info.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{info.ip || location.host} · {info.leds.count} LEDs</div>
+            <div className="truncate text-xs text-muted-foreground">{info.ip || location.host} · {info.leds.count} LEDs<DeviceStatus lead=" · " /></div>
           </div>
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-3.5">
@@ -106,7 +131,10 @@ export function Header({ wide }: { wide: boolean }) {
     <header className="flex shrink-0 flex-col gap-2 px-4 pb-2 pt-2.5">
       <div className="flex items-center gap-1.5">
         <ConnDot />
-        <div className="ml-1 min-w-0 flex-1 truncate text-[15px] font-semibold">{info.name}</div>
+        <div className="ml-1 min-w-0 flex-1">
+          <div className="truncate text-[15px] font-semibold">{info.name}</div>
+          <div className="truncate text-xs text-muted-foreground"><DeviceStatus /></div>
+        </div>
         <Toggle pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
         <Toggle pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
         <Toggle pressed={peek} onPressedChange={() => setPeek(!peek)} aria-label="Peek (live preview)" title="Peek"><Icon.eye /></Toggle>

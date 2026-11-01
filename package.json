@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "gen:fixtures": "node scripts/gen-fixtures.mjs"
+    "gen:fixtures": "node scripts/gen-fixtures.mjs",
+    "gen:icons": "python3 scripts/gen-icons.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

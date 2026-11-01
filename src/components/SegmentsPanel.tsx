@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { send, toast, useStore } from '../store'
+import { onLiveFrame, send, toast, useStore } from '../store'
 import { useDraft, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import type { Segment } from '../api/types'
@@ -169,6 +169,21 @@ function fittingTicks(values: number[], total: number, width: number) {
 }
 
 function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
+  // With Peek on, the bar shows the strip's live colours (the frames Peek already streams) under the segments.
+  const live = useStore((s) => s.peek)
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    if (!live) return
+    return onLiveFrame((f) => {
+      const el = canvas.current
+      if (!el || f[1] !== 1) return // 1D frames only: 'L', version, then RGB triplets
+      const n = (f.length - 2) / 3
+      if (el.width !== n || el.height !== 1) { el.width = n; el.height = 1 }
+      const img = new ImageData(n, 1)
+      for (let i = 0; i < n; i++) img.data.set([f[2 + i * 3], f[3 + i * 3], f[4 + i * 3], 255], i * 4)
+      el.getContext('2d')!.putImageData(img, 0, 0)
+    })
+  }, [live])
   const tickRow = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   useEffect(() => {
@@ -182,6 +197,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="relative h-6 overflow-hidden rounded-md bg-bg">
+        {live && <canvas ref={canvas} aria-hidden className="absolute inset-0 size-full" />}
         {segs.map((s) => {
           const c = s.col[0]
           return (
@@ -190,12 +206,17 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
               title={`${segName(s)}: LED ${s.start}–${s.stop - 1}`}
               aria-label={`Select only ${segName(s)}`}
               onClick={() => send({ seg: segs.map((g) => ({ id: g.id, sel: g.id === s.id })), mainseg: s.id })}
-              className={cx('absolute inset-y-0 flex items-center overflow-hidden border-x border-bg px-1.5 text-[11px] font-semibold', !s.sel && 'opacity-45')}
+              className={cx(
+                'absolute inset-y-0 flex items-center overflow-hidden border-x border-bg px-1.5 text-[11px] font-semibold',
+                live ? 'text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]' : !s.sel && 'opacity-45',
+              )}
               style={{
                 left: `${(s.start / total) * 100}%`,
                 width: `${((s.stop - s.start) / total) * 100}%`,
-                background: s.on ? `rgb(${c[0]},${c[1]},${c[2]})` : 'var(--color-line)',
-                color: s.on && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 140 ? '#000' : '#fff',
+                ...(live ? {} : {
+                  background: s.on ? `rgb(${c[0]},${c[1]},${c[2]})` : 'var(--color-line)',
+                  color: s.on && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 140 ? '#000' : '#fff',
+                }),
               }}
             >
               <span className="truncate">{segName(s)}</span>

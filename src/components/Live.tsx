@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { onLiveFrame, send, useStore } from '../store'
+import { useSelection } from '../hooks'
 import { Button, cx } from './controls'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -23,14 +24,26 @@ export function LivePreview({ className }: { className?: string }) {
     }
     ctx.putImageData(img, 0, 0)
   }), [])
+  // on a strip, thin gaps mark where one segment ends and the next begins, like the segment bar
+  const segs = useStore((s) => s.state?.seg)
+  const total = useStore((s) => s.info?.leds.count ?? 0)
+  const { isMatrix } = useSelection()
+  const cuts = isMatrix || !segs || !total
+    ? []
+    : [...new Set(segs.flatMap((g) => [g.start, g.stop]))].filter((x) => x > 0 && x < total)
   return (
-    <canvas
-      ref={ref}
-      role="img"
-      aria-label="Live preview of the LEDs"
-      className={cx('block h-2 w-full rounded-sm bg-black', className)}
-      style={{ imageRendering: 'pixelated', maxHeight: 280, objectFit: 'contain' }}
-    />
+    <div className={cx('relative', className)}>
+      <canvas
+        ref={ref}
+        role="img"
+        aria-label="Live preview of the LEDs"
+        className="block h-2 w-full rounded-sm bg-black"
+        style={{ imageRendering: 'pixelated', maxHeight: 280, objectFit: 'contain' }}
+      />
+      {cuts.map((x) => (
+        <span key={x} aria-hidden className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-background" style={{ left: `${(x / total) * 100}%` }} />
+      ))}
+    </div>
   )
 }
 

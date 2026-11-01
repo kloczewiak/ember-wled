@@ -24,6 +24,8 @@ npm run build         # writes dist/index.htm.gz
 ```
 
 Open `http://<device>/edit`, upload `dist/index.htm.gz` to the filesystem root and reload `http://<device>/`.
+To make it installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, `dist/icon-192.png`,
+`dist/icon-512.png` and `dist/apple-touch-icon.png`. `npm run gen:icons` redraws the icons.
 WLED serves files on its filesystem in place of its built-in pages, so this UI replaces the stock one at `/`
 while Settings, Update, `/cpal.htm` and the rest stay the firmware's own pages.
 Firmware OTA updates keep the file; a filesystem reset removes it. To go back to the stock UI, delete

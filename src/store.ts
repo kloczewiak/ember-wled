@@ -50,11 +50,16 @@ const ERRORS: Record<number, string> = {
 // ---------------------------------------------------------------- receiving state
 
 let lastUpdate = 0
+const HEARTBEAT_MS = 5000
 let responseTimer: ReturnType<typeof setTimeout> | null = null
 
 function receive(json: { state?: State; info?: Info } & Partial<State>) {
   if (responseTimer) { clearTimeout(responseTimer); responseTimer = null }
   lastUpdate = Date.now()
+  if (lostToast) {
+    toasts.update(lostToast, { title: 'Reconnected', description: undefined, type: 'success', timeout: 2500 })
+    lostToast = null
+  }
   const info = json.info ?? get().info
   const state = json.state ?? (json.seg ? (json as State) : null)
   const patch: Partial<Store> = { conn: 'ok', info }
@@ -97,6 +102,31 @@ function connectWs() {
   sock.onclose = () => {
     ws = null
     if (wsRetries++ < 10) setTimeout(connectWs, wsRetries * 200)
+    else connectionLost()
+  }
+}
+
+// ---------------------------------------------------------------- connection loss
+
+let lostToast: string | null = null
+
+// Shows a "Reconnecting…" toast and polls the light until it answers; receive() then turns the toast
+// into "Reconnected". WLED's Wi-Fi can drop for minutes, so this keeps trying for as long as it takes.
+function connectionLost() {
+  if (get().conn === 'error' || !get().info) return // already reconnecting, or still on the loading screen
+  set({ conn: 'error' })
+  ws?.close()
+  lostToast = toasts.add({ title: 'Connection lost', description: 'Reconnecting…', type: 'loading', timeout: 0 })
+  reconnect()
+}
+
+async function reconnect() {
+  try {
+    receive(await getJson<{ state: State; info: Info }>('/json/si', 0))
+    wsRetries = 0
+    connectWs()
+  } catch {
+    setTimeout(reconnect, 3000)
   }
 }
 
@@ -123,9 +153,7 @@ async function request(cmd: Command | null, info: Info | null, retry = 0): Promi
   if (!responseTimer) {
     responseTimer = setTimeout(() => {
       responseTimer = null
-      ws?.close()
-      set({ conn: 'error' })
-      toast('Connection to light failed!', true)
+      connectionLost()
     }, 3000)
   }
   if (useWs) {
@@ -147,7 +175,9 @@ async function request(cmd: Command | null, info: Info | null, retry = 0): Promi
       await new Promise((r) => setTimeout(r, retry * 50))
       return request(cmd, info, retry + 1)
     }
-    toast(String(e), true)
+    // the light rejecting a command (4xx) is worth showing; anything else means it can't be reached
+    if (/HTTP 4\d\d/.test(String(e))) toast(String(e), true)
+    else connectionLost()
   }
 }
 
@@ -182,6 +212,11 @@ let started = false
 export function init() {
   if (started) return
   started = true
+  // A WebSocket to a light that dropped off Wi-Fi often never closes, so ask for state every few seconds
+  // while visible: a missing reply then shows the reconnect toast. It also keeps info (power draw) fresh.
+  setInterval(() => {
+    if (!document.hidden && get().info && get().conn === 'ok' && Date.now() - lastUpdate > HEARTBEAT_MS) refresh()
+  }, HEARTBEAT_MS)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && get().info && Date.now() - lastUpdate > 3000) refresh()
   })
@@ -301,9 +336,11 @@ async function pollLive() {
     const json = await getJson<{ leds: string[] }>('/json/live', 0)
     const frame = new Uint8Array(2 + json.leds.length * 3)
     frame[0] = 76; frame[1] = 1
+    // /json/live applies master brightness but WebSocket frames don't (ws.cpp); undo it so both look alike
+    const gain = 255 / Math.max(1, get().state?.bri ?? 255)
     json.leds.forEach((hex, i) => {
       const n = parseInt(hex.length > 6 ? hex.slice(2) : hex, 16)
-      frame.set([n >> 16, (n >> 8) & 255, n & 255], 2 + i * 3)
+      frame.set([n >> 16, (n >> 8) & 255, n & 255].map((c) => Math.min(255, Math.round(c * gain))), 2 + i * 3)
     })
     liveListeners.forEach((l) => l(frame))
   } catch { /* try again */ }
