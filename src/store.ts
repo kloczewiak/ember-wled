@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { toast as sonner } from 'sonner'
+import { toast as toasts } from '@/components/ui/toast'
 import { applyCommand } from './api/apply'
 import type { Command, Info, Node, PaletteStop, Presets, State } from './api/types'
 
@@ -37,8 +37,7 @@ const set = useStore.setState
 // ---------------------------------------------------------------- toasts
 
 export function toast(text: string, error = false) {
-  if (error) sonner.error(text, { duration: 6000 })
-  else sonner(text, { duration: 2900 })
+  toasts.add({ title: text, type: error ? 'error' : undefined, timeout: error ? 6000 : 2900 })
 }
 
 const ERRORS: Record<number, string> = {

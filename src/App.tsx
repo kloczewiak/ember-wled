@@ -10,7 +10,7 @@ import { SegmentsPanel } from './components/SegmentsPanel'
 import { PresetsPanel } from './components/PresetsPanel'
 import { MoreSheet } from './components/MoreSheet'
 import { Card, cx } from './components/controls'
-import { Toaster } from '@/components/ui/sonner'
+import { Toaster } from '@/components/ui/toast'
 
 // Tab names match the stock UI's location hashes, so existing bookmarks keep working.
 const TABS = ['Colors', 'Effects', 'Segments', 'Presets'] as const
@@ -137,7 +137,6 @@ function TabBar({ tab }: { tab: Tab }) {
   )
 }
 
-// Toasts sit above the phone tab bar.
 function Toasts() {
-  return <Toaster position="bottom-center" mobileOffset={{ bottom: 84 }} visibleToasts={3} />
+  return <Toaster limit={3} />
 }
