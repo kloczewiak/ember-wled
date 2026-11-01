@@ -72,6 +72,8 @@ function receive(json: { state?: State; info?: Info } & Partial<State>) {
   }
   set(patch)
   if (info && document.title !== info.name) document.title = (info.live ? '(Live) ' : '') + info.name
+  // iOS suggests this as the name for "Add to Home Screen"; the static manifest can't know the device name
+  if (info) document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', info.name)
   // presets were modified elsewhere (pmt = presets modified time)
   if (info && presetsPmt !== null && info.fs.pmt !== presetsPmt) loadPresets()
 }
