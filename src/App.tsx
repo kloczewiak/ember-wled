@@ -137,6 +137,7 @@ function TabBar({ tab }: { tab: Tab }) {
   )
 }
 
+// On phones the toasts sit above the tab bar (the phone layout is used below 1100px, see `wide`).
 function Toasts() {
-  return <Toaster limit={3} />
+  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-20" />
 }
