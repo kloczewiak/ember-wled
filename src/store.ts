@@ -51,6 +51,9 @@ const ERRORS: Record<number, string> = {
 
 let lastUpdate = 0
 const HEARTBEAT_MS = 5000
+// a reply lands a few ms after the tick that asked for it, so the next tick sees it as slightly under
+// HEARTBEAT_MS old; without slack every other tick would skip and the real interval would double
+const HEARTBEAT_SLACK_MS = 200
 let responseTimer: ReturnType<typeof setTimeout> | null = null
 
 function receive(json: { state?: State; info?: Info } & Partial<State>) {
@@ -215,7 +218,7 @@ export function init() {
   // A WebSocket to a light that dropped off Wi-Fi often never closes, so ask for state every few seconds
   // while visible: a missing reply then shows the reconnect toast. It also keeps info (power draw) fresh.
   setInterval(() => {
-    if (!document.hidden && get().info && get().conn === 'ok' && Date.now() - lastUpdate > HEARTBEAT_MS) refresh()
+    if (!document.hidden && get().info && get().conn === 'ok' && Date.now() - lastUpdate > HEARTBEAT_MS - HEARTBEAT_SLACK_MS) refresh()
   }, HEARTBEAT_MS)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && get().info && Date.now() - lastUpdate > 3000) refresh()
