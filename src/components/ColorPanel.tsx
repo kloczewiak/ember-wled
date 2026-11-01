@@ -6,7 +6,7 @@ import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, rgbToKelvin, toHex, t
 import { ColorWheel } from './ColorWheel'
 import { Card, cx, Icon, LabeledSlider, SectionTitle } from './controls'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const QUICK = ['#ff0000', '#ffa000', '#ffc800', '#ffe0a0', '#ffffff', '#000000', '#ff00ff', '#0000ff', '#00ffc8', '#08ff00']
@@ -158,14 +158,17 @@ export function ColorPanel({ className }: { className?: string }) {
 
       <div className="flex flex-wrap items-center gap-2">
         <form className="flex min-w-36 flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); applyHex() }}>
-          <Input
-            value={hex}
-            maxLength={8}
-            placeholder="HEX"
-            onChange={(e) => setHex(e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase())}
-            aria-label="Hex color (RRGGBB or RRGGBBWW)"
-            className="font-mono"
-          />
+          <InputGroup>
+            <InputGroupAddon><InputGroupText className="font-mono">#</InputGroupText></InputGroupAddon>
+            <InputGroupInput
+              value={hex}
+              placeholder="RRGGBB"
+              // strip "#" and anything else before limiting the length, so a pasted "#RRGGBBWW" keeps all 8 digits
+              onChange={(e) => setHex(e.target.value.replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase())}
+              aria-label="Hex color (RRGGBB or RRGGBBWW)"
+              className="font-mono"
+            />
+          </InputGroup>
           <Button type="submit" variant="outline" size="icon" aria-label="Apply hex color"><Icon.check /></Button>
         </form>
         {hasRGB && (
