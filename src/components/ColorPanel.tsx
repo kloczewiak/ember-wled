@@ -7,7 +7,7 @@ import { ColorWheel } from './ColorWheel'
 import { Card, cx, Icon, LabeledSlider, SectionTitle } from './controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const QUICK = ['#ff0000', '#ffa000', '#ffc800', '#ffe0a0', '#ffffff', '#000000', '#ff00ff', '#0000ff', '#00ffc8', '#08ff00']
 const KELVIN_TRACK = `linear-gradient(to right, ${[1900, 3000, 4500, 6500, 8000, 10091].map((k) => rgbCss(kelvinToRgb(k))).join(',')})`
@@ -76,57 +76,62 @@ export function ColorPanel({ className }: { className?: string }) {
 
   return (
     <Card className={className}>
-      <SectionTitle
-        right={hasRGB && (
-          <ToggleGroup variant="outline" size="sm" aria-label="Color controls" value={[colorMode]}
-            onValueChange={(v) => { if (v[0]) setColorMode(v[0] as typeof colorMode) }}>
-            <ToggleGroupItem value="wheel">Wheel</ToggleGroupItem>
-            <ToggleGroupItem value="hsv">HSV</ToggleGroupItem>
-            <ToggleGroupItem value="rgb">RGB</ToggleGroupItem>
-          </ToggleGroup>
-        )}
-      >
-        Color
-      </SectionTitle>
+      <Tabs value={colorMode} onValueChange={(m) => setColorMode(m as typeof colorMode)} className="gap-3">
+        <SectionTitle
+          right={hasRGB && (
+            <TabsList aria-label="Color controls">
+              <TabsTrigger value="wheel">Wheel</TabsTrigger>
+              <TabsTrigger value="hsv">HSV</TabsTrigger>
+              <TabsTrigger value="rgb">RGB</TabsTrigger>
+            </TabsList>
+          )}
+        >
+          Color
+        </SectionTitle>
 
-      {hasRGB && colorMode === 'wheel' && (
-        <div className="flex justify-center py-1">
-          <ColorWheel hsv={hsv} size={wide ? 200 : 220} onChange={setHsv} onCommit={commitHsv} />
-        </div>
-      )}
-
-      <div className="flex flex-col gap-0.5">
-        {hasRGB && colorMode === 'hsv' && (
-          <>
-            <LabeledSlider label="Hue" value={Math.round(hsv.h)} max={359} track={HUE_TRACK} display={`${Math.round(hsv.h)}°`}
-              onInput={(h) => setHsv({ ...hsv, h })} onCommit={(h) => commitHsv({ ...hsv, h })} />
-            <LabeledSlider label="Saturation" value={Math.round(hsv.s)} max={100} track={`linear-gradient(to right, #aaa, ${rgbCss(hsvToRgb({ h: hsv.h, s: 100, v: 100 }))})`}
-              display={`${Math.round(hsv.s)}%`} onInput={(s) => setHsv({ ...hsv, s })} onCommit={(s) => commitHsv({ ...hsv, s })} />
-          </>
-        )}
-        {hasRGB && colorMode === 'rgb' && (['r', 'g', 'b'] as const).map((k) => (
-          <LabeledSlider key={k} label={{ r: 'Red', g: 'Green', b: 'Blue' }[k]} value={rgb[k]}
-            track={`linear-gradient(to right, ${rgbCss({ ...rgb, [k]: 0 })}, ${rgbCss({ ...rgb, [k]: 255 })})`}
-            onInput={(v) => setHsv(rgbToHsv({ ...rgb, [k]: v }))} onCommit={(v) => commit({ ...rgb, [k]: v })} />
-        ))}
         {hasRGB && (
-          <LabeledSlider label="Value" value={Math.round(hsv.v)} max={100} track={`linear-gradient(to right, #000, ${rgbCss(pure)})`}
-            display={`${Math.round(hsv.v)}%`} onInput={(v) => setHsv({ ...hsv, v })} onCommit={(v) => commitHsv({ ...hsv, v })} />
+          <TabsContent value="wheel" className="flex justify-center py-1">
+            <ColorWheel hsv={hsv} size={wide ? 200 : 220} onChange={setHsv} onCommit={commitHsv} />
+          </TabsContent>
         )}
-        {hasRGB && !hasCCT && (
-          <LabeledSlider label="Temperature" value={Math.min(10091, Math.max(1900, kelvin))} min={1900} max={10091} track={KELVIN_TRACK}
-            display={`${Math.round(kelvin / 100) * 100}K`}
-            onInput={(k) => setHsv(rgbToHsv(kelvinToRgb(k)))} onCommit={(k) => { const c = kelvinToRgb(k); setHsv(rgbToHsv(c)); commit(c) }} />
-        )}
-        {(hasWhite || !hasRGB) && (
-          <LabeledSlider label={hasRGB ? 'White' : 'Brightness'} value={w} track="linear-gradient(to right, #23262d, #fff)"
-            onCommit={(v) => commit(rgb, v)} />
-        )}
-        {hasCCT && main && (
-          <LabeledSlider label="White balance" value={main.cct} track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
-            onCommit={(cct) => send({ seg: { cct } })} />
-        )}
-      </div>
+
+        <div className="flex flex-col gap-0.5">
+          {hasRGB && (
+            <TabsContent value="hsv" className="flex flex-col gap-0.5">
+              <LabeledSlider label="Hue" value={Math.round(hsv.h)} max={359} track={HUE_TRACK} display={`${Math.round(hsv.h)}°`}
+                onInput={(h) => setHsv({ ...hsv, h })} onCommit={(h) => commitHsv({ ...hsv, h })} />
+              <LabeledSlider label="Saturation" value={Math.round(hsv.s)} max={100} track={`linear-gradient(to right, #aaa, ${rgbCss(hsvToRgb({ h: hsv.h, s: 100, v: 100 }))})`}
+                display={`${Math.round(hsv.s)}%`} onInput={(s) => setHsv({ ...hsv, s })} onCommit={(s) => commitHsv({ ...hsv, s })} />
+            </TabsContent>
+          )}
+          {hasRGB && (
+            <TabsContent value="rgb" className="flex flex-col gap-0.5">
+              {(['r', 'g', 'b'] as const).map((k) => (
+                <LabeledSlider key={k} label={{ r: 'Red', g: 'Green', b: 'Blue' }[k]} value={rgb[k]}
+                  track={`linear-gradient(to right, ${rgbCss({ ...rgb, [k]: 0 })}, ${rgbCss({ ...rgb, [k]: 255 })})`}
+                  onInput={(v) => setHsv(rgbToHsv({ ...rgb, [k]: v }))} onCommit={(v) => commit({ ...rgb, [k]: v })} />
+              ))}
+            </TabsContent>
+          )}
+          {hasRGB && (
+            <LabeledSlider label="Value" value={Math.round(hsv.v)} max={100} track={`linear-gradient(to right, #000, ${rgbCss(pure)})`}
+              display={`${Math.round(hsv.v)}%`} onInput={(v) => setHsv({ ...hsv, v })} onCommit={(v) => commitHsv({ ...hsv, v })} />
+          )}
+          {hasRGB && !hasCCT && (
+            <LabeledSlider label="Temperature" value={Math.min(10091, Math.max(1900, kelvin))} min={1900} max={10091} track={KELVIN_TRACK}
+              display={`${Math.round(kelvin / 100) * 100}K`}
+              onInput={(k) => setHsv(rgbToHsv(kelvinToRgb(k)))} onCommit={(k) => { const c = kelvinToRgb(k); setHsv(rgbToHsv(c)); commit(c) }} />
+          )}
+          {(hasWhite || !hasRGB) && (
+            <LabeledSlider label={hasRGB ? 'White' : 'Brightness'} value={w} track="linear-gradient(to right, #23262d, #fff)"
+              onCommit={(v) => commit(rgb, v)} />
+          )}
+          {hasCCT && main && (
+            <LabeledSlider label="White balance" value={main.cct} track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
+              onCommit={(cct) => send({ seg: { cct } })} />
+          )}
+        </div>
+      </Tabs>
 
       <div className="flex gap-2">
         {[0, 1, 2].map((i) => {
