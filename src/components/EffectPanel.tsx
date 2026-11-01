@@ -107,7 +107,7 @@ export function EffectParams({ className }: { className?: string }) {
   const name = useStore((s) => s.effects.find((e) => e.id === main?.fx)?.name)
   if (!main) return null
   return (
-    <div className={cx('flex flex-col gap-1.5', className)}>
+    <div className={cx('flex flex-col gap-3', className)}>
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
         <div className="font-semibold">{name ?? 'Effect'}</div>
         <div className="flex flex-wrap gap-1.5">

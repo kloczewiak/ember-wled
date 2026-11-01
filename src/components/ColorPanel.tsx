@@ -95,9 +95,9 @@ export function ColorPanel({ className }: { className?: string }) {
           </TabsContent>
         )}
 
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-3">
           {hasRGB && (
-            <TabsContent value="hsv" className="flex flex-col gap-0.5">
+            <TabsContent value="hsv" className="flex flex-col gap-3">
               <LabeledSlider label="Hue" value={Math.round(hsv.h)} max={359} track={HUE_TRACK} display={`${Math.round(hsv.h)}°`}
                 onInput={(h) => setHsv({ ...hsv, h })} onCommit={(h) => commitHsv({ ...hsv, h })} />
               <LabeledSlider label="Saturation" value={Math.round(hsv.s)} max={100} track={`linear-gradient(to right, #aaa, ${rgbCss(hsvToRgb({ h: hsv.h, s: 100, v: 100 }))})`}
@@ -105,7 +105,7 @@ export function ColorPanel({ className }: { className?: string }) {
             </TabsContent>
           )}
           {hasRGB && (
-            <TabsContent value="rgb" className="flex flex-col gap-0.5">
+            <TabsContent value="rgb" className="flex flex-col gap-3">
               {(['r', 'g', 'b'] as const).map((k) => (
                 <LabeledSlider key={k} label={{ r: 'Red', g: 'Green', b: 'Blue' }[k]} value={rgb[k]}
                   track={`linear-gradient(to right, ${rgbCss({ ...rgb, [k]: 0 })}, ${rgbCss({ ...rgb, [k]: 255 })})`}
