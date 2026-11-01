@@ -1,0 +1,150 @@
+import { useEffect, type ReactNode } from 'react'
+import { init, useStore } from './store'
+import { useHash, useMedia } from './hooks'
+import { Header } from './components/Header'
+import { LivePreview, RealtimeBanner } from './components/Live'
+import { ColorPanel } from './components/ColorPanel'
+import { PalettePanel } from './components/PalettePanel'
+import { EffectList, EffectPanel, EffectParams } from './components/EffectPanel'
+import { SegmentsPanel } from './components/SegmentsPanel'
+import { PresetsPanel } from './components/PresetsPanel'
+import { MoreSheet } from './components/MoreSheet'
+import { Card, cx } from './components/ui'
+
+// Tab names match the stock UI's location hashes, so existing bookmarks keep working.
+const TABS = ['Colors', 'Effects', 'Segments', 'Presets'] as const
+type Tab = (typeof TABS)[number]
+
+export default function App() {
+  const ready = useStore((s) => !!s.state && !!s.info)
+  const conn = useStore((s) => s.conn)
+  const peek = useStore((s) => s.peek)
+  const wide = useMedia('(min-width: 1100px)')
+
+  useEffect(() => { init() }, [])
+
+  if (!ready) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <span className={cx('size-3 rounded-full', conn === 'error' ? 'bg-danger' : 'animate-pulse bg-accent')} />
+        <p className="m-0 text-muted">{conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}</p>
+        <Toasts />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      {wide ? (
+        <>
+          <Header wide />
+          {peek && <div className="px-5 pt-3"><LivePreview /></div>}
+          <RealtimeBanner />
+          <DesktopLayout />
+        </>
+      ) : (
+        <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview /></div>}<RealtimeBanner /></>} />
+      )}
+      <MoreSheet />
+      <Toasts />
+    </div>
+  )
+}
+
+function DesktopLayout() {
+  return (
+    <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 p-4">
+      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto">
+        <ColorPanel className="shrink-0" />
+        <PalettePanel className="min-h-80 flex-1" />
+      </div>
+      <EffectPanel />
+      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto">
+        <SegmentsPanel className="shrink-0" />
+        <PresetsPanel className="shrink-0" />
+      </div>
+    </main>
+  )
+}
+
+// Phones: the header stays put and each tab scrolls under it. On short screens (landscape) that leaves
+// too little room, so the whole page scrolls as one instead and the header scrolls away; only the
+// tab bar stays pinned.
+function PhoneLayout({ top }: { top: ReactNode }) {
+  const hash = useHash()
+  const tab: Tab = TABS.find((t) => `#${t}` === hash) ?? 'Colors'
+  const short = useMedia('(max-height: 560px)')
+
+  const content = (
+    <>
+      {tab === 'Colors' && <><ColorPanel className="shrink-0" /><PalettePanel className="shrink-0" /></>}
+      {tab === 'Effects' && (short
+        ? <><Card className="shrink-0"><EffectParams /></Card><EffectList /></>
+        : <EffectList className="flex-1" />)}
+      {tab === 'Segments' && <SegmentsPanel />}
+      {tab === 'Presets' && <PresetsPanel />}
+    </>
+  )
+
+  if (short) {
+    return (
+      <>
+        {/* keyed by tab so each tab opens scrolled to the top */}
+        <div key={tab} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+          {top}
+          <main className="px-4 pb-4 pt-2">
+            <div className="mx-auto flex max-w-2xl flex-col gap-4">{content}</div>
+          </main>
+        </div>
+        <TabBar tab={tab} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      {top}
+      <main key={tab} className={cx('min-h-0 flex-1 px-4 pb-4 pt-2', tab === 'Effects' ? 'flex flex-col' : 'scroll-thin overflow-y-auto')}>
+        {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll as a page */}
+        <div className={cx('mx-auto flex max-w-2xl flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
+      </main>
+      {tab === 'Effects' && (
+        <section aria-label="Effect settings" className="shrink-0 rounded-t-2xl bg-surface px-4 pb-3 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.4)]">
+          <EffectParams className="mx-auto max-w-2xl" />
+        </section>
+      )}
+      <TabBar tab={tab} />
+    </>
+  )
+}
+
+function TabBar({ tab }: { tab: Tab }) {
+  return (
+    <nav aria-label="Sections" className="grid shrink-0 grid-cols-4 border-t border-raised bg-[#121317] pb-[max(4px,env(safe-area-inset-bottom))]">
+      {TABS.map((t) => (
+        <a
+          key={t}
+          href={`#${t}`}
+          aria-current={t === tab ? 'page' : undefined}
+          className={cx('flex h-14 flex-col items-center justify-center gap-1.5 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted')}
+        >
+          <span className={cx('h-1 w-9 rounded-full', t === tab ? 'bg-accent' : 'bg-transparent')} />
+          {t === 'Colors' ? 'Color' : t}
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+function Toasts() {
+  const toasts = useStore((s) => s.toasts)
+  return (
+    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-6">
+      {toasts.map((t) => (
+        <div key={t.id} className={cx('max-w-md rounded-xl px-4 py-2.5 text-[13px] shadow-lg', t.error ? 'border border-danger-line bg-[#2a1416] text-danger' : 'border border-line bg-raised text-fg')}>
+          {t.text}
+        </div>
+      ))}
+    </div>
+  )
+}

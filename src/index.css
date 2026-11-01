@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* System fonts only: the device is often on a network without internet access. */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-bg: #0d0e11;
+  --color-surface: #16181d;
+  --color-raised: #1e2128;
+  --color-hover: #23262d;
+  --color-line: #2a2e36;
+  --color-line-strong: #3a3f49;
+  --color-fg: #eceef2;
+  --color-soft: #c9cdd4;
+  --color-muted: #9ba1ac;
+  --color-accent: #ff9f43;
+  --color-on-accent: #1a1206;
+  --color-danger: #ff8a8a;
+  --color-danger-line: #5a2a2a;
+  --color-warn-bg: #3a2a12;
+  --color-warn-line: #6b4a1c;
+  --color-warn-fg: #ffd9a8;
+  --color-ok: #4fd18b;
+}
+
+html, body, #root { height: 100%; }
+/* The page itself never scrolls (only the panels inside it do), so dragging the header or tab bar
+   can't pull the whole UI around, and the browser's overscroll bounce is off. */
+html, body { overflow: hidden; overscroll-behavior: none; }
+body {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  touch-action: pan-x pan-y; /* no pinch or double-tap zoom */
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+select option { background: var(--color-surface); }
+
+/* Range sliders: --t overrides the track background, otherwise it fills to --p with the accent colour. */
+.sl {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 28px; margin: 0; background: transparent; display: block;
+  touch-action: pan-y;
+}
+.sl::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 4px;
+  background: var(--t, linear-gradient(to right, var(--color-accent) var(--p, 50%), var(--color-line) var(--p, 50%)));
+}
+.sl::-moz-range-track {
+  height: 8px; border-radius: 4px;
+  background: var(--t, linear-gradient(to right, var(--color-accent) var(--p, 50%), var(--color-line) var(--p, 50%)));
+}
+.sl::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; margin-top: -6px; box-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+.sl::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+@media (pointer: coarse) {
+  .sl { height: 32px; }
+  .sl::-webkit-slider-runnable-track { height: 10px; border-radius: 5px; }
+  .sl::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -7px; }
+}
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-line-strong) transparent; }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* usermod rows in Info may contain HTML from the device */
+.info-html button { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; border: 1px solid var(--color-line); border-radius: 8px; padding: 0 8px; background: transparent; color: inherit; cursor: pointer; }
+.info-html button:hover { background: var(--color-hover); }
+.info-html .icons { display: inline-flex; font-style: normal; }
+.info-html .icons svg { width: 18px; height: 18px; }
+.info-html .on { color: var(--color-accent); }
+.info-html .off { color: var(--color-muted); }
