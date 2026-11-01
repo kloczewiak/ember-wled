@@ -94,7 +94,7 @@ function PhoneLayout({ top }: { top: ReactNode }) {
         <div key={tab} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
           {top}
           <main className="px-4 pb-4 pt-2">
-            <div className="mx-auto flex max-w-2xl flex-col gap-4">{content}</div>
+            <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">{content}</div>
           </main>
         </div>
         <TabBar tab={tab} />
@@ -107,7 +107,7 @@ function PhoneLayout({ top }: { top: ReactNode }) {
       {top}
       <main key={tab} className={cx('min-h-0 flex-1 px-4 pb-4 pt-2', tab === 'Effects' ? 'flex flex-col' : 'scroll-thin overflow-y-auto')}>
         {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll as a page */}
-        <div className={cx('mx-auto flex max-w-2xl flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
+        <div className={cx('mx-auto flex w-full max-w-2xl flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
       </main>
       {tab === 'Effects' && (
         <section aria-label="Effect settings" className="shrink-0 rounded-t-2xl bg-surface px-4 pb-3 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.4)]">

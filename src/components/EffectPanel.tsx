@@ -27,8 +27,9 @@ function tags(flags: string, usesPalette: boolean) {
   return t
 }
 
-// The effect list. `columns` lays it out as a grid on wide screens.
-export function EffectList({ columns = 1, className }: { columns?: number; className?: string }) {
+// The effect list: two columns once the list itself is at least 32rem wide (a container query, so it
+// adapts to the column it sits in, not the window).
+export function EffectList({ className }: { className?: string }) {
   const { main, segLmax, has2D, isMatrix } = useSelection()
   const effects = useStore((s) => s.effects)
   const fxdata = useStore((s) => s.fxdata)
@@ -62,7 +63,7 @@ export function EffectList({ columns = 1, className }: { columns?: number; class
   }
 
   return (
-    <div className={cx('flex min-h-0 flex-col gap-3', className)}>
+    <div className={cx('@container flex min-h-0 flex-col gap-3', className)}>
       <SearchField value={query} onChange={(q) => { setQuery(q); if (q) setFilters([]) }} placeholder={`Search ${effects.length} effects`} />
       <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
         {FILTERS.filter((f) => f.flag !== '2' || isMatrix).map((f) => (
@@ -73,8 +74,7 @@ export function EffectList({ columns = 1, className }: { columns?: number; class
         ref={listRef}
         role="listbox"
         aria-label="Effects"
-        className="scroll-thin -mx-1 grid min-h-0 flex-1 content-start gap-1 overflow-y-auto px-1"
-        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        className="scroll-thin -mx-1 grid min-h-0 flex-1 grid-cols-1 content-start gap-1 overflow-y-auto px-1 @lg:grid-cols-2"
       >
         {filtered.map((e) => {
           const sel = e.id === selected
@@ -129,7 +129,7 @@ export function EffectPanel({ className }: { className?: string }) {
   return (
     <Card className={cx('min-h-0', className)}>
       <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>Effect</SectionTitle>
-      <EffectList columns={2} className="flex-1" />
+      <EffectList className="flex-1" />
       <EffectParams className="rounded-xl bg-bg px-4 py-3" />
     </Card>
   )
