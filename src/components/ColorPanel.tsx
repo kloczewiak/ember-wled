@@ -4,7 +4,10 @@ import { useUi } from '../ui'
 import { useDraft, useFxMeta, useMedia, useSelection } from '../hooks'
 import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, rgbToKelvin, toHex, type HSV, type RGB } from '../lib/color'
 import { ColorWheel } from './ColorWheel'
-import { Card, cx, Icon, LabeledSlider, SectionTitle } from './ui'
+import { Card, cx, Icon, LabeledSlider, SectionTitle } from './controls'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const QUICK = ['#ff0000', '#ffa000', '#ffc800', '#ffe0a0', '#ffffff', '#000000', '#ff00ff', '#0000ff', '#00ffc8', '#08ff00']
 const KELVIN_TRACK = `linear-gradient(to right, ${[1900, 3000, 4500, 6500, 8000, 10091].map((k) => rgbCss(kelvinToRgb(k))).join(',')})`
@@ -75,18 +78,12 @@ export function ColorPanel({ className }: { className?: string }) {
     <Card className={className}>
       <SectionTitle
         right={hasRGB && (
-          <div className="flex rounded-lg bg-bg p-0.5 text-xs" role="group" aria-label="Color controls">
-            {(['wheel', 'hsv', 'rgb'] as const).map((m) => (
-              <button
-                key={m}
-                aria-pressed={colorMode === m}
-                onClick={() => setColorMode(m)}
-                className={cx('rounded-md px-2.5 py-1 uppercase', colorMode === m ? 'bg-line text-fg' : 'text-muted hover:text-fg')}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup variant="outline" size="sm" aria-label="Color controls" value={[colorMode]}
+            onValueChange={(v) => { if (v[0]) setColorMode(v[0] as typeof colorMode) }}>
+            <ToggleGroupItem value="wheel">Wheel</ToggleGroupItem>
+            <ToggleGroupItem value="hsv">HSV</ToggleGroupItem>
+            <ToggleGroupItem value="rgb">RGB</ToggleGroupItem>
+          </ToggleGroup>
         )}
       >
         Color
@@ -145,9 +142,9 @@ export function ColorPanel({ className }: { className?: string }) {
               key={i}
               aria-pressed={csel === i}
               onClick={() => setCsel(i)}
-              className={cx('flex h-14 min-w-0 flex-1 flex-col gap-1 rounded-xl border-2 bg-bg p-1 text-[11px]', csel === i ? 'border-accent text-fg' : 'border-hover text-muted')}
+              className={cx('flex h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg border p-1 text-xs', csel === i ? 'border-primary ring-3 ring-ring/50' : 'border-border text-muted-foreground')}
             >
-              <span className="w-full flex-1 rounded-lg" style={{ background: bg }} />
+              <span className="w-full flex-1 rounded-md" style={{ background: bg }} />
               <span className="truncate">{meta.colors[i] ?? `Color ${i + 1}`}</span>
             </button>
           )
@@ -155,26 +152,24 @@ export function ColorPanel({ className }: { className?: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <form className="flex h-10 min-w-36 flex-1 items-center gap-2 rounded-lg bg-bg pl-3 pr-1 text-xs text-muted" onSubmit={(e) => { e.preventDefault(); applyHex() }}>
-          HEX
-          <input
+        <form className="flex min-w-36 flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); applyHex() }}>
+          <Input
             value={hex}
             maxLength={8}
+            placeholder="HEX"
             onChange={(e) => setHex(e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase())}
             aria-label="Hex color (RRGGBB or RRGGBBWW)"
-            className="min-w-0 flex-1 bg-transparent font-mono text-sm text-fg outline-none"
+            className="font-mono"
           />
-          <button type="submit" aria-label="Apply hex color" className="flex size-8 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-fg">
-            <Icon.check className="size-4" />
-          </button>
+          <Button type="submit" variant="outline" size="icon" aria-label="Apply hex color"><Icon.check /></Button>
         </form>
         {hasRGB && (
           <div className="flex flex-wrap gap-1.5">
             {QUICK.map((q) => (
-              <button key={q} aria-label={`Set color ${q}`} onClick={() => pickQuick(q)} className="size-7 rounded-full border border-line" style={{ background: q }} />
+              <button key={q} aria-label={`Set color ${q}`} onClick={() => pickQuick(q)} className="size-7 rounded-full border" style={{ background: q }} />
             ))}
             <button aria-label="Random color" onClick={() => pickQuick('random')}
-              className="flex size-7 items-center justify-center rounded-full border border-line"
+              className="flex size-7 items-center justify-center rounded-full border"
               style={{ background: HUE_TRACK }}>
               <Icon.dice className="size-4 text-black/70" />
             </button>

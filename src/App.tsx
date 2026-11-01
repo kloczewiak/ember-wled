@@ -9,7 +9,8 @@ import { EffectList, EffectPanel, EffectParams } from './components/EffectPanel'
 import { SegmentsPanel } from './components/SegmentsPanel'
 import { PresetsPanel } from './components/PresetsPanel'
 import { MoreSheet } from './components/MoreSheet'
-import { Card, cx } from './components/ui'
+import { Card, cx } from './components/controls'
+import { Toaster } from '@/components/ui/sonner'
 
 // Tab names match the stock UI's location hashes, so existing bookmarks keep working.
 const TABS = ['Colors', 'Effects', 'Segments', 'Presets'] as const
@@ -26,8 +27,8 @@ export default function App() {
   if (!ready) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-        <span className={cx('size-3 rounded-full', conn === 'error' ? 'bg-danger' : 'animate-pulse bg-accent')} />
-        <p className="m-0 text-muted">{conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}</p>
+        <span className={cx('size-3 rounded-full', conn === 'error' ? 'bg-danger' : 'animate-pulse bg-primary')} />
+        <p className="m-0 text-muted-foreground">{conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}</p>
         <Toasts />
       </div>
     )
@@ -120,15 +121,15 @@ function PhoneLayout({ top }: { top: ReactNode }) {
 
 function TabBar({ tab }: { tab: Tab }) {
   return (
-    <nav aria-label="Sections" className="grid shrink-0 grid-cols-4 border-t border-raised bg-[#121317] pb-[max(4px,env(safe-area-inset-bottom))]">
+    <nav aria-label="Sections" className="grid shrink-0 grid-cols-4 border-t bg-background pb-[max(4px,env(safe-area-inset-bottom))]">
       {TABS.map((t) => (
         <a
           key={t}
           href={`#${t}`}
           aria-current={t === tab ? 'page' : undefined}
-          className={cx('flex h-14 flex-col items-center justify-center gap-1.5 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted')}
+          className={cx('flex h-14 flex-col items-center justify-center gap-1.5 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted-foreground')}
         >
-          <span className={cx('h-1 w-9 rounded-full', t === tab ? 'bg-accent' : 'bg-transparent')} />
+          <span className={cx('h-1 w-9 rounded-full', t === tab ? 'bg-primary' : 'bg-transparent')} />
           {t === 'Colors' ? 'Color' : t}
         </a>
       ))}
@@ -136,15 +137,7 @@ function TabBar({ tab }: { tab: Tab }) {
   )
 }
 
+// Toasts sit above the phone tab bar.
 function Toasts() {
-  const toasts = useStore((s) => s.toasts)
-  return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-6">
-      {toasts.map((t) => (
-        <div key={t.id} className={cx('max-w-md rounded-xl px-4 py-2.5 text-[13px] shadow-lg', t.error ? 'border border-danger-line bg-[#2a1416] text-danger' : 'border border-line bg-raised text-fg')}>
-          {t.text}
-        </div>
-      ))}
-    </div>
-  )
+  return <Toaster position="bottom-center" mobileOffset={{ bottom: 84 }} visibleToasts={3} />
 }

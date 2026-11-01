@@ -27,6 +27,7 @@ function wledOutput(): Plugin {
 }
 
 export default defineConfig({
+  resolve: { alias: { '@': resolve(__dirname, 'src') } },
   plugins: [react(), tailwindcss(), viteSingleFile(), wledOutput(), ...(mock ? [mockWled()] : [])],
   server: mock ? undefined : {
     proxy: {

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { send, useStore } from '../store'
 import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
 import type { Color, PaletteStop } from '../api/types'
-import { Card, cx, SearchField, SectionTitle } from './ui'
+import { Card, cx, SearchField, SectionTitle } from './controls'
+import { Button } from '@/components/ui/button'
 
 // CSS gradient for a palette preview from /json/palx data; "c1".."c3" stops use the segment's colour slots.
 function gradient(stops: PaletteStop[] | undefined, col: Color[]) {
@@ -65,7 +66,7 @@ export function PalettePanel({ className }: { className?: string }) {
         {meta.palette.label}
       </SectionTitle>
       {!usable ? (
-        <p className="m-0 text-[13px] text-muted">{hasRGB ? 'This effect does not use a palette.' : 'Palettes need an RGB segment.'}</p>
+        <p className="m-0 text-[13px] text-muted-foreground">{hasRGB ? 'This effect does not use a palette.' : 'Palettes need an RGB segment.'}</p>
       ) : (
         <>
           <SearchField value={query} onChange={setQuery} placeholder={`Search ${all.length} palettes`} />
@@ -73,19 +74,18 @@ export function PalettePanel({ className }: { className?: string }) {
             {shown.map((p) => {
               const sel = p.id === main?.pal
               return (
-                <button
+                <Button
                   key={p.id}
                   role="option"
                   aria-selected={sel}
+                  variant={sel ? 'secondary' : 'ghost'}
+                  size="lg"
                   onClick={() => send({ seg: { pal: p.id } })}
-                  className={cx(
-                    'grid min-h-10 shrink-0 grid-cols-[minmax(0,120px)_1fr] items-center gap-3 rounded-lg border px-2.5 text-left text-[13px]',
-                    sel ? 'border-accent bg-hover' : 'border-transparent hover:bg-hover',
-                  )}
+                  className="grid shrink-0 grid-cols-[minmax(0,120px)_1fr] gap-3 text-left font-normal"
                 >
                   <span className="truncate">{p.name}</span>
-                  <span className="h-3.5 rounded-full bg-line" style={{ background: gradient(palx[p.id], main?.col ?? []) }} />
-                </button>
+                  <span className="h-3 rounded-full" style={{ background: gradient(palx[p.id], main?.col ?? []) }} />
+                </Button>
               )
             })}
           </div>

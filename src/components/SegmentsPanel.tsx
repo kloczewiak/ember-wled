@@ -4,7 +4,11 @@ import { useDraft, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import type { Segment } from '../api/types'
 import { stockCfg } from '../ui'
-import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch } from './ui'
+import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch } from './controls'
+import { Button as UiButton } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
+import { Checkbox } from '@/components/ui/checkbox'
+import { NativeSelect } from '@/components/ui/native-select'
 
 const BLEND_MODES = ['Top/Default', 'Bottom/None', 'Add', 'Subtract', 'Difference', 'Average', 'Multiply', 'Divide', 'Lighten', 'Darken', 'Screen', 'Overlay', 'Hard Light', 'Soft Light', 'Dodge', 'Burn', 'Stencil']
 const SOUND_SIMS = ['BeatSin', 'WeWillRockYou', '10/13', '14/3']
@@ -16,7 +20,7 @@ const BLEND_STYLES: [number, string, boolean?][] = [
   [12, 'Swipe BR', true], [13, 'Swipe BL', true], [14, 'Circular Out', true], [15, 'Circular In', true],
 ]
 // segment groups ("sets") 1-3 are colour coded like the stock UI
-const SET_COLORS = ['var(--color-muted)', '#ee4422', '#44ee22', '#4488aa']
+const SET_COLORS = ['var(--color-muted-foreground)', '#ee4422', '#44ee22', '#4488aa']
 
 const segName = (s: Segment) => s.n || `Segment ${s.id}`
 const numCls = cx(inputCls, 'font-mono')
@@ -65,18 +69,19 @@ export function SegmentsPanel({ className }: { className?: string }) {
       {!isMatrix && segs.length > 0 && <StripMap segs={segs} total={ledCount} />}
 
       {segs.length > 2 && (
-        <div className="flex items-center gap-1.5 text-xs text-muted">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Select group
           {[0, 1, 2, 3].map((g) => (
-            <button
+            <UiButton
               key={g}
+              variant="outline"
+              size="icon-sm"
               aria-label={`Select group ${g + 1}`}
               onClick={() => send({ seg: segs.map((s) => ({ id: s.id, sel: s.set === g })) })}
-              className="size-7 rounded-md border border-line font-mono text-xs hover:bg-hover"
               style={{ color: SET_COLORS[g] }}
             >
               {g + 1}
-            </button>
+            </UiButton>
           ))}
         </div>
       )}
@@ -109,16 +114,16 @@ export function SegmentsPanel({ className }: { className?: string }) {
         <TransitionField value={state.transition} />
         {state.transition > 0 && (
           <Field label="Blending" className="min-w-32 flex-1">
-            <select className={inputCls} value={state.bs ?? 0} onChange={(e) => send({ bs: Number(e.target.value) })}>
+            <NativeSelect className="w-full" value={state.bs ?? 0} onChange={(e) => send({ bs: Number(e.target.value) })}>
               {BLEND_STYLES.filter(([, , is2D]) => isMatrix || !is2D).map(([v, n]) => <option key={v} value={v}>{n}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
         )}
         {(info.maps?.length ?? 0) > 1 && (
           <Field label="LED map" className="min-w-32 flex-1">
-            <select className={inputCls} value={state.ledmap ?? 0} onChange={(e) => send({ ledmap: Number(e.target.value) })}>
+            <NativeSelect className="w-full" value={state.ledmap ?? 0} onChange={(e) => send({ ledmap: Number(e.target.value) })}>
               {info.maps!.map((m) => <option key={m.id} value={m.id}>{m.id === 0 ? 'Default' : m.n || `ledmap${m.id}.json`}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
         )}
         {segs.length > 1 && (
@@ -198,7 +203,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
           )
         })}
       </div>
-      <div ref={tickRow} className="relative h-3 font-mono text-[10px] text-muted">
+      <div ref={tickRow} className="relative h-3 font-mono text-[10px] text-muted-foreground">
         {ticks.map((t) => (
           <span key={t} className="absolute" style={{ left: `${(t / total) * 100}%`, transform: t === 0 ? undefined : t === total ? 'translateX(-100%)' : 'translateX(-50%)' }}>{t}</span>
         ))}
@@ -223,45 +228,40 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
   }
 
   return (
-    <div className={cx('flex flex-col gap-2.5 rounded-xl border p-3', open ? 'border-line-strong bg-raised' : main ? 'border-line-strong' : 'border-hover')}>
+    <div className={cx('flex flex-col gap-3 rounded-lg border p-3', main && 'border-input', open && 'bg-muted/50')}>
       <div className="flex items-center gap-2.5">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={seg.sel}
-          onChange={(e) => send({ seg: { id: seg.id, sel: e.target.checked } })}
+          onCheckedChange={(sel) => send({ seg: { id: seg.id, sel } })}
           aria-label={`Select ${segName(seg)}`}
-          className="size-[18px] shrink-0 accent-accent"
         />
         <button className="min-w-0 flex-1 text-left" onClick={() => send({ seg: state.seg.map((g) => ({ id: g.id, sel: g.id === seg.id })), mainseg: seg.id })} title="Select only this segment">
           <div className="flex items-center gap-1.5 truncate font-semibold">
             {segName(seg)}
             {seg.set > 0 && <span className="font-mono text-[11px]" style={{ color: SET_COLORS[seg.set] }}>G{seg.set + 1}</span>}
           </div>
-          <div className="truncate text-xs text-muted">
+          <div className="truncate text-xs text-muted-foreground">
             {isMatrix && seg.startY !== undefined ? `${seg.start},${seg.startY} – ${seg.stop},${seg.stopY}` : `LED ${seg.start}–${seg.stop - 1}`}
             {' · '}{lengthLabel((seg.stop - seg.start) * (isMatrix ? (seg.stopY ?? 1) - (seg.startY ?? 0) : 1), seg.grp, seg.spc)}
           </div>
         </button>
-        <button aria-label={open ? 'Collapse segment settings' : 'Expand segment settings'} aria-expanded={open} onClick={onToggle}
-          className="flex size-8 items-center justify-center rounded-lg text-muted hover:text-fg">
-          <Icon.chevron className={cx('size-4 transition-transform', open && 'rotate-180')} />
-        </button>
+        <UiButton variant="ghost" size="icon" aria-label={open ? 'Collapse segment settings' : 'Expand segment settings'} aria-expanded={open} onClick={onToggle}>
+          <Icon.chevron className={cx('transition-transform', open && 'rotate-180')} />
+        </UiButton>
         {!stockCfg.segpwr && <Switch on={seg.on} label={`${segName(seg)} power`} onChange={(on) => send({ seg: { id: seg.id, on } })} />}
       </div>
       <div className="flex items-center gap-3">
-          <button
+          <Toggle
+            variant="outline"
+            size="sm"
+            pressed={seg.frz}
+            onPressedChange={freeze}
             aria-label={live ? `Override live data on ${segName(seg)}` : seg.frz ? `Unfreeze ${segName(seg)}` : `Freeze ${segName(seg)}`}
-            aria-pressed={seg.frz}
             title={live ? 'Receiving live data: tap to show the effect instead' : seg.frz ? 'Effect paused: tap to resume' : 'Pause the effect on its current frame'}
-            onClick={freeze}
-            className={cx(
-              'flex h-8 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-medium transition-colors',
-              seg.frz ? 'border-transparent bg-accent text-on-accent' : 'border-line text-muted hover:text-fg',
-            )}
           >
-            <Icon.snow className="size-3.5" />
+            <Icon.snow />
             {live ? 'Live' : seg.frz ? 'Frozen' : 'Freeze'}
-          </button>
+          </Toggle>
         {!stockCfg.segpwr && <Slider label={`${segName(seg)} brightness`} value={seg.bri} min={1} onCommit={(bri) => send({ seg: { id: seg.id, bri } })} className="min-w-0 flex-1" />}
       </div>
       {open && (
@@ -333,7 +333,7 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
           <Button type="submit" variant="primary" className="w-full">Apply</Button>
         </div>
       </div>
-      <div className="text-xs text-muted">{lengthLabel(len, grp || 1, spc || 0)}{isMatrix && !is2DSeg ? ' [strip]' : ''}</div>
+      <div className="text-xs text-muted-foreground">{lengthLabel(len, grp || 1, spc || 0)}{isMatrix && !is2DSeg ? ' [strip]' : ''}</div>
 
       <div className="grid grid-cols-2 gap-x-3">
         <Check checked={seg.rev} onChange={(rev) => set({ rev })}>{is2DSeg ? 'Reverse X' : 'Reverse direction'}</Check>
@@ -351,28 +351,28 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Blend mode">
-          <select className={inputCls} value={seg.bm} onChange={(e) => set({ bm: Number(e.target.value) })}>
+          <NativeSelect className="w-full" value={seg.bm} onChange={(e) => set({ bm: Number(e.target.value) })}>
             {BLEND_MODES.map((n, i) => <option key={i} value={i}>{n}</option>)}
-          </select>
+          </NativeSelect>
         </Field>
         {is2DSeg && is1DFx && seg.stop - seg.start > 1 && (seg.stopY ?? 1) - (seg.startY ?? 0) > 1 && (
           <Field label="Expand 1D FX">
-            <select className={inputCls} value={seg.m12} onChange={(e) => set({ m12: Number(e.target.value) })}>
+            <NativeSelect className="w-full" value={seg.m12} onChange={(e) => set({ m12: Number(e.target.value) })}>
               {EXPAND_1D.map((n, i) => <option key={i} value={i}>{n}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
         )}
         {isAudioFx && !audioOn && (
           <Field label="Sound sim">
-            <select className={inputCls} value={seg.si} onChange={(e) => set({ si: Number(e.target.value) })}>
+            <NativeSelect className="w-full" value={seg.si} onChange={(e) => set({ si: Number(e.target.value) })}>
               {SOUND_SIMS.map((n, i) => <option key={i} value={i}>{n}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
         )}
         <Field label="Group">
-          <select className={inputCls} value={seg.set} onChange={(e) => set({ set: Number(e.target.value) })}>
+          <NativeSelect className="w-full" value={seg.set} onChange={(e) => set({ set: Number(e.target.value) })}>
             {[0, 1, 2, 3].map((i) => <option key={i} value={i}>Group {i + 1}</option>)}
-          </select>
+          </NativeSelect>
         </Field>
       </div>
 
@@ -417,14 +417,14 @@ function NewSegment({ id, defaults, onDone }: { id: number; defaults: { start: n
     onDone()
   }
   return (
-    <form className="flex flex-col gap-3 rounded-xl border border-accent bg-raised p-3" onSubmit={(e) => { e.preventDefault(); submit() }}>
+    <form className="flex flex-col gap-3 rounded-xl border border-primary bg-raised p-3" onSubmit={(e) => { e.preventDefault(); submit() }}>
       <Field label="Name"><input className={inputCls} value={name} placeholder={`New segment ${id}`} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
       <div className="grid grid-cols-2 gap-2">
         {field('start', isMatrix ? 'Start X' : 'Start LED')}
         {field('stop', isMatrix ? (rel ? 'Width' : 'Stop X') : (rel ? 'LED count' : 'Stop LED'))}
         {isMatrix && <>{field('startY', 'Start Y')}{field('stopY', rel ? 'Height' : 'Stop Y')}</>}
       </div>
-      <div className="text-xs text-muted">{lengthLabel((stop - Number(v.start)) * (isMatrix ? stopY - Number(v.startY) : 1), 1, 0)}</div>
+      <div className="text-xs text-muted-foreground">{lengthLabel((stop - Number(v.start)) * (isMatrix ? stopY - Number(v.startY) : 1), 1, 0)}</div>
       <div className="flex gap-2">
         <Button type="submit" variant="primary" className="flex-1">Add segment</Button>
         <Button type="button" className="flex-1" onClick={onDone}>Cancel</Button>

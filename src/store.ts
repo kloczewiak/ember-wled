@@ -1,8 +1,7 @@
 import { create } from 'zustand'
+import { toast as sonner } from 'sonner'
 import { applyCommand } from './api/apply'
 import type { Command, Info, Node, PaletteStop, Presets, State } from './api/types'
-
-export interface Toast { id: number; text: string; error: boolean }
 
 interface Store {
   conn: 'connecting' | 'ok' | 'error'
@@ -15,7 +14,6 @@ interface Store {
   presets: Presets | null
   presetsError: boolean
   nodes: Node[] | null
-  toasts: Toast[]
   peek: boolean
 }
 
@@ -30,7 +28,6 @@ export const useStore = create<Store>(() => ({
   presets: null,
   presetsError: false,
   nodes: null,
-  toasts: [],
   peek: false,
 }))
 
@@ -39,11 +36,9 @@ const set = useStore.setState
 
 // ---------------------------------------------------------------- toasts
 
-let toastId = 0
 export function toast(text: string, error = false) {
-  const id = ++toastId
-  set({ toasts: [...get().toasts.filter((t) => !t.error || error), { id, text, error }].slice(-3) })
-  setTimeout(() => set({ toasts: get().toasts.filter((t) => t.id !== id) }), error ? 6000 : 2900)
+  if (error) sonner.error(text, { duration: 6000 })
+  else sonner(text, { duration: 2900 })
 }
 
 const ERRORS: Record<number, string> = {

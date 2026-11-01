@@ -4,7 +4,9 @@ import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import { stockCfg } from '../ui'
 import { searchList } from './PalettePanel'
-import { Card, Chip, cx, LabeledSlider, SearchField, SectionTitle } from './ui'
+import { Card, Chip, cx, LabeledSlider, SearchField, SectionTitle } from './controls'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 const FILTERS = [
   { flag: 'pal', label: 'Palette', title: 'Uses palette' },
@@ -77,21 +79,20 @@ export function EffectList({ columns = 1, className }: { columns?: number; class
         {filtered.map((e) => {
           const sel = e.id === selected
           return (
-            <button
+            <Button
               key={e.id}
               role="option"
               aria-selected={sel}
+              variant={sel ? 'secondary' : 'ghost'}
+              size="lg"
               onClick={() => send({ seg: { fx: e.id, fxdef: stockCfg.fxdef } })}
-              className={cx(
-                'flex min-h-10 items-center justify-between gap-2 rounded-lg border px-3 text-left text-[13px]',
-                sel ? 'border-accent bg-hover text-fg' : 'border-transparent text-soft hover:bg-hover',
-              )}
+              className="justify-between font-normal"
             >
               <span className="truncate">{e.name}</span>
               <span className="flex shrink-0 gap-1">
-                {e.tags.map((t) => <span key={t} className="rounded bg-hover px-1.5 py-0.5 text-[10px] text-muted">{t}</span>)}
+                {e.tags.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
               </span>
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -118,7 +119,7 @@ export function EffectParams({ className }: { className?: string }) {
       {meta.sliders.map((s) => (
         <LabeledSlider key={s.key} label={s.label} value={main[s.key]} max={s.max} onCommit={(v) => send({ seg: { [s.key]: v } })} />
       ))}
-      {!meta.sliders.length && !meta.options.length && <p className="m-0 text-[13px] text-muted">This effect has no settings.</p>}
+      {!meta.sliders.length && !meta.options.length && <p className="m-0 text-[13px] text-muted-foreground">This effect has no settings.</p>}
     </div>
   )
 }
@@ -127,7 +128,7 @@ export function EffectPanel({ className }: { className?: string }) {
   const count = useStore((s) => s.effects.length)
   return (
     <Card className={cx('min-h-0', className)}>
-      <SectionTitle right={<span className="text-xs text-muted">{count} effects</span>}>Effect</SectionTitle>
+      <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>Effect</SectionTitle>
       <EffectList columns={2} className="flex-1" />
       <EffectParams className="rounded-xl bg-bg px-4 py-3" />
     </Card>

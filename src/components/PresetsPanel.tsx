@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react'
 import { presetsBackup, presetsChanged, send, toast, uploadPresets, useStore } from '../store'
 import type { Command, Playlist, Preset, Presets } from '../api/types'
 import { stockCfg } from '../ui'
-import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTitle } from './ui'
+import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTitle } from './controls'
+import { Badge } from '@/components/ui/badge'
+import { Button as UiButton } from '@/components/ui/button'
+import { NativeSelect } from '@/components/ui/native-select'
 
 const pName = (presets: Presets | null, id: number) => presets?.[id]?.n || `Preset ${id}`
 const isPlaylist = (p?: Preset) => !!p?.playlist?.ps
@@ -37,14 +40,16 @@ export function QuickLoad({ className }: { className?: string }) {
   return (
     <div className={cx('grid grid-cols-[repeat(auto-fill,minmax(52px,1fr))] gap-1.5', className)}>
       {ql.map(([id, p]) => (
-        <button
+        <UiButton
           key={id}
+          variant={Number(id) === current ? 'secondary' : 'outline'}
+          size="lg"
           title={pName(presets, Number(id))}
           onClick={() => applyPreset(Number(id))}
-          className={cx('h-11 truncate rounded-lg border bg-bg px-1 text-[15px] font-semibold', Number(id) === current ? 'border-accent' : 'border-line hover:bg-hover')}
+          className="truncate"
         >
           {p.ql}
-        </button>
+        </UiButton>
       ))}
     </div>
   )
@@ -86,7 +91,7 @@ export function PresetsPanel({ className }: { className?: string }) {
       {presetsError ? (
         <PresetsProblem empty={false} />
       ) : presets === null ? (
-        <p className="m-0 text-[13px] text-muted">Loading…</p>
+        <p className="m-0 text-[13px] text-muted-foreground">Loading…</p>
       ) : !sorted.length ? (
         <PresetsProblem empty />
       ) : (
@@ -96,22 +101,23 @@ export function PresetsPanel({ className }: { className?: string }) {
             {shown.map(([key, p]) => {
               const id = Number(key)
               return (
-                <div key={key} className={cx('rounded-xl', (editing === id || id === current) && 'bg-hover')}>
-                  <div className="flex min-h-12 items-center gap-2 pl-3 pr-1">
-                    {stockCfg.pid && <span className="w-6 shrink-0 font-mono text-[11px] text-muted">{id}</span>}
-                    <button className="min-w-0 flex-1 truncate py-2 text-left" onClick={() => applyPreset(id)}>
-                      {pName(presets, id)}
-                    </button>
-                    {id === info?.leds.bootps && <span title="Applied at boot" className="text-accent"><Icon.star className="size-3.5" /></span>}
-                    {isPlaylist(p) && <span className="rounded bg-raised px-1.5 py-0.5 text-[10px] text-muted">Playlist</span>}
-                    <button
+                <div key={key} className={cx('rounded-lg', (editing === id || id === current) && 'bg-muted')}>
+                  <div className="flex items-center gap-1 pl-3">
+                    {stockCfg.pid && <span className="w-6 shrink-0 font-mono text-[11px] text-muted-foreground">{id}</span>}
+                    <UiButton variant="ghost" size="lg" className="min-w-0 flex-1 justify-start font-normal" onClick={() => applyPreset(id)}>
+                      <span className="truncate">{pName(presets, id)}</span>
+                    </UiButton>
+                    {id === info?.leds.bootps && <span title="Applied at boot" className="text-primary"><Icon.star className="size-4" /></span>}
+                    {isPlaylist(p) && <Badge variant="secondary">Playlist</Badge>}
+                    <UiButton
+                      variant="ghost"
+                      size="icon-lg"
                       aria-label={`Edit ${pName(presets, id)}`}
                       aria-expanded={editing === id}
                       onClick={() => setEditing(editing === id ? null : id)}
-                      className="flex size-10 items-center justify-center rounded-lg text-muted hover:text-fg"
                     >
-                      <Icon.edit className="size-4" />
-                    </button>
+                      <Icon.edit />
+                    </UiButton>
                   </div>
                   {editing === id && <PresetEditor id={id} playlist={isPlaylist(p)} onClose={() => setEditing(null)} />}
                 </div>
@@ -134,7 +140,7 @@ function PresetsProblem({ empty }: { empty: boolean }) {
       {!empty && <Button onClick={() => { useStore.setState({ presetsError: false }); presetsChanged() }}>Try again</Button>}
       {hasBackup && (
         <>
-          <p className="m-0 text-muted">
+          <p className="m-0 text-muted-foreground">
             {empty ? 'There is a backup of presets from a previous installation. Saving a preset will overwrite it.' : 'Here is a backup of the last known good presets:'}
           </p>
           <textarea className={cx(inputCls, 'h-24 py-2 font-mono text-xs')} value={text} onChange={(e) => setText(e.target.value)} aria-label="Presets backup" />
@@ -249,7 +255,7 @@ function PresetEditor({ id, playlist, onClose }: { id: number; playlist: boolean
   }
 
   return (
-    <div className={cx('flex flex-col gap-3 p-3', id === 0 && 'rounded-xl border border-accent bg-raised')}>
+    <div className={cx('flex flex-col gap-3 p-3', id === 0 && 'rounded-xl border border-primary bg-raised')}>
       <div className="grid grid-cols-[1fr_72px] gap-2">
         <Field label="Name"><input className={inputCls} value={name} maxLength={32} placeholder="Enter name..." autoFocus={id === 0} onChange={(e) => setName(e.target.value)} /></Field>
         <Field label="Quick load"><input className={inputCls} value={ql} maxLength={2} onChange={(e) => setQl(e.target.value)} /></Field>
@@ -273,10 +279,10 @@ function PresetEditor({ id, playlist, onClose }: { id: number; playlist: boolean
           <Check checked={sc} onChange={setSc}>Checked segments only</Check>
           {(info.maps?.length ?? 0) > 1 && (
             <Field label="LED map" className="mt-1">
-              <select className={inputCls} value={ledmap} onChange={(e) => setLedmap(e.target.value)}>
+              <NativeSelect className="w-full" value={ledmap} onChange={(e) => setLedmap(e.target.value)}>
                 <option value="">Unchanged</option>
                 {info.maps!.map((m) => <option key={m.id} value={m.id}>{m.id === 0 ? 'Default' : m.n || `ledmap${m.id}.json`}</option>)}
-              </select>
+              </NativeSelect>
             </Field>
           )}
         </div>
@@ -329,21 +335,21 @@ function PlaylistEditor({ id, pl, setPl, presets }: { id: number; pl: PlaylistSt
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-[1fr_64px_56px_28px_28px] gap-1.5 text-[11px] text-muted">
+      <div className="grid grid-cols-[1fr_64px_56px_28px_28px] gap-1.5 text-[11px] text-muted-foreground">
         <span>Preset</span><span>Duration (s)</span><span>Fade (s)</span><span /><span />
       </div>
       {pl.ps.map((ps, i) => (
         <div key={i} className="grid grid-cols-[1fr_64px_56px_28px_28px] items-center gap-1.5">
-          <select className={cx(inputCls, 'px-1.5 text-[13px]')} aria-label={`Entry ${i + 1} preset`} value={ps} onChange={(e) => setAt('ps', i, Number(e.target.value))}>
+          <NativeSelect className="w-full" aria-label={`Entry ${i + 1} preset`} value={ps} onChange={(e) => setAt('ps', i, Number(e.target.value))}>
             {!presets[ps] && <option value={ps}>Preset {ps}</option>}
             {options.map(([key, p]) => <option key={key} value={key}>{pName(presets, Number(key))}{isPlaylist(p) ? ' ▶' : ''}</option>)}
-          </select>
+          </NativeSelect>
           <input className={cx(inputCls, 'px-1.5 font-mono text-xs')} aria-label={`Entry ${i + 1} duration in seconds, 0 for forever`} inputMode="decimal"
             defaultValue={pl.dur[i] / 10} readOnly={manual} key={`d${i}-${manual}`} onChange={(e) => setAt('dur', i, tenths(e.target.value))} />
           <input className={cx(inputCls, 'px-1.5 font-mono text-xs')} aria-label={`Entry ${i + 1} transition in seconds`} inputMode="decimal"
             defaultValue={pl.transition[i] / 10} onChange={(e) => setAt('transition', i, Math.min(655, tenths(e.target.value)))} />
-          <button aria-label={`Add entry after ${i + 1}`} onClick={() => add(i)} className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-fg"><Icon.plus className="size-4" /></button>
-          <button aria-label={`Remove entry ${i + 1}`} disabled={pl.ps.length < 2} onClick={() => del(i)} className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-hover hover:text-fg"><Icon.x className="size-4" /></button>
+          <UiButton variant="ghost" size="icon-sm" aria-label={`Add entry after ${i + 1}`} onClick={() => add(i)}><Icon.plus /></UiButton>
+          <UiButton variant="ghost" size="icon-sm" aria-label={`Remove entry ${i + 1}`} disabled={pl.ps.length < 2} onClick={() => del(i)}><Icon.x /></UiButton>
         </div>
       ))}
       <div className="grid grid-cols-2 gap-x-3">
@@ -358,11 +364,11 @@ function PlaylistEditor({ id, pl, setPl, presets }: { id: number; pl: PlaylistSt
               onChange={(e) => update({ repeat: Math.min(127, Math.max(1, parseInt(e.target.value) || 1)) })} />
           </Field>
           <Field label="End preset">
-            <select className={inputCls} value={pl.end} onChange={(e) => update({ end: Number(e.target.value) })}>
+            <NativeSelect className="w-full" value={pl.end} onChange={(e) => update({ end: Number(e.target.value) })}>
               <option value={0}>None</option>
               <option value={255}>Restore preset</option>
               {options.map(([key]) => <option key={key} value={key}>{pName(presets, Number(key))}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
         </div>
       )}

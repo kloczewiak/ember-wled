@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { onLiveFrame, send, useStore } from '../store'
-import { Button, cx } from './ui'
+import { Button, cx } from './controls'
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 // Draws liveview frames: 'L', version (1 = 1D, 2 = 2D with width/height bytes), then RGB triplets.
 export function LivePreview({ className }: { className?: string }) {
@@ -40,20 +41,23 @@ export function RealtimeBanner() {
   if (!info?.live) return null
   if (lor > 0) {
     return (
-      <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2 text-[13px] text-soft">
-        Ignoring live {info.lm} data {lor === 2 ? 'until reboot' : 'once'}.
-        <Button size="sm" onClick={() => send({ lor: 0 })}>Resume live data</Button>
-      </div>
+      <Alert className="mx-4 mt-3 w-auto">
+        <AlertDescription>Ignoring live {info.lm} data {lor === 2 ? 'until reboot' : 'once'}.</AlertDescription>
+        <AlertAction><Button size="sm" onClick={() => send({ lor: 0 })}>Resume live data</Button></AlertAction>
+      </Alert>
     )
   }
   if (info.liveseg >= 0) return null
   return (
-    <div className="mx-4 mt-3 flex flex-col gap-2 rounded-xl border border-warn-line bg-warn-bg px-3 py-2.5 text-[13px] text-warn-fg">
-      <div>WLED is receiving live {info.lm} data{info.lip.length > 2 ? ` from ${info.lip}` : ''}. Your changes won't show.</div>
-      <div className="flex gap-2">
-        <button className="h-9 flex-1 rounded-lg border border-warn-line hover:bg-warn-line/40" onClick={() => send({ lor: 1 })}>Override once</button>
-        <button className="h-9 flex-1 rounded-lg border border-warn-line hover:bg-warn-line/40" onClick={() => send({ lor: 2 })}>Override until reboot</button>
-      </div>
-    </div>
+    <Alert className="mx-4 mt-3 w-auto">
+      <AlertTitle>Receiving live {info.lm} data{info.lip.length > 2 ? ` from ${info.lip}` : ''}</AlertTitle>
+      <AlertDescription>
+        Your changes won't show while it lasts.
+        <div className="mt-2 flex gap-2">
+          <Button onClick={() => send({ lor: 1 })}>Override once</Button>
+          <Button onClick={() => send({ lor: 2 })}>Override until reboot</Button>
+        </div>
+      </AlertDescription>
+    </Alert>
   )
 }

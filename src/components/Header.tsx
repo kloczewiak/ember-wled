@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { send, setPeek, toast, useStore } from '../store'
 import { stockCfg, useUi } from '../ui'
-import { cx, Icon, IconButton, Slider } from './ui'
+import { cx, Icon, IconButton, Slider } from './controls'
+import { Button } from '@/components/ui/button'
+import { Toggle } from '@/components/ui/toggle'
 
 export function togglePower() {
   const { state, info } = useStore.getState()
@@ -42,24 +44,8 @@ export function toggleSync() {
 
 function ConnDot() {
   const conn = useStore((s) => s.conn)
-  const color = conn === 'ok' ? 'bg-ok' : conn === 'error' ? 'bg-danger' : 'bg-accent'
+  const color = conn === 'ok' ? 'bg-ok' : conn === 'error' ? 'bg-danger' : 'bg-primary'
   return <span title={conn === 'ok' ? 'Connected' : conn === 'error' ? 'Connection lost' : 'Connecting'} className={cx('size-2 shrink-0 rounded-full', color)} />
-}
-
-function ToggleButton({ on, onClick, icon, children }: { on: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <button
-      aria-pressed={on}
-      onClick={onClick}
-      className={cx(
-        'flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] transition-colors',
-        on ? 'border-accent bg-hover text-fg' : 'border-line bg-surface text-soft hover:bg-hover',
-      )}
-    >
-      {icon}
-      {children}
-    </button>
-  )
 }
 
 export function Header({ wide }: { wide: boolean }) {
@@ -71,14 +57,9 @@ export function Header({ wide }: { wide: boolean }) {
   if (!state || !info) return null
 
   const power = (
-    <button
-      aria-label={state.on ? 'Turn off' : 'Turn on'}
-      aria-pressed={state.on}
-      onClick={togglePower}
-      className={cx('flex shrink-0 items-center justify-center rounded-full transition-colors', wide ? 'size-11' : 'size-9', state.on ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted')}
-    >
-      <Icon.power className="size-5" />
-    </button>
+    <Button variant={state.on ? 'default' : 'outline'} size={wide ? 'icon-lg' : 'icon'} aria-label={state.on ? 'Turn off' : 'Turn on'} aria-pressed={state.on} onClick={togglePower}>
+      <Icon.power />
+    </Button>
   )
   const brightness = (
     <Slider label="Master brightness" value={state.bri} min={1} onInput={setDragBri}
@@ -86,9 +67,9 @@ export function Header({ wide }: { wide: boolean }) {
   )
   const toggles = (
     <>
-      <ToggleButton on={state.nl.on} onClick={toggleTimer} icon={<Icon.moon className="size-4" />}>Timer</ToggleButton>
-      <ToggleButton on={state.udpn.send} onClick={toggleSync} icon={<Icon.sync className="size-4" />}>Sync</ToggleButton>
-      <ToggleButton on={peek} onClick={() => setPeek(!peek)} icon={<Icon.eye className="size-4" />}>Peek</ToggleButton>
+      <Toggle variant="outline" pressed={state.nl.on} onPressedChange={toggleTimer}><Icon.moon />Timer</Toggle>
+      <Toggle variant="outline" pressed={state.udpn.send} onPressedChange={toggleSync}><Icon.sync />Sync</Toggle>
+      <Toggle variant="outline" pressed={peek} onPressedChange={() => setPeek(!peek)}><Icon.eye />Peek</Toggle>
     </>
   )
   const bri = dragBri ?? state.bri
@@ -100,21 +81,21 @@ export function Header({ wide }: { wide: boolean }) {
           <ConnDot />
           <div className="min-w-0">
             <div className="truncate text-[15px] font-semibold">{info.name}</div>
-            <div className="truncate text-xs text-muted">{info.ip || location.host} · {info.leds.count} LEDs</div>
+            <div className="truncate text-xs text-muted-foreground">{info.ip || location.host} · {info.leds.count} LEDs</div>
           </div>
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-3.5">
           {power}
           <div className="flex w-[360px] items-center gap-3">
             {brightness}
-            <span className="w-8 text-right font-mono text-[13px]">{bri}</span>
+            <span className="w-8 text-right font-mono text-sm">{bri}</span>
           </div>
-          <div className="ml-2 flex gap-1.5">{toggles}</div>
+          <div className="ml-2 flex gap-2">{toggles}</div>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           <IconButton label="Info" onClick={() => setSheet('more')}><Icon.info /></IconButton>
           {info.ndc > 0 && <IconButton label="Other WLED devices" onClick={() => setSheet('more')}><Icon.nodes /></IconButton>}
-          <a href="/settings" aria-label="Settings" title="Settings" className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface text-fg hover:bg-hover"><Icon.settings /></a>
+          <Button variant="outline" size="icon-lg" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="/settings" />}><Icon.settings /></Button>
         </div>
       </header>
     )
@@ -126,31 +107,17 @@ export function Header({ wide }: { wide: boolean }) {
       <div className="flex items-center gap-1.5">
         <ConnDot />
         <div className="ml-1 min-w-0 flex-1 truncate text-[15px] font-semibold">{info.name}</div>
-        <IconToggle on={state.nl.on} onClick={toggleTimer} label="Timer"><Icon.moon className="size-4" /></IconToggle>
-        <IconToggle on={state.udpn.send} onClick={toggleSync} label="Sync"><Icon.sync className="size-4" /></IconToggle>
-        <IconToggle on={peek} onClick={() => setPeek(!peek)} label="Peek (live preview)"><Icon.eye className="size-4" /></IconToggle>
-        <a href="/settings" aria-label="Settings" title="Settings" className="flex size-9 items-center justify-center rounded-lg text-soft"><Icon.settings className="size-4" /></a>
-        <button aria-label="Info, timer and more" title="More" onClick={() => setSheet('more')} className="-mr-1.5 flex size-9 items-center justify-center rounded-lg text-soft"><Icon.more className="size-4" /></button>
+        <Toggle pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
+        <Toggle pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
+        <Toggle pressed={peek} onPressedChange={() => setPeek(!peek)} aria-label="Peek (live preview)" title="Peek"><Icon.eye /></Toggle>
+        <Button variant="ghost" size="icon" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="/settings" />}><Icon.settings /></Button>
+        <Button variant="ghost" size="icon" aria-label="Info, timer and more" title="More" onClick={() => setSheet('more')}><Icon.more /></Button>
       </div>
       <div className="flex items-center gap-3">
         {power}
         {brightness}
-        <span className="w-8 text-right font-mono text-[13px]">{bri}</span>
+        <span className="w-8 text-right font-mono text-sm">{bri}</span>
       </div>
     </header>
-  )
-}
-
-function IconToggle({ on, onClick, label, children }: { on: boolean; onClick: () => void; label: string; children: React.ReactNode }) {
-  return (
-    <button
-      aria-pressed={on}
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className={cx('flex size-9 items-center justify-center rounded-lg border transition-colors', on ? 'border-accent bg-hover text-accent' : 'border-transparent text-soft')}
-    >
-      {children}
-    </button>
   )
 }
