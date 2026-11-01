@@ -17,6 +17,8 @@ export function LivePreview({ className }: { className?: string }) {
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
     canvas.style.aspectRatio = is2D ? `${w} / ${h}` : ''
     canvas.style.height = is2D ? 'auto' : ''
+    // a matrix keeps its shape; a strip stretches to the full width (contain would leave empty ends)
+    canvas.style.objectFit = is2D ? 'contain' : 'fill'
     const ctx = canvas.getContext('2d')!
     const img = ctx.createImageData(w, h)
     for (let i = 0; i < w * h; i++) {
@@ -38,7 +40,7 @@ export function LivePreview({ className }: { className?: string }) {
         role="img"
         aria-label="Live preview of the LEDs"
         className="block h-2 w-full rounded-sm bg-black"
-        style={{ imageRendering: 'pixelated', maxHeight: 280, objectFit: 'contain' }}
+        style={{ imageRendering: 'pixelated', maxHeight: 280 }}
       />
       {cuts.map((x) => (
         <span key={x} aria-hidden className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-background" style={{ left: `${(x / total) * 100}%` }} />
