@@ -108,13 +108,12 @@ export function EffectParams({ className }: { className?: string }) {
   if (!main) return null
   return (
     <div className={cx('flex flex-col gap-3', className)}>
-      <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
-        <div className="font-semibold">{name ?? 'Effect'}</div>
-        <div className="flex flex-wrap gap-1.5">
-          {meta.options.map((o) => (
-            <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
-          ))}
-        </div>
+      {/* name and option chips share one wrapping row, so chips that don't fit move down one at a time */}
+      <div className="flex min-h-8 flex-wrap items-center justify-end gap-1.5">
+        <div className="mr-auto pr-1 font-semibold">{name ?? 'Effect'}</div>
+        {meta.options.map((o) => (
+          <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
+        ))}
       </div>
       {meta.sliders.map((s) => (
         <LabeledSlider key={s.key} label={s.label} value={main[s.key]} max={s.max} onCommit={(v) => send({ seg: { [s.key]: v } })} />
