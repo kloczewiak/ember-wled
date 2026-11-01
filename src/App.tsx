@@ -56,14 +56,16 @@ export default function App() {
 }
 
 function DesktopLayout() {
+  // p-px on the scrolling columns: shadcn Cards draw their edge with a ring (a box-shadow just outside the
+  // card), which a scroll container would otherwise clip
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 px-4 pb-4">
-      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl">
+      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
         <ColorPanel className="shrink-0" />
         <PalettePanel className="min-h-80 flex-1" />
       </div>
       <EffectPanel />
-      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl">
+      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
         <SegmentsPanel className="shrink-0" />
         <PresetsPanel className="shrink-0" />
       </div>
@@ -112,7 +114,7 @@ function PhoneLayout({ top }: { top: ReactNode }) {
         <main key={tab} className="flex min-h-0 flex-1 flex-col px-4 pb-4">
           {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll inside
               a rounded area as wide as the content column, so cards keep their rounded corners as they scroll out */}
-          <div className={cx('mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col', tab !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl')}>
+          <div className={cx('mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col', tab !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px')}>
             <div className={cx('flex flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
           </div>
         </main>
