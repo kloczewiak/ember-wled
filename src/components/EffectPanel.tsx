@@ -108,9 +108,11 @@ export function EffectParams({ className }: { className?: string }) {
   if (!main) return null
   return (
     <div className={cx('flex flex-col gap-3', className)}>
-      {/* name and option chips share one wrapping row, so chips that don't fit move down one at a time */}
-      <div className="flex min-h-8 flex-wrap items-center justify-end gap-1.5">
-        <div className="mr-auto pr-1 font-semibold">{name ?? 'Effect'}</div>
+      {/* name and option chips share one wrapping row, so chips that don't fit move down one at a time;
+          the name grows into the space left on its row, which pushes that row's chips right while
+          wrapped chips start at the left */}
+      <div className="flex min-h-8 flex-wrap items-center gap-1.5">
+        <div className="grow pr-1 font-semibold">{name ?? 'Effect'}</div>
         {meta.options.map((o) => (
           <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
         ))}
