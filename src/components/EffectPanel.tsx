@@ -128,10 +128,12 @@ export function EffectParams({ className }: { className?: string }) {
 export function EffectPanel({ className }: { className?: string }) {
   const count = useStore((s) => s.effects.length)
   return (
-    <Card className={cx('min-h-0', className)}>
-      <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>Effect</SectionTitle>
-      <EffectList className="flex-1" />
-      <EffectParams className="rounded-xl bg-bg px-4 py-3" />
-    </Card>
+    <div className={cx('flex min-h-0 flex-col gap-4', className)}>
+      <Card className="min-h-0 flex-1">
+        <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>Effect</SectionTitle>
+        <EffectList className="flex-1" />
+      </Card>
+      <Card className="shrink-0"><EffectParams /></Card>
+    </div>
   )
 }

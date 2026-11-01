@@ -118,8 +118,8 @@ function PhoneLayout({ top }: { top: ReactNode }) {
         </main>
       </div>
       {tab === 'Effects' && (
-        <section aria-label="Effect settings" className="shrink-0 rounded-t-2xl bg-surface px-4 pb-3 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.4)]">
-          <EffectParams className="mx-auto max-w-2xl" />
+        <section aria-label="Effect settings" className="shrink-0 px-4 pb-4">
+          <Card className="mx-auto max-w-2xl"><EffectParams /></Card>
         </section>
       )}
       <TabBar tab={tab} />
