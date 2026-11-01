@@ -39,9 +39,12 @@ export default function App() {
       {wide ? (
         <>
           <Header wide />
-          {peek && <div className="px-5 pt-3"><LivePreview /></div>}
-          <RealtimeBanner />
-          <DesktopLayout />
+          {/* vertical spacing between these comes from the gap, not from their own padding */}
+          <div className="flex min-h-0 flex-1 flex-col gap-4 pt-4">
+            {peek && <div className="px-5"><LivePreview /></div>}
+            <RealtimeBanner />
+            <DesktopLayout />
+          </div>
         </>
       ) : (
         <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview /></div>}<RealtimeBanner /></>} />
@@ -54,7 +57,7 @@ export default function App() {
 
 function DesktopLayout() {
   return (
-    <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 p-4">
+    <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 px-4 pb-4">
       <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto">
         <ColorPanel className="shrink-0" />
         <PalettePanel className="min-h-80 flex-1" />
@@ -91,9 +94,9 @@ function PhoneLayout({ top }: { top: ReactNode }) {
     return (
       <>
         {/* keyed by tab so each tab opens scrolled to the top */}
-        <div key={tab} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+        <div key={tab} className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
           {top}
-          <main className="px-4 pb-4 pt-2">
+          <main className="px-4 pb-4">
             <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">{content}</div>
           </main>
         </div>
@@ -104,11 +107,13 @@ function PhoneLayout({ top }: { top: ReactNode }) {
 
   return (
     <>
-      {top}
-      <main key={tab} className={cx('min-h-0 flex-1 px-4 pb-4 pt-2', tab === 'Effects' ? 'flex flex-col' : 'scroll-thin overflow-y-auto')}>
-        {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll as a page */}
-        <div className={cx('mx-auto flex w-full max-w-2xl flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
-      </main>
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {top}
+        <main key={tab} className={cx('min-h-0 flex-1 px-4 pb-4', tab === 'Effects' ? 'flex flex-col' : 'scroll-thin overflow-y-auto')}>
+          {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll as a page */}
+          <div className={cx('mx-auto flex w-full max-w-2xl flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
+        </main>
+      </div>
       {tab === 'Effects' && (
         <section aria-label="Effect settings" className="shrink-0 rounded-t-2xl bg-surface px-4 pb-3 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.4)]">
           <EffectParams className="mx-auto max-w-2xl" />

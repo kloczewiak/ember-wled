@@ -128,7 +128,7 @@ export function Header({ wide }: { wide: boolean }) {
 
   // phone: two compact rows, with the toggles as icon buttons next to the name
   return (
-    <header className="flex shrink-0 flex-col gap-2 px-4 pb-2 pt-2.5">
+    <header className="flex shrink-0 flex-col gap-2 px-4 pt-2.5">
       <div className="flex items-center gap-1.5">
         <ConnDot />
         <div className="ml-1 min-w-0 flex-1">

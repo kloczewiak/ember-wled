@@ -56,7 +56,7 @@ export function RealtimeBanner() {
   if (!info?.live) return null
   if (lor > 0) {
     return (
-      <Alert className="mx-4 mt-3 w-auto">
+      <Alert className="mx-4 w-auto">
         <AlertDescription>Ignoring live {info.lm} data {lor === 2 ? 'until reboot' : 'once'}.</AlertDescription>
         <AlertAction><Button size="sm" onClick={() => send({ lor: 0 })}>Resume live data</Button></AlertAction>
       </Alert>
@@ -64,7 +64,7 @@ export function RealtimeBanner() {
   }
   if (info.liveseg >= 0) return null
   return (
-    <Alert className="mx-4 mt-3 w-auto">
+    <Alert className="mx-4 w-auto">
       <AlertTitle>Receiving live {info.lm} data{info.lip.length > 2 ? ` from ${info.lip}` : ''}</AlertTitle>
       <AlertDescription>
         Your changes won't show while it lasts.
