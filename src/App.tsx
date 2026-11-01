@@ -41,13 +41,13 @@ export default function App() {
           <Header wide />
           {/* vertical spacing between these comes from the gap, not from their own padding */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 pt-4">
-            {peek && <div className="px-5"><LivePreview /></div>}
+            {peek && <div className="px-4"><LivePreview /></div>}
             <RealtimeBanner />
             <DesktopLayout />
           </div>
         </>
       ) : (
-        <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview /></div>}<RealtimeBanner /></>} />
+        <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview className="mx-auto max-w-2xl" /></div>}<RealtimeBanner /></>} />
       )}
       <MoreSheet />
       <Toasts />
