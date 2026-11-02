@@ -203,7 +203,9 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
   const ticks = width ? fittingTicks(edges, total, width) : []
   return (
     <div className="flex flex-col gap-1">
-      <div className="relative h-6 overflow-hidden rounded-md bg-bg">
+      <div className="relative h-6 overflow-hidden rounded-md">
+        {/* the empty track, inset so it can't show as a dark rim around the rounded ends of the segments */}
+        <div className="absolute inset-px rounded-md bg-bg" />
         {live && <canvas ref={canvas} aria-hidden className="absolute inset-0 size-full" />}
         {segs.map((s) => {
           const c = s.col[0]
@@ -216,6 +218,8 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
               className={cx(
                 // the border is the card colour, so neighbouring segments look separated by a gap
                 'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1.5 text-[11px] font-semibold',
+                // no gap at the ends of the bar, where it would flatten the rounded corners
+                s.start === 0 && 'border-l-0', s.stop >= total && 'border-r-0',
                 // live colours are a canvas underneath, so unselected segments are dimmed with an overlay instead
                 live ? cx('text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]', !s.sel && 'bg-black/55') : !s.sel && 'opacity-45',
               )}
