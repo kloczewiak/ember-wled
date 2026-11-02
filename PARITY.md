@@ -10,14 +10,17 @@ The target is the stock UI of **WLED v16.0.1**, the released firmware (`wled-fir
 
 The stock settings pages get their values by loading `/settings/s.js?p=<page>`, JavaScript that the firmware
 generates to fill in their forms (`getSettingsJS()` in `wled00/xml.cpp`). This UI reads settings through the
-JSON API instead (`/json/cfg`, `/json/info`) and doesn't use that script. Two things are only exposed there:
+JSON API instead (`/json/cfg`, `/json/info`, `/json/pins`) and doesn't use that script. These are only exposed
+there:
 
 | Stock feature | Where the stock UI gets it | What this UI does |
 | --- | --- | --- |
 | Wi-Fi → ESP-NOW: "Last device seen" and its **+** button, which links that device as a remote | `last_signal_src`, written to `s.js?p=1` only (`xml.cpp`) | Not shown. Remotes are linked with an **Add remote** button and the MAC typed in (12 hex characters). |
 | Settings menu: the **2D configuration** entry is hidden on builds without 2D (`WLED_DISABLE_2D`) | `s.js?p=0` hides the button | Always listed. On a build without 2D, the link doesn't lead to a 2D page. |
+| Sync interfaces → Philips Hue: the connection status ("Active", "Unauthorized", …) | `hueError`, written to `s.js?p=4` only | Not shown. |
+| Time and macros: today's sunrise and sunset times | `s.js?p=5` only (`xml.cpp`) | Not shown; the local time comes from `info.time`. |
 
-Both would need the firmware to expose these values in its JSON API.
+These would need the firmware to expose the values in its JSON API.
 
 ### Small differences
 
@@ -30,11 +33,16 @@ Both would need the firmware to expose these values in its JSON API.
   only shows it for networks loaded from the device.
 - Leaving a settings page with the browser's own back button doesn't warn about unsaved changes. In-app links,
   reloading and closing the tab do.
+- Time and macros → Alexa on/off presets are only shown on builds with Alexa. Without it they're saved as 0
+  (`/json/cfg` doesn't include them); the stock page shows and keeps them, but they do nothing on such builds.
+- Wired DMX input pin lists come from `/json/pins` (usable pins, input-only pins left out for TX and enable).
+  The stock list also hides pins that the settings script reports as reserved; `/json/pins` already leaves
+  unusable pins out.
 
 ### Pages not rebuilt yet
 
-These link to the firmware's own pages: LED and hardware, Pin info, 2D configuration, DMX output, Sync
-interfaces, Time and macros, Usermods, Security and updates.
+These link to the firmware's own pages: LED and hardware, Pin info, 2D configuration, DMX output, Usermods,
+Security and updates.
 
 ## Main UI
 
