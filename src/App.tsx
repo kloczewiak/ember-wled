@@ -137,7 +137,7 @@ function TabBar({ tab }: { tab: Tab }) {
           key={t}
           href={`#${t}`}
           aria-current={t === tab ? 'page' : undefined}
-          className={cx('flex h-14 flex-col items-center justify-center gap-1.5 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted-foreground')}
+          className={cx('flex h-11 flex-col items-center justify-center gap-1 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted-foreground')}
         >
           <span className={cx('h-1 w-9 rounded-full', t === tab ? 'bg-primary' : 'bg-transparent')} />
           {t === 'Colors' ? 'Color' : t}
@@ -148,7 +148,7 @@ function TabBar({ tab }: { tab: Tab }) {
 }
 
 // On phones the toasts sit 16px above the tab bar (the phone layout is used below 1100px, see `wide`); the
-// tab bar is 3.5rem plus the home-indicator safe area, so the offset is 4.5rem plus the same safe area.
+// tab bar is 2.75rem plus the home-indicator safe area, so the offset is 3.75rem plus the same safe area.
 function Toasts() {
-  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-[calc(4.5rem+max(4px,env(safe-area-inset-bottom)))]" />
+  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-[calc(3.75rem+max(4px,env(safe-area-inset-bottom)))]" />
 }
