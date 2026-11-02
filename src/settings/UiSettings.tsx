@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { toast } from '../store'
 import { readStockUiCfg, writeStockUiCfg, type Json } from '../ui'
 import { Switch } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { loadCfg } from './api'
-import { FieldError, Row, SaveBar, Section, useDraft, useLeaveGuard, useSaver } from './shared'
+import { useCfgForm } from './config'
+import { FieldError, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg).
@@ -30,14 +30,8 @@ async function upload(file: File, path: string) {
 const RANDOM_BG = 'https://picsum.photos/1920/1080'
 
 export function UiSettings() {
-  const [loaded, setLoaded] = useState<Form | null>(null)
-  const [loadError, setLoadError] = useState(false)
-  const reload = () => {
-    setLoadError(false)
-    loadCfg().then((c) => setLoaded({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg() })).catch(() => setLoadError(true))
-  }
-  useEffect(reload, [])
-  const { draft, setDraft, dirty, discard } = useDraft(loaded)
+  const { base: loaded, draft, setDraft, dirty, discard, error, retry } =
+    useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg() }))
   useLeaveGuard(dirty)
   // browser settings are read when the app starts, so reload after saving (the stock page asks you to refresh)
   const { save, saving, dialog } = useSaver('ui', () => location.reload())
@@ -46,7 +40,7 @@ export function UiSettings() {
   const cssFile = useRef<HTMLInputElement>(null)
   const holidaysFile = useRef<HTMLInputElement>(null)
 
-  if (loadError) return <p className="text-sm text-muted-foreground">Couldn't load the settings. <Button variant="link" onClick={reload}>Try again</Button></p>
+  if (error && !draft) return <p className="text-sm text-muted-foreground">Couldn't load the settings. <Button variant="link" onClick={retry}>Try again</Button></p>
   if (!draft || !loaded) return <p className="text-sm text-muted-foreground">Loading settings…</p>
 
   const ui = draft.ui

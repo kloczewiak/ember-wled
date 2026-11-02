@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Switch } from '../components/controls'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Icon } from '../components/controls'
+import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
-import { loadCfg, scanNetworks, type Cfg, type ScannedNet } from './api'
-import { FieldError, IpInput, ipValid, Row, SaveBar, Section, useDraft, useLeaveGuard, useSaver } from './shared'
+import { scanNetworks, type Cfg, type ScannedNet } from './api'
+import { useCfgForm } from './config'
+import { FieldError, IpInput, ipValid, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → Wi-Fi and network, with the same fields, limits and conditional sections as the firmware's
 // page (data/settings_wifi.htm, filled by xml.cpp, saved by set.cpp).
@@ -100,23 +100,14 @@ function SsidField({ value, onChange, scanned, label }: { value: string; onChang
 }
 
 export function WifiSettings() {
-  const [cfg, setCfg] = useState<Cfg | null>(null)
   const info = useStore((s) => s.info)
-  const [loadError, setLoadError] = useState(false)
   const [scanned, setScanned] = useState<ScannedNet[] | null>(null)
   const [scanning, setScanning] = useState(false)
-  const reload = () => {
-    setLoadError(false)
-    loadCfg().then(setCfg).catch(() => setLoadError(true))
-  }
-  useEffect(reload, [])
-  const [loaded, setLoaded] = useState<Form | null>(null)
-  if (cfg && !loaded) setLoaded(toForm(cfg))
-  const { draft: f, setDraft, dirty, discard } = useDraft(loaded)
+  const { draft: f, setDraft, dirty, discard, cfg, error, retry, reloadAfterSave } = useCfgForm(toForm)
   useLeaveGuard(dirty)
-  const { save, saving, dialog } = useSaver('wifi', () => { setCfg(null); setLoaded(null); reload() })
+  const { save, saving, dialog } = useSaver('wifi', reloadAfterSave)
 
-  if (loadError) return <p className="text-sm text-muted-foreground">Couldn't load the settings. <Button variant="link" onClick={reload}>Try again</Button></p>
+  if (error && !f) return <p className="text-sm text-muted-foreground">Couldn't load the settings. <Button variant="link" onClick={retry}>Try again</Button></p>
   if (!f || !cfg) return <p className="text-sm text-muted-foreground">Loading settings…</p>
 
   const enterprise = cfg.nw.ins.some((n) => n.enc_type !== undefined)

@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useMedia } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Bolt, ChevronRight, Clock, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
-import { loadCfg } from './api'
+import { refreshCfg, useCfg } from './config'
 import { confirmLeave } from './shared'
 import { UiSettings } from './UiSettings'
 import { WifiSettings } from './WifiSettings'
@@ -63,9 +63,10 @@ function Menu({ build, current }: { build: Build; current?: string }) {
 
 export function SettingsScreen({ route }: { route: string }) {
   const wide = useMedia('(min-width: 1100px)')
-  const [build, setBuild] = useState<Build>({ dmx: false })
   // the config only has a dmx section on builds with DMX output
-  useEffect(() => { loadCfg().then((c) => setBuild({ dmx: c.dmx !== undefined })).catch(() => {}) }, [])
+  const build: Build = { dmx: useCfg((s) => s.cfg?.dmx !== undefined) }
+  // loaded when settings open (shared with the pages, which refresh it in the background)
+  useEffect(() => { refreshCfg() }, [])
   const page = PAGES.find((p) => p.render && p.id === route)
   const title = page?.title ?? 'Settings'
   // back goes from a page to the menu (on phones) and from the menu to the controls

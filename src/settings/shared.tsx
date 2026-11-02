@@ -16,7 +16,7 @@ export function useDraft<T>(loaded: T | null) {
   if (loaded !== base) { setBase(loaded); setDraft(loaded) }
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(base)
   const patch = (p: Partial<T>) => setDraft((d) => (d ? { ...d, ...p } : d))
-  return { draft, setDraft, patch, dirty, discard: () => setDraft(base) }
+  return { base, draft, setDraft, patch, dirty, discard: () => setDraft(base) }
 }
 
 // Unsaved changes on the open settings page, checked by the settings navigation before leaving it.
