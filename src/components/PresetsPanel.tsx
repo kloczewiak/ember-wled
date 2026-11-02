@@ -6,17 +6,10 @@ import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTit
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
+import { comparePresets } from '../lib/presets'
 
 const pName = (presets: Presets | null, id: number) => presets?.[id]?.n || `Preset ${id}`
 const isPlaylist = (p?: Preset) => !!p?.playlist?.ps
-
-// Playlists first, then names starting with a letter or digit, then the rest (stock UI ordering);
-// by ID with "Sort presets by ID" (Settings → User interface).
-const comparePresets = (idsort: boolean) => ([ia, a]: [string, Preset], [ib, b]: [string, Preset]) => {
-  if (idsort || !a.n || !b.n) return Number(ia) - Number(ib)
-  const rank = (p: Preset) => (p.playlist ? '<' : /^[\p{L}\p{N}]/u.test(p.n!) ? '=' : '>')
-  return (rank(a) + a.n).localeCompare(rank(b) + b.n, undefined, { numeric: true })
-}
 
 export function applyPreset(id: number) {
   const { presets } = useStore.getState()

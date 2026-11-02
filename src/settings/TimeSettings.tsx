@@ -7,7 +7,7 @@ import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
 import type { Cfg } from './api'
 import { useCfgForm } from './config'
-import { ChoiceChip, FieldError, intIn, NumberInput, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { ChoiceChip, FieldError, intIn, presetIdValid, NumberInput, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → Time and macros, with the same fields and limits as the firmware's page in WLED v16.0.1
 // (data/settings_time.htm, filled by xml.cpp, saved by set.cpp and ntp.cpp addTimer). Presets are picked by
@@ -99,6 +99,8 @@ function validate(f: Form): string[] {
   check(!Number.isNaN(f.lon) && Math.abs(f.lon) <= 180, 'The longitude must be from 0 to 180.')
   check(intIn(f.ol.min, 0, 1024) && intIn(f.ol.max, 0, 1024) && intIn(f.ol.h12, 0, 1024), 'Clock overlay LEDs must be whole numbers from 0 to 1024.')
   check(validGoal(f.cd.goal), 'Set a countdown goal between 2000 and 2099.')
+  const ids = [f.nlPreset, f.cdPreset, f.alexaOn, f.alexaOff, ...f.buttons.flatMap((b) => (isAnalog(b.type) ? [] : b.macros)), ...f.timers.map((t) => t.preset)]
+  check(ids.every(presetIdValid), 'Preset IDs must be whole numbers from 0 to 250.')
   f.timers.forEach((t, i) => {
     const n = `Timer ${i + 1}`
     if (t.kind) check(intIn(t.min, -120, 120), `${n}: the offset must be −120 to 120 minutes.`)

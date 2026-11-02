@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { toast, useStore } from '../store'
+import { useUi } from '../ui'
+import { comparePresets } from '../lib/presets'
 import { Card, chipOnCls, SectionTitle, cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -106,22 +108,39 @@ export function PasswordInput({ secret, maxLength, label, onChange }: { secret: 
   )
 }
 
-// A preset chosen by name, where the stock pages want its ID typed in. 0 is the default action (`none`); an
-// ID that isn't a saved preset stays selectable so loading a page never changes it.
+// Preset IDs the stock pages accept (0 is the default action).
+export const presetIdValid = (v: number) => intIn(v, 0, 250)
+
+// A preset chosen by name, where the stock pages want its ID typed in, sorted like the presets list ("Sort
+// presets by ID"). 0 is the default action (`none`). "Type an ID…" switches to a number box, which is also
+// how an ID that isn't a saved preset opens, so loading a page never changes it.
 export function PresetSelect({ value, onChange, label, none, className }: {
   value: number; onChange: (id: number) => void; label: string; none: string; className?: string
 }) {
   const presets = useStore((s) => s.presets)
-  const list = Object.entries(presets ?? {})
-    .filter(([id]) => id !== '0')
-    .map(([id, p]) => ({ id: Number(id), name: p.n || `Preset ${id}` }))
-    .sort((a, b) => a.id - b.id)
-  const known = value === 0 || list.some((p) => p.id === value)
+  const idsort = useUi((s) => s.stock.idsort)
+  const list = Object.entries(presets ?? {}).filter(([id, p]) => id !== '0' && p && typeof p === 'object').sort(comparePresets(idsort))
+  const name = (id: number) => presets?.[id]?.n || `Preset ${id}`
+  const known = value === 0 || !!presets?.[value]
+  const [typing, setTyping] = useState(!known)
+  if (typing) {
+    return (
+      <div className={cx('flex items-center gap-2', className)}>
+        <NumberInput label={label} min={0} max={250} value={value} onChange={onChange} />
+        <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {value === 0 ? none : presets?.[value] ? name(value) : presetIdValid(value) ? 'Not a saved preset' : 'Enter 0–250'}
+        </span>
+        <Button variant="outline" onClick={() => { setTyping(false); if (Number.isNaN(value)) onChange(0) }}>Choose</Button>
+      </div>
+    )
+  }
   return (
-    <NativeSelect className={cx('w-full', className)} value={Number.isNaN(value) ? 0 : value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
+    <NativeSelect className={cx('w-full', className)} value={value} aria-label={label}
+      onChange={(e) => (e.target.value === 'type' ? setTyping(true) : onChange(Number(e.target.value)))}>
       <option value={0}>{none}</option>
       {!known && <option value={value}>{value}: not a saved preset</option>}
-      {list.map((p) => <option key={p.id} value={p.id}>{p.id}: {p.name}</option>)}
+      {list.map(([id]) => <option key={id} value={id}>{id}: {name(Number(id))}</option>)}
+      <option value="type">Type an ID…</option>
     </NativeSelect>
   )
 }
