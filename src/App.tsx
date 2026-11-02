@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { init, useStore } from './store'
-import { useHash, useMedia } from './hooks'
+import { useAccuratePeek, useHash, useMedia } from './hooks'
 import { useUi } from './ui'
 import { Header } from './components/Header'
 import { LivePreview, RealtimeBanner } from './components/Live'
@@ -27,6 +27,7 @@ export default function App() {
   const settings = /^#settings(\/|$)/.test(hash)
 
   useEffect(() => { init() }, [])
+  useAccuratePeek()
   // opening settings from the More sheet: don't leave the sheet open to reappear on the way back
   useEffect(() => { if (settings) useUi.getState().setSheet(null) }, [settings])
 

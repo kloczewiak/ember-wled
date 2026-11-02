@@ -9,9 +9,10 @@ import { useCfgForm } from './config'
 import { FieldError, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
-// the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg).
+// the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg),
+// plus this UI's own accurate Peek option (also in this browser).
 
-type Form = { name: string; sui: boolean; ui: Json }
+type Form = { name: string; sui: boolean; ui: Json; accuratePeek: boolean }
 
 const get = (o: Json, path: string): unknown => path.split('.').reduce<unknown>((v, k) => (v as Json)?.[k], o)
 function set(o: Json, path: string, value: unknown): Json {
@@ -31,7 +32,7 @@ const RANDOM_BG = 'https://picsum.photos/1920/1080'
 
 export function UiSettings() {
   const { base: loaded, draft, setDraft, dirty, discard, error, retry, reloadAfterSave } =
-    useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg() }))
+    useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg(), accuratePeek: useUi.getState().accuratePeek }))
   useLeaveGuard(dirty)
   // after saving the light's settings: fetch fresh info (the header shows the device name) and re-read the form
   const { save, saving, dialog } = useSaver('ui', () => { refresh(); reloadAfterSave() })
@@ -82,9 +83,10 @@ export function UiSettings() {
   const onSave = async () => {
     const deviceChanged = draft.name !== loaded.name || draft.sui !== loaded.sui
     // browser settings are stored and applied at once (the panels read them from the UI store)
-    if (JSON.stringify(draft.ui) !== JSON.stringify(loaded.ui)) {
-      try { useUi.getState().setStockCfg(draft.ui) } catch { toast('Couldn\'t save to this browser\'s storage.', true); return }
-    }
+    try {
+      if (JSON.stringify(draft.ui) !== JSON.stringify(loaded.ui)) useUi.getState().setStockCfg(draft.ui)
+      if (draft.accuratePeek !== loaded.accuratePeek) useUi.getState().setAccuratePeek(draft.accuratePeek)
+    } catch { toast('Couldn\'t save to this browser\'s storage.', true); return }
     // like the stock page, only post to the light when its own settings changed
     if (deviceChanged) save([['DS', draft.name], ...(draft.sui ? [['SU', 'on'] as [string, string]] : [])])
     else { toast('Settings saved'); reloadAfterSave() }
@@ -111,6 +113,12 @@ export function UiSettings() {
         {bool('comp.segexp', 'Always expand first segment')}
         <Row label="Power button preset for on" hint="0 turns the light on normally.">{num('comp.on', 0, 250, 1)}</Row>
         <Row label="Power button preset for off" hint="0 turns the light off normally.">{num('comp.off', 0, 250, 1)}</Row>
+        <Row
+          label="Accurate Peek colours"
+          hint="Peek shows the colours as the LEDs really get them, with the light's gamma correction, brightness and current limit, so the steps you see on the strip at low brightness show here too. Brightness is evened out, so dim colours stay visible."
+        >
+          <Switch on={draft.accuratePeek} label="Accurate Peek colours" onChange={(accuratePeek) => setDraft({ ...draft, accuratePeek })} />
+        </Row>
       </Section>
 
       <Section title={<span className="flex items-center gap-2">In this browser <Badge variant="outline">Stock UI only</Badge></span>}>

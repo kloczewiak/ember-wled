@@ -83,6 +83,13 @@ function receive(json: { state?: State; info?: Info } & Partial<State>) {
 let ws: WebSocket | null = null
 let wsRetries = 0
 const liveListeners = new Set<(frame: Uint8Array) => void>()
+// applied to every live frame before the views get it (accurate Peek, lib/ledoutput.ts)
+let liveFilter: ((frame: Uint8Array) => Uint8Array) | null = null
+export function setLiveFilter(filter: typeof liveFilter) { liveFilter = filter }
+function emitLive(frame: Uint8Array) {
+  const shown = liveFilter ? liveFilter(frame) : frame
+  liveListeners.forEach((l) => l(shown))
+}
 
 function connectWs() {
   if (ws || (get().info?.ws ?? 0) < 0) return
@@ -97,7 +104,7 @@ function connectWs() {
   sock.onmessage = (e) => {
     if (e.data instanceof ArrayBuffer) {
       const frame = new Uint8Array(e.data)
-      if (frame[0] === 76) liveListeners.forEach((l) => l(frame)) // 'L' = liveview packet
+      if (frame[0] === 76) emitLive(frame) // 'L' = liveview packet
       return
     }
     const json = JSON.parse(e.data)
@@ -347,7 +354,7 @@ async function pollLive() {
       const n = parseInt(hex.length > 6 ? hex.slice(2) : hex, 16)
       frame.set([n >> 16, (n >> 8) & 255, n & 255].map((c) => Math.min(255, Math.round(c * gain))), 2 + i * 3)
     })
-    liveListeners.forEach((l) => l(frame))
+    emitLive(frame)
   } catch { /* try again */ }
   livePoll = setTimeout(pollLive, 100)
 }

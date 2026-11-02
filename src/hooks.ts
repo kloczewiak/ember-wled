@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { useStore } from './store'
+import { setLiveFilter, useStore } from './store'
+import { useUi } from './ui'
+import { refreshCfg, useCfg } from './settings/config'
+import { ledModel, ledOutputFrame } from './lib/ledoutput'
 import { parseFxMeta } from './api/fxmeta'
 import type { Segment } from './api/types'
 
@@ -76,4 +79,22 @@ export function useScrollToSelected<T extends HTMLElement>(ready: boolean) {
     list.scrollTop = top - (list.clientHeight - sel.offsetHeight) / 2
   }, [ready])
   return ref
+}
+
+// Accurate Peek: while Peek and the option are on, live frames are turned into what the LEDs really get.
+// It needs the light's config (gamma, brightness factor, current limits), loaded when it's turned on.
+export function useAccuratePeek() {
+  const peek = useStore((s) => s.peek)
+  const accurate = useUi((s) => s.accuratePeek)
+  const on = peek && accurate
+  const cfg = useCfg((s) => s.cfg)
+  const bri = useStore((s) => s.state?.bri ?? 0)
+  const info = useStore((s) => s.info)
+  useEffect(() => { if (on) refreshCfg() }, [on])
+  useEffect(() => {
+    if (!on || !cfg || !info) return
+    const model = ledModel(cfg, bri, info)
+    setLiveFilter((frame) => ledOutputFrame(frame, model))
+    return () => setLiveFilter(null)
+  }, [on, cfg, bri, info])
 }

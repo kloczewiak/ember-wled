@@ -19,6 +19,9 @@ export const cfg = {
   },
   ap: { ssid: 'WLED-AP', chan: 1, hide: 0, behav: 1, ip: [4, 3, 2, 1] },
   wifi: { sleep: false, phy: false, txpwr: 78 },
+  // what accurate Peek reads: gamma, brightness factor, one WS2812 output and the global 5A current limit
+  light: { 'scale-bri': 100, gc: { bri: 1, col: 2.2, val: 2.2 } },
+  hw: { led: { maxpwr: 5000, ins: [{ start: 0, len: 300, type: 22, ledma: 55, maxpwr: 5000 }] } },
 }
 
 // the parts of /json/cfg the settings pages read; passwords are never sent, only their length (pskl)

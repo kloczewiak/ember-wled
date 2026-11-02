@@ -14,6 +14,9 @@ export interface Cfg {
   wifi: { sleep: boolean; phy: boolean; txpwr?: number }
   eth?: { type: number }
   dmx?: unknown // only on builds with DMX output (WLED_ENABLE_DMX)
+  // read by accurate Peek (lib/ledoutput.ts): gamma, brightness factor and the outputs' current limits
+  light?: { 'scale-bri': number; gc: { col: number } }
+  hw?: { led: { maxpwr: number; ins: { start: number; len: number; type: number; ledma?: number; maxpwr?: number }[] } }
 }
 
 export async function loadCfg(): Promise<Cfg> {

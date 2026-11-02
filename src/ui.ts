@@ -13,6 +13,8 @@ interface Ui {
   setSheet: (s: Ui['sheet']) => void
   stock: StockComp // the stock UI settings this UI follows (see below)
   setStockCfg: (cfg: Json) => void // stores the whole wledUiCfg object and applies it at once
+  accuratePeek: boolean // Peek shows the colours as the LEDs get them (lib/ledoutput.ts)
+  setAccuratePeek: (on: boolean) => void
 }
 
 const read = (key: string, fallback: string) => {
@@ -88,5 +90,10 @@ export const useUi = create<Ui>((set) => ({
   setStockCfg: (cfg) => {
     writeStockUiCfg(cfg) // throws if storage is unavailable; the caller reports it
     set({ stock: toComp(cfg) })
+  },
+  accuratePeek: read('wledUiAccuratePeek', '') === '1',
+  setAccuratePeek: (accuratePeek) => {
+    localStorage.setItem('wledUiAccuratePeek', accuratePeek ? '1' : '') // throws if storage is unavailable; the caller reports it
+    set({ accuratePeek })
   },
 }))
