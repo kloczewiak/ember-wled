@@ -116,6 +116,10 @@ export function IconButton({ label, children, className, ...props }: ButtonHTMLA
 }
 
 // A pressable filter/option chip.
+// A chip that is on is filled with the primary colour: the outline toggle's own "on" (a slightly lighter fill)
+// is hard to tell apart when several chips sit side by side.
+export const chipOnCls = 'aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground'
+
 export function Chip({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: ReactNode; title?: string }) {
   return (
     <Toggle
@@ -124,7 +128,7 @@ export function Chip({ on, onClick, children, title }: { on: boolean; onClick: (
       pressed={on}
       onPressedChange={onClick}
       title={title}
-      className="shrink-0"
+      className={cn('shrink-0', chipOnCls)}
     >
       {children}
     </Toggle>

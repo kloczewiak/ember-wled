@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { toast, useStore } from '../store'
-import { Card, SectionTitle, cx } from '../components/controls'
+import { Card, chipOnCls, SectionTitle, cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -70,12 +70,11 @@ export function NumberInput({ value, onChange, label, min, max, step, className 
   )
 }
 
-// An on/off chip for picking several of a set (groups, weekdays). On is filled with the primary colour, since
-// the outline toggle's subtle "on" is hard to read when the whole point is which ones are picked.
+// An on/off chip for picking several of a set (groups, weekdays), filled when on like the main UI's chips.
 export function ChoiceChip({ on, onChange, label, children, className }: { on: boolean; onChange: (on: boolean) => void; label?: string; children: ReactNode; className?: string }) {
   return (
     <Toggle variant="outline" size="sm" pressed={on} onPressedChange={onChange} aria-label={label}
-      className={cx('aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground', className)}>
+      className={cx(chipOnCls, className)}>
       {children}
     </Toggle>
   )
