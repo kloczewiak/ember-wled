@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from '../store'
 import { Card, SectionTitle, cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
@@ -129,13 +130,18 @@ export function useSaver(page: string, onSaved: () => void) {
   return { save: run, saving, dialog }
 }
 
-// The bar at the bottom of a settings page: what is unsaved, Discard and Save. It sticks above the iPhone's
-// home indicator, and the two buttons wrap to the next line together.
+// On phones the settings screen puts a footer below the page's scroll area (like the tab bar on the controls)
+// and passes it here; the save bar is drawn there, so it stays put instead of moving with the end of the page.
+export const SaveBarSlot = createContext<HTMLElement | null>(null)
+
+// The bar at the bottom of a settings page: what is unsaved, Discard and Save. The two buttons wrap to the
+// next line together. Without a footer (wide screens) it sticks to the bottom of the page.
 export function SaveBar({ dirty, saving, error, onSave, onDiscard, saveLabel = 'Save' }: {
   dirty: boolean; saving: boolean; error?: string | null; onSave: () => void; onDiscard: () => void; saveLabel?: string
 }) {
-  return (
-    <div className="sticky bottom-[env(safe-area-inset-bottom)] z-10 flex flex-wrap items-center justify-end gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+  const slot = useContext(SaveBarSlot)
+  const content = (
+    <>
       <span className={cx('mr-auto text-sm', error ? 'text-destructive' : 'text-muted-foreground')}>
         {error ?? (dirty ? 'Unsaved changes' : 'No changes')}
       </span>
@@ -143,6 +149,12 @@ export function SaveBar({ dirty, saving, error, onSave, onDiscard, saveLabel = '
         <Button variant="outline" disabled={!dirty || saving} onClick={onDiscard}>Discard</Button>
         <Button disabled={!dirty || saving || !!error} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>
       </div>
+    </>
+  )
+  if (slot) return createPortal(<div className="mx-auto flex max-w-2xl flex-wrap items-center justify-end gap-2 px-4 py-2">{content}</div>, slot)
+  return (
+    <div className="sticky bottom-[env(safe-area-inset-bottom)] z-10 flex flex-wrap items-center justify-end gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+      {content}
     </div>
   )
 }

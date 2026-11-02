@@ -1,11 +1,11 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useMedia } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Bolt, ChevronRight, Clock, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
 import { refreshCfg, useCfg } from './config'
-import { confirmLeave } from './shared'
+import { confirmLeave, SaveBarSlot } from './shared'
 import { UiSettings } from './UiSettings'
 import { WifiSettings } from './WifiSettings'
 
@@ -71,6 +71,8 @@ export function SettingsScreen({ route }: { route: string }) {
   const title = page?.title ?? 'Settings'
   // back goes from a page to the menu (on phones) and from the menu to the controls
   const back = page && !wide ? () => go('#settings') : () => go('#')
+  // phones: the footer below a page's scroll area that holds its save bar
+  const [footer, setFooter] = useState<HTMLDivElement | null>(null)
 
   return (
     <div className="flex h-full flex-col">
@@ -91,14 +93,19 @@ export function SettingsScreen({ route }: { route: string }) {
           </div>
         </div>
       ) : (
-        // a new scroll area for each view: sharing one kept the page's scroll position (and iOS's momentum)
-        // when going back, leaving the shorter menu scrolled past its end. The bottom padding keeps the end of
-        // the page clear of the home indicator.
-        <div key={page?.id ?? 'menu'} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-2xl px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            {page ? <main className="min-w-0">{page.render!()}</main> : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
+        <>
+          {/* a new scroll area for each view: sharing one kept the page's scroll position (and iOS's momentum)
+              when going back, leaving the shorter menu scrolled past its end. The menu's bottom padding keeps its
+              end clear of the home indicator; on a page the footer does that. */}
+          <div key={page?.id ?? 'menu'} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+            <div className={cx('mx-auto max-w-2xl px-4 pt-2', page ? 'pb-4' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]')}>
+              {page
+                ? <main className="min-w-0"><SaveBarSlot.Provider value={footer}>{page.render!()}</SaveBarSlot.Provider></main>
+                : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
+            </div>
           </div>
-        </div>
+          {page && <div ref={setFooter} className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] empty:hidden" />}
+        </>
       )}
     </div>
   )
