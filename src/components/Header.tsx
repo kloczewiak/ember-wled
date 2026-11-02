@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { send, setPeek, toast, useStore } from '../store'
-import { stockCfg, useUi } from '../ui'
+import { useUi } from '../ui'
 import { formatCurrent } from '../lib/format'
 import { cx, Icon, IconButton, Slider } from './controls'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,8 @@ export function togglePower() {
   // turning on while a live segment is frozen by realtime data: leave live mode
   if (on && info?.live && info.liveseg >= 0) Object.assign(cmd, { live: false, seg: [{ id: info.liveseg, frz: false }] })
   // "Power button preset override" in Settings → User Interface: load a preset instead of switching
-  const preset = on ? stockCfg.on : stockCfg.off
+  const { stock } = useUi.getState()
+  const preset = on ? stock.on : stock.off
   send(preset > 0 ? { ps: preset } : cmd)
 }
 

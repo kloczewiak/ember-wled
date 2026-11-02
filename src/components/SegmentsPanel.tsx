@@ -3,7 +3,7 @@ import { onLiveFrame, send, toast, useStore } from '../store'
 import { useDraft, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import type { Segment } from '../api/types'
-import { stockCfg } from '../ui'
+import { useUi } from '../ui'
 import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
@@ -39,7 +39,7 @@ export function SegmentsPanel({ className }: { className?: string }) {
   const [adding, setAdding] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   // "Always expand first segment" in Settings → User Interface
-  const [expanded, setExpanded] = useState<number | null>(() => (stockCfg.segexp ? useStore.getState().state?.seg[0]?.id ?? null : null))
+  const [expanded, setExpanded] = useState<number | null>(() => (useUi.getState().stock.segexp ? useStore.getState().state?.seg[0]?.id ?? null : null))
   if (!state || !info) return null
 
   const segs = state.seg
@@ -245,6 +245,7 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
 }) {
   const info = useStore((s) => s.info)!
   const state = useStore((s) => s.state)!
+  const segpwr = useUi((s) => s.stock.segpwr)
   const { isMatrix, mw, mh } = useSelection()
   const fxdata = useStore((s) => s.fxdata)
   const live = info.live && info.liveseg === seg.id
@@ -276,7 +277,7 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
         <UiButton variant="ghost" size="icon" aria-label={open ? 'Collapse segment settings' : 'Expand segment settings'} aria-expanded={open} onClick={onToggle}>
           <Icon.chevron className={cx('transition-transform', open && 'rotate-180')} />
         </UiButton>
-        {!stockCfg.segpwr && <Switch on={seg.on} label={`${segName(seg)} power`} onChange={(on) => send({ seg: { id: seg.id, on } })} />}
+        {!segpwr && <Switch on={seg.on} label={`${segName(seg)} power`} onChange={(on) => send({ seg: { id: seg.id, on } })} />}
       </div>
       <div className="flex items-center gap-3">
           <Toggle
@@ -290,7 +291,7 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
             <Icon.snow />
             {live ? 'Live' : seg.frz ? 'Frozen' : 'Freeze'}
           </Toggle>
-        {!stockCfg.segpwr && <Slider label={`${segName(seg)} brightness`} value={seg.bri} min={1} onCommit={(bri) => send({ seg: { id: seg.id, bri } })} className="min-w-0 flex-1" />}
+        {!segpwr && <Slider label={`${segName(seg)} brightness`} value={seg.bri} min={1} onCommit={(bri) => send({ seg: { id: seg.id, bri } })} className="min-w-0 flex-1" />}
       </div>
       {open && (
         <SegmentEditor
@@ -309,7 +310,7 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
   const is2DSeg = isMatrix && seg.start < mw * mh
   const [name, setName] = useDraft(seg.n ?? '')
   // with "Set segment length instead of stop LED" the stop fields hold lengths; `stop`/`stopY` are always absolute
-  const rel = stockCfg.seglen
+  const rel = useUi((s) => s.stock.seglen)
   const [b, setB] = useDraft(`${seg.start},${seg.stop - (rel ? seg.start : 0)},${seg.startY ?? 0},${(seg.stopY ?? 1) - (rel ? seg.startY ?? 0 : 0)},${seg.of},${seg.grp},${seg.spc}`)
   const [start, stopField, startY, stopYField, of, grp, spc] = b.split(',').map((v) => (v === '' ? NaN : Number(v)))
   const stop = stopField + (rel ? start : 0)
@@ -426,7 +427,7 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
 function NewSegment({ id, defaults, onDone }: { id: number; defaults: { start: number; stop: number; startY?: number; stopY?: number }; onDone: () => void }) {
   const { isMatrix } = useSelection()
   const [name, setName] = useState('')
-  const rel = stockCfg.seglen // stop fields hold lengths, as in the segment editor
+  const rel = useUi((s) => s.stock.seglen) // stop fields hold lengths, as in the segment editor
   const [v, setV] = useState({
     start: String(defaults.start), stop: String(defaults.stop - (rel ? defaults.start : 0)),
     startY: String(defaults.startY ?? 0), stopY: String((defaults.stopY ?? 1) - (rel ? defaults.startY ?? 0 : 0)),

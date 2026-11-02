@@ -11,6 +11,8 @@ interface Ui {
   setCsel: (i: number) => void
   setColorMode: (m: ColorMode) => void
   setSheet: (s: Ui['sheet']) => void
+  stock: StockComp // the stock UI settings this UI follows (see below)
+  setStockCfg: (cfg: Json) => void // stores the whole wledUiCfg object and applies it at once
 }
 
 const read = (key: string, fallback: string) => {
@@ -53,17 +55,19 @@ export function writeStockUiCfg(cfg: Json) {
   localStorage.setItem('wledUiCfg', JSON.stringify(cfg))
 }
 
-interface StockComp { pid: boolean; fxdef: boolean; on: number; off: number; seglen: boolean; segpwr: boolean; segexp: boolean; idsort: boolean }
+export interface StockComp { pid: boolean; fxdef: boolean; on: number; off: number; seglen: boolean; segpwr: boolean; segexp: boolean; idsort: boolean }
 function stockUiCfg(): StockComp {
   const cfg = readStockUiCfg()
   try { writeStockUiCfg(cfg) } catch { /* storage unavailable */ }
+  return toComp(cfg)
+}
+function toComp(cfg: Json): StockComp {
   const comp = cfg.comp as Json
   return {
     pid: comp.pid !== false, fxdef: comp.fxdef !== false, seglen: comp.seglen === true, segpwr: comp.segpwr === true,
     segexp: comp.segexp === true, idsort: comp.idsort === true, on: Number(comp.on) || 0, off: Number(comp.off) || 0,
   }
 }
-export const stockCfg = stockUiCfg()
 
 export const useUi = create<Ui>((set) => ({
   csel: 0,
@@ -75,4 +79,9 @@ export const useUi = create<Ui>((set) => ({
     set({ colorMode })
   },
   setSheet: (sheet) => set({ sheet }),
+  stock: stockUiCfg(),
+  setStockCfg: (cfg) => {
+    writeStockUiCfg(cfg) // throws if storage is unavailable; the caller reports it
+    set({ stock: toComp(cfg) })
+  },
 }))

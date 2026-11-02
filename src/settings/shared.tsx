@@ -23,12 +23,6 @@ export function useDraft<T>(loaded: T | null) {
 export const unsaved = { current: false }
 export const confirmLeave = () => !unsaved.current || confirm('Discard your unsaved changes?')
 
-// Reloads after a save, without the browser's "leave page?" prompt for the changes just saved.
-export function reloadAfterSave() {
-  unsaved.current = false
-  location.reload()
-}
-
 // Warns before leaving the page (reload, closing the tab, following a link out) with unsaved changes.
 export function useLeaveGuard(dirty: boolean) {
   useEffect(() => {

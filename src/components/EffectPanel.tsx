@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { send, useStore } from '../store'
 import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
-import { stockCfg } from '../ui'
+import { useUi } from '../ui'
 import { searchList } from './PalettePanel'
 import { Card, Chip, cx, LabeledSlider, SearchField, SectionTitle } from './controls'
 import { Badge } from '@/components/ui/badge'
@@ -85,7 +85,7 @@ export function EffectList({ className }: { className?: string }) {
               aria-selected={sel}
               variant={sel ? 'secondary' : 'ghost'}
               size="lg"
-              onClick={() => send({ seg: { fx: e.id, fxdef: stockCfg.fxdef } })}
+              onClick={() => send({ seg: { fx: e.id, fxdef: useUi.getState().stock.fxdef } })}
               className="justify-between font-normal"
             >
               <span className="truncate">{e.name}</span>

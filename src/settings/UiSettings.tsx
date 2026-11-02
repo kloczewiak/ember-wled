@@ -1,12 +1,12 @@
 import { useRef } from 'react'
-import { toast } from '../store'
-import { readStockUiCfg, writeStockUiCfg, type Json } from '../ui'
+import { refresh, toast } from '../store'
+import { readStockUiCfg, useUi, type Json } from '../ui'
 import { Switch } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useCfgForm } from './config'
-import { FieldError, reloadAfterSave, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { FieldError, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg).
@@ -30,11 +30,11 @@ async function upload(file: File, path: string) {
 const RANDOM_BG = 'https://picsum.photos/1920/1080'
 
 export function UiSettings() {
-  const { base: loaded, draft, setDraft, dirty, discard, error, retry } =
+  const { base: loaded, draft, setDraft, dirty, discard, error, retry, reloadAfterSave } =
     useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg() }))
   useLeaveGuard(dirty)
-  // browser settings are read when the app starts, so reload after saving (the stock page asks you to refresh)
-  const { save, saving, dialog } = useSaver('ui', reloadAfterSave)
+  // after saving the light's settings: fetch fresh info (the header shows the device name) and re-read the form
+  const { save, saving, dialog } = useSaver('ui', () => { refresh(); reloadAfterSave() })
   // the image chosen before turning on "random image", restored when it's turned off again (like oldUrl)
   const oldUrl = useRef('')
   const cssFile = useRef<HTMLInputElement>(null)
@@ -81,8 +81,9 @@ export function UiSettings() {
 
   const onSave = async () => {
     const deviceChanged = draft.name !== loaded.name || draft.sui !== loaded.sui
+    // browser settings are stored and applied at once (the panels read them from the UI store)
     if (JSON.stringify(draft.ui) !== JSON.stringify(loaded.ui)) {
-      try { writeStockUiCfg(draft.ui) } catch { toast('Couldn\'t save to this browser\'s storage.', true); return }
+      try { useUi.getState().setStockCfg(draft.ui) } catch { toast('Couldn\'t save to this browser\'s storage.', true); return }
     }
     // like the stock page, only post to the light when its own settings changed
     if (deviceChanged) save([['DS', draft.name], ...(draft.sui ? [['SU', 'on'] as [string, string]] : [])])

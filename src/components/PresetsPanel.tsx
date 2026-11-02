@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { presetsBackup, presetsChanged, send, toast, uploadPresets, useStore } from '../store'
 import type { Command, Playlist, Preset, Presets } from '../api/types'
-import { stockCfg } from '../ui'
+import { useUi } from '../ui'
 import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTitle } from './controls'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
@@ -10,9 +10,10 @@ import { NativeSelect } from '@/components/ui/native-select'
 const pName = (presets: Presets | null, id: number) => presets?.[id]?.n || `Preset ${id}`
 const isPlaylist = (p?: Preset) => !!p?.playlist?.ps
 
-// Playlists first, then names starting with a letter or digit, then the rest (stock UI ordering).
-function comparePresets([ia, a]: [string, Preset], [ib, b]: [string, Preset]) {
-  if (stockCfg.idsort || !a.n || !b.n) return Number(ia) - Number(ib)
+// Playlists first, then names starting with a letter or digit, then the rest (stock UI ordering);
+// by ID with "Sort presets by ID" (Settings → User interface).
+const comparePresets = (idsort: boolean) => ([ia, a]: [string, Preset], [ib, b]: [string, Preset]) => {
+  if (idsort || !a.n || !b.n) return Number(ia) - Number(ib)
   const rank = (p: Preset) => (p.playlist ? '<' : /^[\p{L}\p{N}]/u.test(p.n!) ? '=' : '>')
   return (rank(a) + a.n).localeCompare(rank(b) + b.n, undefined, { numeric: true })
 }
@@ -56,6 +57,7 @@ export function QuickLoad({ className }: { className?: string }) {
 }
 
 export function PresetsPanel({ className }: { className?: string }) {
+  const { idsort, pid } = useUi((s) => s.stock)
   const presets = useStore((s) => s.presets)
   const presetsError = useStore((s) => s.presetsError)
   const state = useStore((s) => s.state)
@@ -63,7 +65,7 @@ export function PresetsPanel({ className }: { className?: string }) {
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState<number | 'new' | 'newpl' | null>(null)
 
-  const sorted = useMemo(() => Object.entries(presets ?? {}).filter(([, p]) => p && typeof p === 'object').sort(comparePresets), [presets])
+  const sorted = useMemo(() => Object.entries(presets ?? {}).filter(([, p]) => p && typeof p === 'object').sort(comparePresets(idsort)), [presets, idsort])
   const current = state ? (state.pl < 0 ? state.ps : state.pl) : -1
   const q = query.toUpperCase()
   const shown = query
@@ -103,7 +105,7 @@ export function PresetsPanel({ className }: { className?: string }) {
               return (
                 <div key={key} className={cx('rounded-lg', (editing === id || id === current) && 'bg-muted')}>
                   <div className="flex items-center gap-1 pl-3">
-                    {stockCfg.pid && <span className="w-6 shrink-0 font-mono text-[11px] text-muted-foreground">{id}</span>}
+                    {pid && <span className="w-6 shrink-0 font-mono text-[11px] text-muted-foreground">{id}</span>}
                     <UiButton variant="ghost" size="lg" className="min-w-0 flex-1 justify-start font-normal" onClick={() => applyPreset(id)}>
                       <span className="truncate">{pName(presets, id)}</span>
                     </UiButton>
@@ -318,11 +320,12 @@ function PresetEditor({ id, playlist, onClose }: { id: number; playlist: boolean
 type PlaylistState = ReturnType<typeof normalizePlaylist>
 
 function PlaylistEditor({ id, pl, setPl, presets }: { id: number; pl: PlaylistState; setPl: (p: PlaylistState) => void; presets: Presets }) {
+  const idsort = useUi((s) => s.stock.idsort)
   const manual = pl.dur.every((d) => d === 0)
   // endless playlists (and this playlist itself) can't be entries
   const options = Object.entries(presets)
     .filter(([key, p]) => !isPlaylist(p) || ((p.playlist!.repeat ?? 0) > 0 && Number(key) !== id))
-    .sort(comparePresets)
+    .sort(comparePresets(idsort))
   const update = (patch: Partial<PlaylistState>) => setPl({ ...pl, ...patch })
   const setAt = (field: 'ps' | 'dur' | 'transition', i: number, v: number) => update({ [field]: pl[field].map((x, j) => (j === i ? v : x)) })
   const add = (i: number) => update({
