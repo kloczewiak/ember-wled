@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { send, setPeek, toast, useStore } from '../store'
 import { useUi } from '../ui'
-import { formatCurrent } from '../lib/format'
 import { cx, Icon, IconButton, Slider } from './controls'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
@@ -44,16 +43,16 @@ export function toggleSync() {
   send({ udpn: { send: !udpn.send } })
 }
 
-// Estimated current (WLED's own estimate, reported in /json/info) and the timer's remaining time.
-function DeviceStatus({ lead = '' }: { lead?: string }) {
-  const pwr = useStore((s) => s.info?.leds.pwr ?? 0)
+// The line under the device name: its IP address and, while it runs, the timer's remaining time.
+function DeviceStatus() {
+  const ip = useStore((s) => s.info?.ip) || location.host
   const nl = useStore((s) => s.state?.nl)
   const left = useCountdown(nl?.on ? nl.rem : -1)
-  const parts: string[] = []
-  if (pwr > 0) parts.push(formatCurrent(pwr))
-  if (left > 0) parts.push(`timer ${left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`}`)
-  if (!parts.length) return null
-  return <span title="Estimated current · nightlight timer remaining">{lead}{parts.join(' · ')}</span>
+  return (
+    <div className="truncate text-xs text-muted-foreground">
+      {ip}{left > 0 && <span title="Timer remaining"> · timer {left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`}</span>}
+    </div>
+  )
 }
 
 // Counts down locally from the seconds the light last reported (-1 = not running).
@@ -108,7 +107,7 @@ export function Header({ wide }: { wide: boolean }) {
           <ConnDot />
           <div className="min-w-0">
             <div className="truncate text-[15px] font-semibold">{info.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{info.ip || location.host} · {info.leds.count} LEDs<DeviceStatus lead=" · " /></div>
+            <DeviceStatus />
           </div>
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-3.5">
@@ -135,7 +134,7 @@ export function Header({ wide }: { wide: boolean }) {
         <ConnDot />
         <div className="ml-1 min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold">{info.name}</div>
-          <div className="truncate text-xs text-muted-foreground"><DeviceStatus /></div>
+          <DeviceStatus />
         </div>
         <Toggle pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
         <Toggle pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
