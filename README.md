@@ -31,6 +31,17 @@ while Settings, Update, `/cpal.htm` and the rest stay the firmware's own pages.
 Firmware OTA updates keep the file; a filesystem reset removes it. To go back to the stock UI, delete
 `/index.htm.gz` in the file editor.
 
+## Firmware-specific data
+
+This UI targets **WLED v16.0.1**, the firmware release checked out in `../wled-firmware`. Some of it is
+copied or derived from that firmware's source, so check these after every firmware update:
+
+| What | Last checked against | How to update |
+| --- | --- | --- |
+| Effect colours on the Default palette (`src/lib/fxcolors.ts`), used by the segment bar | v16.0.1 | Follow `src/lib/fxcolors.md` (`npm run audit:fx-colors` lists what to review) |
+| Mock effect and palette lists (`mock/fixtures.json`) | v16.0.1 | `npm run gen:fixtures` |
+| Settings pages and the rest of the stock UI's behaviour | v16.0.1 | Diff `wled00/data` and `wled00/set.cpp` against the previous release; gaps go in `PARITY.md` |
+
 ## Layout
 
 - `src/store.ts`: connection (WebSocket with HTTP fallback), loading, live view, toasts

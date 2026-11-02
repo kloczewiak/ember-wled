@@ -10,6 +10,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "gen:fixtures": "node scripts/gen-fixtures.mjs",
+    "audit:fx-colors": "node scripts/audit-fx-colors.mjs",
     "gen:icons": "python3 scripts/gen-icons.py"
   },
   "dependencies": {

@@ -1,8 +1,9 @@
 import type { Color, PaletteStop, Segment } from '../api/types'
 import { parseFxMeta } from '../api/fxmeta'
+import { DEFAULT_PALETTE_LOOK } from './fxcolors'
 
 // What a segment roughly looks like on the strip, for the segment bar: the colours its effect draws with
-// (wled00/FX.cpp and FX_fcn.cpp in WLED v16.0.1), dimmed like the LEDs. Animation isn't modelled, so an
+// (per-effect rules for the Default palette are in fxcolors.ts), dimmed like the LEDs. Animation isn't modelled, so an
 // effect shows the colours it uses rather than what's on the strip at this moment.
 
 type Rgb = [number, number, number]
@@ -34,13 +35,10 @@ export const cssGradient = (stops: Stop[]) =>
 
 const rgbOf = (c: Color | undefined): Rgb => [c?.[0] ?? 0, c?.[1] ?? 0, c?.[2] ?? 0]
 
-// Effects that, with the Default palette, colour LEDs from the hue wheel (Segment::color_wheel) instead of
-// colour 1, so they show a rainbow: Wipe/Sweep Random, Random Colors, Dynamic (+ Smooth), Colorloop,
-// Rainbow, Theater Rainbow, Dissolve Rnd, Strobe/Blink Rainbow, Chase Random/Rainbow/Flash Rnd, Rainbow
-// Runner, Stream, Palette, Fireworks Starburst, Sinelon Rainbow, Ripple Rainbow.
-const HUE_WHEEL = new Set([4, 5, 7, 8, 9, 14, 19, 24, 26, 29, 30, 32, 33, 36, 39, 65, 89, 94, 99, 117])
-const RAINBOW: Stop[] = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255], [255, 0, 0]]
-  .map((rgb, i) => ({ rgb: rgb as Rgb, pos: Math.round((i / 6) * 100) }))
+const RAINBOW: Rgb[] = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255], [255, 0, 0]]
+
+// colours spread evenly across the segment
+const evenly = (list: Rgb[]): Stop[] => list.map((rgb, i) => ({ rgb, pos: list.length > 1 ? Math.round((i / (list.length - 1)) * 100) : 0 }))
 
 // The colours a segment's effect draws with, at full brightness.
 function effectStops(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>): Stop[] {
@@ -48,11 +46,17 @@ function effectStops(seg: Segment, fxdata: string[], palx: Record<number, Palett
   if (!parseFxMeta(seg.fx, fxdata[seg.fx]).usesPalette) return solid
   let pal = seg.pal
   if (pal === 0) {
-    if (HUE_WHEEL.has(seg.fx)) return RAINBOW
-    // Default stands for the effect's own palette (its "pal=" default, see Segment::setMode), which effects
-    // with one draw from; the rest get colour 1 from color_from_palette()
-    pal = Number(/(?:^|,)pal=(\d+)/.exec((fxdata[seg.fx] ?? '').split(';')[4] ?? '')?.[1] ?? 0)
-    if (!pal) return solid
+    // what Default means differs per effect, see fxcolors.ts
+    const look = DEFAULT_PALETTE_LOOK[seg.fx]
+    if (look === undefined) return solid
+    if (look === 'rainbow') return evenly(RAINBOW)
+    if (Array.isArray(look)) return evenly(look)
+    if (look === 'colors') {
+      const used = seg.col.slice(0, 3).map(rgbOf).filter(([r, g, b]) => r || g || b)
+      return used.length ? evenly(used) : solid
+    }
+    // the effect's own palette (its "pal=" default, see Segment::setMode), else Party Colors
+    pal = Number(/(?:^|,)pal=(\d+)/.exec((fxdata[seg.fx] ?? '').split(';')[4] ?? '')?.[1] ?? 0) || 6
   }
   const stops = paletteStops(palx[pal], seg.col)
   return stops.length ? stops : solid // palettes not loaded yet
