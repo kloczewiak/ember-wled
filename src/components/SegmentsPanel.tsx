@@ -183,7 +183,6 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
   const live = useStore((s) => s.peek)
   const fxdata = useStore((s) => s.fxdata)
   const palx = useStore((s) => s.palx)
-  const masterBri = useStore((s) => s.state?.bri ?? 255)
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (!live) return
@@ -215,7 +214,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
         <div className="absolute inset-px rounded-md bg-bg" />
         {live && <canvas ref={canvas} aria-hidden className="absolute inset-0 size-full" />}
         {segs.map((s) => {
-          const fill = live || !s.on ? null : segmentFill(s, fxdata, palx, (s.bri / 255) * (masterBri / 255))
+          const fill = live || !s.on ? null : segmentFill(s, fxdata, palx, s.bri / 255)
           return (
             <button
               key={s.id}

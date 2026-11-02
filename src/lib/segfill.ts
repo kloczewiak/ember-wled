@@ -65,7 +65,7 @@ const toLinear = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 1
 const fromLinear = (l: number) => Math.round(255 * Math.min(1, l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055))
 
 // CSS background for a segment in the bar, and whether it's light enough to need dark text.
-// `bri` is the overall brightness factor (0-1): the segment's own brightness times the master brightness.
+// `bri` is the segment's brightness (0-1). Master brightness is left out, like Peek's live colours.
 export function segmentFill(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>, bri: number) {
   const white = toLinear(seg.col[0]?.[3] ?? 0) // the white channel of colour 1 is added to every LED (RGBW strips)
   const stops = effectStops(seg, fxdata, palx).map((s) => ({
