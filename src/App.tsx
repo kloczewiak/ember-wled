@@ -147,7 +147,8 @@ function TabBar({ tab }: { tab: Tab }) {
   )
 }
 
-// On phones the toasts sit above the tab bar (the phone layout is used below 1100px, see `wide`).
+// On phones the toasts sit 16px above the tab bar (the phone layout is used below 1100px, see `wide`); the
+// tab bar is 3.5rem plus the home-indicator safe area, so the offset is 4.5rem plus the same safe area.
 function Toasts() {
-  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-20" />
+  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-[calc(4.5rem+max(4px,env(safe-area-inset-bottom)))]" />
 }

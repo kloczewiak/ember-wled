@@ -51,7 +51,7 @@ export function EffectList({ className }: { className?: string }) {
     return true
   })
   const filtered = filters.length
-    ? runnable.filter((e, i) => i === 0 || e.id === selected || filters.every((f) => (f === 'pal' ? e.usesPalette : e.flags.includes(f))))
+    ? runnable.filter((e) => filters.every((f) => (f === 'pal' ? e.usesPalette : e.flags.includes(f))))
     : searchList(runnable, query, selected)
 
   // bring the selected effect into view once the list has loaded

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { send, setPeek, toast, useStore } from '../store'
 import { stockCfg, useUi } from '../ui'
+import { formatCurrent } from '../lib/format'
 import { cx, Icon, IconButton, Slider } from './controls'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
@@ -48,7 +49,7 @@ function DeviceStatus({ lead = '' }: { lead?: string }) {
   const nl = useStore((s) => s.state?.nl)
   const left = useCountdown(nl?.on ? nl.rem : -1)
   const parts: string[] = []
-  if (pwr > 0) parts.push(pwr >= 1000 ? `${(pwr / 1000).toFixed(1)} A` : `${pwr} mA`)
+  if (pwr > 0) parts.push(formatCurrent(pwr))
   if (left > 0) parts.push(`timer ${left >= 60 ? `${Math.ceil(left / 60)} min` : `${left} s`}`)
   if (!parts.length) return null
   return <span title="Estimated current · nightlight timer remaining">{lead}{parts.join(' · ')}</span>

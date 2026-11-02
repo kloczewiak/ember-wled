@@ -145,27 +145,33 @@ export function SegmentsPanel({ className }: { className?: string }) {
 }
 
 const TICK_CHAR_PX = 6.2 // width of one digit at 10px monospace
-const TICK_GAP_PX = 6
+const TICK_GAP_PX = 4    // minimum space between two labels
+const TICK_INSET_PX = 3  // labels sit this far inside the segment edge they mark
 
-// Boundary labels that fit under the bar without touching: the two ends always, then segment
-// boundaries left to right, skipping any that would overlap one already placed.
-function fittingTicks(values: number[], total: number, width: number) {
-  const span = (t: number) => {
-    const w = String(t).length * TICK_CHAR_PX
-    const x = (t / total) * width
-    const left = t === 0 ? x : t === total ? x - w : x - w / 2
+// One label per segment edge: its first LED at its left edge and its last LED at its right edge,
+// so two touching segments show e.g. "96 | 97" on either side of the boundary.
+type Tick = { x: number; led: number; edge: 'start' | 'end' }
+
+// The labels that fit under the bar without touching: the outermost two always, then the rest left to
+// right, skipping any that would overlap one already placed. Returns each shown label's left position.
+function fittingTicks(ticks: Tick[], total: number, width: number) {
+  const span = (t: Tick) => {
+    const w = String(t.led).length * TICK_CHAR_PX
+    const x = (t.x / total) * width
+    const inset = t.x === 0 || t.x === total ? 0 : TICK_INSET_PX
+    const left = t.edge === 'start' ? x + inset : x - inset - w
     return [left, left + w] as const
   }
-  const placed: (readonly [number, number])[] = []
-  const fits = (t: number) => { const [a, b] = span(t); return placed.every(([c, d]) => b + TICK_GAP_PX <= c || a >= d + TICK_GAP_PX) }
-  const shown = [0, total]
-  placed.push(span(0), span(total))
-  for (const t of values) {
-    if (t === 0 || t === total || !fits(t)) continue
-    placed.push(span(t))
-    shown.push(t)
+  const placed: { tick: Tick; at: readonly [number, number] }[] = []
+  const fits = ([a, b]: readonly [number, number]) => placed.every(({ at: [c, d] }) => b + TICK_GAP_PX <= c || a >= d + TICK_GAP_PX)
+  const outer = ticks.length ? [ticks[0], ticks[ticks.length - 1]] : []
+  for (const t of [...new Set(outer)]) placed.push({ tick: t, at: span(t) })
+  for (const t of ticks) {
+    if (outer.includes(t)) continue
+    const at = span(t)
+    if (fits(at)) placed.push({ tick: t, at })
   }
-  return shown.sort((a, b) => a - b)
+  return placed.map(({ tick, at }) => ({ ...tick, left: at[0] }))
 }
 
 function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
@@ -192,8 +198,9 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  const boundaries = [...new Set(segs.flatMap((s) => [s.start, s.stop]))].sort((a, b) => a - b)
-  const ticks = width ? fittingTicks(boundaries, total, width) : [0, total]
+  const edges: Tick[] = [...segs].sort((a, b) => a.start - b.start)
+    .flatMap((s) => [{ x: s.start, led: s.start, edge: 'start' as const }, { x: s.stop, led: s.stop - 1, edge: 'end' as const }])
+  const ticks = width ? fittingTicks(edges, total, width) : []
   return (
     <div className="flex flex-col gap-1">
       <div className="relative h-6 overflow-hidden rounded-md bg-bg">
@@ -207,8 +214,10 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
               aria-label={`Select only ${segName(s)}`}
               onClick={() => send({ seg: segs.map((g) => ({ id: g.id, sel: g.id === s.id })), mainseg: s.id })}
               className={cx(
-                'absolute inset-y-0 flex items-center overflow-hidden border-x border-bg px-1.5 text-[11px] font-semibold',
-                live ? 'text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]' : !s.sel && 'opacity-45',
+                // the border is the card colour, so neighbouring segments look separated by a gap
+                'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1.5 text-[11px] font-semibold',
+                // live colours are a canvas underneath, so unselected segments are dimmed with an overlay instead
+                live ? cx('text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]', !s.sel && 'bg-black/55') : !s.sel && 'opacity-45',
               )}
               style={{
                 left: `${(s.start / total) * 100}%`,
@@ -225,9 +234,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
         })}
       </div>
       <div ref={tickRow} className="relative h-3 font-mono text-[10px] text-muted-foreground">
-        {ticks.map((t) => (
-          <span key={t} className="absolute" style={{ left: `${(t / total) * 100}%`, transform: t === 0 ? undefined : t === total ? 'translateX(-100%)' : 'translateX(-50%)' }}>{t}</span>
-        ))}
+        {ticks.map((t) => <span key={`${t.edge}${t.x}`} className="absolute" style={{ left: t.left }}>{t.led}</span>)}
       </div>
     </div>
   )

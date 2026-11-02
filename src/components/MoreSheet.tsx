@@ -3,6 +3,7 @@ import { loadNodes, refresh, send, useStore } from '../store'
 import { useDraft, useMedia } from '../hooks'
 import { useUi } from '../ui'
 import type { Info, Node } from '../api/types'
+import { formatCurrent } from '../lib/format'
 import { toggleSync, toggleTimer } from './Header'
 import { Button, Check, cx, Field, inputCls, SectionTitle, Switch } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
@@ -23,10 +24,7 @@ function runtime(t: number) {
 }
 
 function current(i: Info) {
-  const pwr = i.leds.pwr
-  if (pwr > 1000) return `${(pwr / 1000).toFixed(pwr > 10000 ? 0 : 1)} A`
-  if (pwr > 0) return `${50 * Math.round(pwr / 50)} mA`
-  return 'Not calculated'
+  return i.leds.pwr > 0 ? formatCurrent(i.leds.pwr) : 'Not calculated'
 }
 
 const chip = (t: number) => ({ 2: 'ESP32', 32: 'ESP32', 3: 'ESP32-S2', 33: 'ESP32-S2', 4: 'ESP32-S3', 34: 'ESP32-S3', 5: 'ESP32-C3', 35: 'ESP32-C3', 39: 'ESP32-C6', 40: 'ESP32-C61', 41: 'ESP32-C5', 42: 'ESP32-P4', 43: 'ESP32-P4', 1: 'ESP8266', 82: 'ESP8266' } as Record<number, string>)[t] ?? '?'
