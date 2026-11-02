@@ -64,7 +64,8 @@ function effectStops(seg: Segment, fxdata: string[], palx: Record<number, Palett
 const toLinear = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
 const fromLinear = (l: number) => Math.round(255 * Math.min(1, l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055))
 
-// CSS background for a segment in the bar, and whether it's light enough to need dark text.
+// CSS background for a segment in the bar, and how to label it: outlined text over several colours,
+// otherwise dark or light text depending on the colour.
 // `bri` is the segment's brightness (0-1). Master brightness is left out, like Peek's live colours.
 export function segmentFill(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>, bri: number) {
   const white = toLinear(seg.col[0]?.[3] ?? 0) // the white channel of colour 1 is added to every LED (RGBW strips)
@@ -72,9 +73,11 @@ export function segmentFill(seg: Segment, fxdata: string[], palx: Record<number,
     ...s,
     rgb: s.rgb.map((v) => fromLinear((toLinear(v) + white) * bri)) as Rgb,
   }))
-  const avg = [0, 1, 2].map((i) => stops.reduce((sum, s) => sum + s.rgb[i], 0) / stops.length)
+  const [r, g, b] = stops[0].rgb
+  const solid = stops.every((s) => s.rgb[0] === r && s.rgb[1] === g && s.rgb[2] === b)
   return {
-    background: stops.length === 1 ? `rgb(${stops[0].rgb.join(',')})` : cssGradient(stops)!,
-    light: 0.2126 * avg[0] + 0.7152 * avg[1] + 0.0722 * avg[2] > 140,
+    background: solid ? `rgb(${r},${g},${b})` : cssGradient(stops)!,
+    outline: !solid,
+    light: solid && 0.2126 * r + 0.7152 * g + 0.0722 * b > 140,
   }
 }
