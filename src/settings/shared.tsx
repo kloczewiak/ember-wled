@@ -122,7 +122,9 @@ export function PresetSelect({ value, onChange, label, none, className }: {
   const list = Object.entries(presets ?? {}).filter(([id, p]) => id !== '0' && p && typeof p === 'object').sort(comparePresets(idsort))
   const name = (id: number) => presets?.[id]?.n || `Preset ${id}`
   const known = value === 0 || !!presets?.[value]
-  const [typing, setTyping] = useState(!known)
+  // typing when chosen; otherwise for an ID that isn't a saved preset, once the presets have loaded
+  const [typed, setTyping] = useState<boolean | null>(null)
+  const typing = typed ?? (presets !== null && !known)
   if (typing) {
     return (
       <div className={cx('flex items-center gap-2', className)}>
