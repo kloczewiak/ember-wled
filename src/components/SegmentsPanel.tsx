@@ -224,8 +224,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
                 'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1.5 text-[11px] font-semibold',
                 // no gap at the ends of the bar, where it would flatten the rounded corners
                 s.start === 0 && 'border-l-0', s.stop >= total && 'border-r-0',
-                // live colours are a canvas underneath, so unselected segments are dimmed with an overlay instead
-                live ? cx('text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]', !s.sel && 'bg-black/55') : !s.sel && 'opacity-45',
+                live && 'text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]',
               )}
               style={{
                 left: `${(s.start / total) * 100}%`,
@@ -240,6 +239,16 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
             </button>
           )
         })}
+      </div>
+      {/* selected segments are marked with a line under them, so the bar itself keeps the LEDs' colours */}
+      <div className="relative h-0.5">
+        {segs.filter((s) => s.sel).map((s) => (
+          <span
+            key={s.id}
+            className="absolute inset-y-0 rounded-full bg-primary"
+            style={{ left: `calc(${(s.start / total) * 100}% + 1px)`, width: `calc(${((s.stop - s.start) / total) * 100}% - 2px)` }}
+          />
+        ))}
       </div>
       <div ref={tickRow} className="relative h-3 font-mono text-[10px] text-muted-foreground">
         {ticks.map((t) => <span key={`${t.edge}${t.x}`} className="absolute" style={{ left: t.left }}>{t.led}</span>)}
