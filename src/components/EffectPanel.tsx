@@ -4,7 +4,7 @@ import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import { useUi } from '../ui'
 import { searchList } from './PalettePanel'
-import { Card, Chip, cx, LabeledSlider, SearchField, SectionTitle } from './controls'
+import { Card, Chip, cx, LabeledSlider, SearchField, SectionTitle, sliderGridCls } from './controls'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -108,18 +108,23 @@ export function EffectParams({ className }: { className?: string }) {
   if (!main) return null
   return (
     <div className={cx('flex flex-col gap-3', className)}>
-      {/* name and option chips share one wrapping row, so chips that don't fit move down one at a time;
-          the name grows into the space left on its row, which pushes that row's chips right while
-          wrapped chips start at the left */}
-      <div className="flex min-h-8 flex-wrap items-center gap-1.5">
-        <div className="grow pr-1 font-semibold">{name ?? 'Effect'}</div>
-        {meta.options.map((o) => (
-          <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
-        ))}
-      </div>
-      {meta.sliders.map((s) => (
-        <LabeledSlider key={s.key} label={s.label} value={main[s.key]} max={s.max} onCommit={(v) => send({ seg: { [s.key]: v } })} />
-      ))}
+      {/* the effect's name is the card title; its options sit on the right like other cards' buttons */}
+      <SectionTitle right={meta.options.length > 0 && (
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {meta.options.map((o) => (
+            <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
+          ))}
+        </div>
+      )}>
+        {name ?? 'Effect'}
+      </SectionTitle>
+      {meta.sliders.length > 0 && (
+        <div className={sliderGridCls}>
+          {meta.sliders.map((s) => (
+            <LabeledSlider key={s.key} grouped label={s.label} value={main[s.key]} max={s.max} onCommit={(v) => send({ seg: { [s.key]: v } })} />
+          ))}
+        </div>
+      )}
       {!meta.sliders.length && !meta.options.length && <p className="m-0 text-[13px] text-muted-foreground">This effect has no settings.</p>}
     </div>
   )

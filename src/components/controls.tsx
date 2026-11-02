@@ -52,15 +52,21 @@ export function Slider({
 }
 
 // `display` overrides the shown value; without it the raw value is shown, following the thumb while dragging.
-export function LabeledSlider({ label, display, onInput, onCommit, ...props }: Parameters<typeof Slider>[0] & { display?: ReactNode }) {
+// Classes for a block of sliders that share columns (`grouped` LabeledSliders): labels as wide as the longest
+// one, the slider takes the rest, values at their own width.
+export const sliderGridCls = 'grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-3'
+
+// A slider with its label on the left and value on the right. On its own it uses fixed columns; `grouped`
+// rows use the columns of a surrounding sliderGridCls grid, and their values are up to 3 digits.
+export function LabeledSlider({ label, display, onInput, onCommit, grouped, ...props }: Parameters<typeof Slider>[0] & { display?: ReactNode; grouped?: boolean }) {
   const [live, setLive] = useState<number | null>(null)
   return (
-    <div className="grid grid-cols-[88px_1fr_52px] items-center gap-3 text-xs text-muted-foreground">
-      <span className="truncate">{label}</span>
+    <div className={cn('items-center gap-3 text-xs text-muted-foreground', grouped ? 'col-span-3 grid grid-cols-subgrid' : 'grid grid-cols-[88px_1fr_52px]')}>
+      <span className={grouped ? undefined : 'truncate'}>{label}</span>
       <Slider label={label} {...props}
         onInput={(v) => { setLive(v); onInput?.(v) }}
         onCommit={(v) => { setLive(null); onCommit(v) }} />
-      <span className="text-right font-mono text-foreground">{display ?? live ?? props.value}</span>
+      <span className={cn('text-right font-mono text-foreground', grouped && 'w-[3ch]')}>{display ?? live ?? props.value}</span>
     </div>
   )
 }
