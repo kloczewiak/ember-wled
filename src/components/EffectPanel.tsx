@@ -108,14 +108,11 @@ export function EffectParams({ className }: { className?: string }) {
   if (!main) return null
   return (
     <div className={cx('flex flex-col gap-3', className)}>
-      {/* the effect's name is the card title; its options sit on the right like other cards' buttons */}
-      <SectionTitle right={meta.options.length > 0 && (
-        <div className="flex flex-wrap justify-end gap-1.5">
-          {meta.options.map((o) => (
-            <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
-          ))}
-        </div>
-      )}>
+      {/* the effect's name is the card title; its options sit on the right like other cards' buttons, and
+          those that don't fit wrap below it, starting at the left */}
+      <SectionTitle wrap right={meta.options.map((o) => (
+        <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
+      ))}>
         {name ?? 'Effect'}
       </SectionTitle>
       {meta.sliders.length > 0 && (

@@ -80,10 +80,12 @@ export function Card({ children, className }: { children: ReactNode; className?:
 }
 
 // The title sits at the top of its card; buttons on the right hang below it rather than pushing it down.
-export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+// With `wrap`, the buttons in `right` (a fragment) sit in the title's row one by one: those that don't fit
+// beside the title wrap onto lines of their own, starting at the left.
+export function SectionTitle({ children, right, wrap }: { children: ReactNode; right?: ReactNode; wrap?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-2">
-      <h2 className="m-0 font-heading text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</h2>
+    <div className={cn('flex items-start', wrap ? 'flex-wrap gap-1.5' : 'justify-between gap-2')}>
+      <h2 className={cn('m-0 font-heading text-xs font-semibold uppercase tracking-wider text-muted-foreground', wrap && 'grow pr-1')}>{children}</h2>
       {right}
     </div>
   )
