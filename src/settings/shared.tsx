@@ -129,17 +129,20 @@ export function useSaver(page: string, onSaved: () => void) {
   return { save: run, saving, dialog }
 }
 
-// The bar at the bottom of a settings page: what is unsaved, Discard and Save.
+// The bar at the bottom of a settings page: what is unsaved, Discard and Save. It sticks above the iPhone's
+// home indicator, and the two buttons wrap to the next line together.
 export function SaveBar({ dirty, saving, error, onSave, onDiscard, saveLabel = 'Save' }: {
   dirty: boolean; saving: boolean; error?: string | null; onSave: () => void; onDiscard: () => void; saveLabel?: string
 }) {
   return (
-    <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+    <div className="sticky bottom-[env(safe-area-inset-bottom)] z-10 flex flex-wrap items-center justify-end gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
       <span className={cx('mr-auto text-sm', error ? 'text-destructive' : 'text-muted-foreground')}>
         {error ?? (dirty ? 'Unsaved changes' : 'No changes')}
       </span>
-      <Button variant="outline" disabled={!dirty || saving} onClick={onDiscard}>Discard</Button>
-      <Button disabled={!dirty || saving || !!error} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>
+      <div className="flex gap-2">
+        <Button variant="outline" disabled={!dirty || saving} onClick={onDiscard}>Discard</Button>
+        <Button disabled={!dirty || saving || !!error} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>
+      </div>
     </div>
   )
 }

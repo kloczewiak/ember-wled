@@ -83,16 +83,20 @@ export function SettingsScreen({ route }: { route: string }) {
         // p-px keeps the cards' outline ring from being clipped by the scroll area
         <div className="mx-auto grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[260px_minmax(0,1fr)] gap-6 px-4 pt-2">
           <nav aria-label="Settings pages"><Menu build={build} current={page?.id} /></nav>
-          <div className="scroll-thin min-h-0 overflow-y-auto rounded-xl p-px pb-4">
+          {/* keyed by page, so every page opens at the top */}
+          <div key={page?.id ?? 'none'} className="scroll-thin min-h-0 overflow-y-auto rounded-xl p-px pb-4">
             {page
               ? <main key={page.id} className="min-w-0"><h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>{page.render!()}</main>
               : <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>}
           </div>
         </div>
       ) : (
-        <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-2xl px-4 pt-2 pb-4">
-            {page ? <main key={page.id} className="min-w-0">{page.render!()}</main> : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
+        // a new scroll area for each view: sharing one kept the page's scroll position (and iOS's momentum)
+        // when going back, leaving the shorter menu scrolled past its end. The bottom padding keeps the end of
+        // the page clear of the home indicator.
+        <div key={page?.id ?? 'menu'} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-2xl px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            {page ? <main className="min-w-0">{page.render!()}</main> : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
           </div>
         </div>
       )}

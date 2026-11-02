@@ -41,8 +41,13 @@ const isObj = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.
 function mergeDeep(defaults: Json, saved: unknown): Json {
   if (!isObj(saved)) return structuredClone(defaults)
   const out: Json = { ...saved }
-  for (const [k, v] of Object.entries(defaults)) out[k] = isObj(v) ? mergeDeep(v, saved[k]) : k in saved ? saved[k] : v
+  for (const [k, v] of Object.entries(defaults)) out[k] = isObj(v) ? mergeDeep(v, saved[k]) : k in saved ? asDefaultType(v, saved[k]) : v
   return out
+}
+// The stock settings page saves its number fields as strings (settings_ui.htm stores each input's .value),
+// so "0" or "0.6" are read back as numbers where the default is one.
+function asDefaultType(def: unknown, value: unknown) {
+  return typeof def === 'number' && typeof value === 'string' && value.trim() !== '' && isFinite(Number(value)) ? Number(value) : value
 }
 
 // The full stock UI settings object (saved values over defaults), for Settings → User interface.

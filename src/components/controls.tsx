@@ -72,9 +72,10 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return <UiCard className={className}><CardContent className="flex min-h-0 flex-1 flex-col gap-3">{children}</CardContent></UiCard>
 }
 
+// The title sits at the top of its card; buttons on the right hang below it rather than pushing it down.
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex min-h-8 items-center justify-between gap-2">
+    <div className="flex items-start justify-between gap-2">
       <h2 className="m-0 font-heading text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</h2>
       {right}
     </div>

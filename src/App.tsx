@@ -66,7 +66,7 @@ export default function App() {
         <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview className="mx-auto max-w-2xl" /></div>}<RealtimeBanner /></>} />
       )}
       <MoreSheet />
-      <Toasts />
+      <Toasts behindTabBar={!wide} />
     </div>
   )
 }
@@ -163,8 +163,17 @@ function TabBar({ tab }: { tab: Tab }) {
   )
 }
 
-// On phones the toasts sit 16px above the tab bar (the phone layout is used below 1100px, see `wide`); the
-// tab bar is 2.75rem plus the home-indicator safe area, so the offset is 3.75rem plus the same safe area.
-function Toasts() {
-  return <Toaster limit={3} viewportClassName="max-[1099px]:bottom-[calc(3.75rem+max(4px,env(safe-area-inset-bottom)))]" />
+// On the phone controls screen the toasts slide out from behind the tab bar: the viewport ends at the bar's top
+// edge (2.75rem, its 1px border and the home-indicator safe area) and clips anything below it, the toasts sit
+// 1rem above that edge, and they don't fade. Elsewhere on phones (settings, connecting) they keep the same
+// height above the bottom and fade in and out instead.
+function Toasts({ behindTabBar = false }: { behindTabBar?: boolean }) {
+  return (
+    <Toaster
+      limit={3}
+      viewportClassName={behindTabBar
+        ? 'bottom-[calc(2.75rem+1px+max(4px,env(safe-area-inset-bottom)))] [clip-path:inset(-100vh_-100vw_0_-100vw)] [--toast-inset:1rem] [--toast-fade:1]'
+        : 'max-[1099px]:bottom-[calc(3.75rem+max(4px,env(safe-area-inset-bottom)))]'}
+    />
+  )
 }
