@@ -161,7 +161,7 @@ function TimerCard({ t, i, onChange, onRemove }: { t: Timer; i: number; onChange
         <Button variant="ghost" size="icon" className="ml-auto" aria-label={`Remove ${n}`} onClick={onRemove}><Icon.trash /></Button>
       </div>
       {!t.kind && t.hour === 24 && <p className="m-0 text-xs text-muted-foreground">Hour 24 runs every hour at this minute.</p>}
-      <PresetSelect label={`${n} preset`} none="No preset (removed when you save)" value={t.preset} onChange={(preset) => onChange({ preset })} />
+      <PresetSelect label={`${n} preset`} none="Removed when you save" value={t.preset} onChange={(preset) => onChange({ preset })} />
       <div className="flex flex-wrap gap-1" role="group" aria-label={`${n} weekdays`}>
         {DAYS.map((d, j) => (
           <ChoiceChip key={d} on={!!(t.dow & (1 << j))} onChange={(on) => onChange({ dow: on ? t.dow | (1 << j) : t.dow & ~(1 << j) })}>{d}</ChoiceChip>

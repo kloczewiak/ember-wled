@@ -112,10 +112,10 @@ export function UiSettings() {
         {bool('comp.segpwr', 'Hide segment power and brightness')}
         {bool('comp.segexp', 'Always expand first segment')}
         <Row label="Power button preset for on" stack>
-          <PresetSelect label="Power button preset for on" none="None: turn the light on" value={Number(get(ui, 'comp.on'))} onChange={(v) => setUi('comp.on', v)} />
+          <PresetSelect label="Power button preset for on" none="Turn the light on" value={Number(get(ui, 'comp.on'))} onChange={(v) => setUi('comp.on', v)} />
         </Row>
         <Row label="Power button preset for off" stack>
-          <PresetSelect label="Power button preset for off" none="None: turn the light off" value={Number(get(ui, 'comp.off'))} onChange={(v) => setUi('comp.off', v)} />
+          <PresetSelect label="Power button preset for off" none="Turn the light off" value={Number(get(ui, 'comp.off'))} onChange={(v) => setUi('comp.off', v)} />
         </Row>
         <Row
           label="Accurate Peek colours"

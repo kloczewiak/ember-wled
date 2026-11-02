@@ -112,8 +112,10 @@ export function PasswordInput({ secret, maxLength, label, onChange }: { secret: 
 export const presetIdValid = (v: number) => intIn(v, 0, 250)
 
 // A preset chosen by name, where the stock pages want its ID typed in, sorted like the presets list ("Sort
-// presets by ID"). 0 is the default action (`none`). "Type an ID…" switches to a number box, which is also
-// how an ID that isn't a saved preset opens, so loading a page never changes it.
+// presets by ID"). Sorted by ID the options lead with the ID ("1: Morning", "None: default action"), sorted by
+// name they lead with the name ("Morning (1)", "Default action (none)"). 0 is the default action, described
+// by `none`. "Type an ID…" switches to a number box, which is also how an ID that isn't a saved preset opens,
+// so loading a page never changes it.
 export function PresetSelect({ value, onChange, label, none, className }: {
   value: number; onChange: (id: number) => void; label: string; none: string; className?: string
 }) {
@@ -139,9 +141,9 @@ export function PresetSelect({ value, onChange, label, none, className }: {
   return (
     <NativeSelect className={cx('w-full', className)} value={value} aria-label={label}
       onChange={(e) => (e.target.value === 'type' ? setTyping(true) : onChange(Number(e.target.value)))}>
-      <option value={0}>{none}</option>
-      {!known && <option value={value}>{value}: not a saved preset</option>}
-      {list.map(([id]) => <option key={id} value={id}>{id}: {name(Number(id))}</option>)}
+      <option value={0}>{idsort ? `None: ${none[0].toLowerCase()}${none.slice(1)}` : `${none} (none)`}</option>
+      {!known && <option value={value}>{idsort ? `${value}: not a saved preset` : `Not a saved preset (${value})`}</option>}
+      {list.map(([id]) => <option key={id} value={id}>{idsort ? `${id}: ${name(Number(id))}` : `${name(Number(id))} (${id})`}</option>)}
       <option value="type">Type an ID…</option>
     </NativeSelect>
   )
