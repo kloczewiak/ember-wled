@@ -3,7 +3,7 @@ import { send, useStore } from '../store'
 import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
 import { Card, cx, SearchField, SectionTitle } from './controls'
 import { Button } from '@/components/ui/button'
-import { cssGradient, paletteStops } from '../lib/segfill'
+import { cssGradient, effectStops, paletteStops, stopsBackground } from '../lib/segfill'
 
 // Search like the stock UI: matching names first, ordered by where the match is; Default and the selected
 // palette stay visible.
@@ -22,6 +22,7 @@ export function PalettePanel({ className }: { className?: string }) {
   const meta = useFxMeta(main?.fx)
   const palettes = useStore((s) => s.palettes)
   const palx = useStore((s) => s.palx)
+  const fxdata = useStore((s) => s.fxdata)
   const info = useStore((s) => s.info)
   const [query, setQuery] = useState('')
 
@@ -66,7 +67,15 @@ export function PalettePanel({ className }: { className?: string }) {
                   className="grid shrink-0 grid-cols-[minmax(0,120px)_1fr] gap-3 text-left font-normal"
                 >
                   <span className="truncate">{p.name}</span>
-                  <span className="h-3 rounded-full" style={{ background: cssGradient(paletteStops(palx[p.id], main?.col ?? [])) }} />
+                  <span
+                    className="h-3 rounded-full"
+                    style={{
+                      // Default means something different for each effect (lib/fxcolors.ts), so it's previewed for the current one
+                      background: p.id === 0 && main
+                        ? stopsBackground(effectStops(main, fxdata, palx, 0))
+                        : cssGradient(paletteStops(palx[p.id], main?.col ?? [])),
+                    }}
+                  />
                 </Button>
               )
             })}

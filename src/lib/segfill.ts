@@ -40,11 +40,10 @@ const RAINBOW: Rgb[] = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], 
 // colours spread evenly across the segment
 const evenly = (list: Rgb[]): Stop[] => list.map((rgb, i) => ({ rgb, pos: list.length > 1 ? Math.round((i / (list.length - 1)) * 100) : 0 }))
 
-// The colours a segment's effect draws with, at full brightness.
-function effectStops(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>): Stop[] {
+// The colours a segment's effect draws with on a palette (its own by default), at full brightness.
+export function effectStops(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>, pal = seg.pal): Stop[] {
   const solid: Stop[] = [{ rgb: rgbOf(seg.col[0]), pos: 0 }]
   if (!parseFxMeta(seg.fx, fxdata[seg.fx]).usesPalette) return solid
-  let pal = seg.pal
   if (pal === 0) {
     // what Default means differs per effect, see fxcolors.ts
     const look = DEFAULT_PALETTE_LOOK[seg.fx]
@@ -78,10 +77,15 @@ export function segmentFill(seg: Segment, fxdata: string[], palx: Record<number,
     rgb: s.rgb.map((v) => fromLinear((toLinear(v) + white) * bri)) as Rgb,
   }))
   const [r, g, b] = stops[0].rgb
-  const solid = stops.every((s) => s.rgb[0] === r && s.rgb[1] === g && s.rgb[2] === b)
+  const solid = isSolid(stops)
   return {
-    background: solid ? `rgb(${r},${g},${b})` : cssGradient(stops)!,
+    background: stopsBackground(stops),
     outline: !solid,
     light: solid && 0.2126 * r + 0.7152 * g + 0.0722 * b > 140,
   }
 }
+
+const isSolid = (stops: Stop[]) => stops.every((s) => s.rgb.every((v, i) => v === stops[0].rgb[i]))
+
+// CSS background for stops: a plain colour when they're all the same (a gradient needs two stops)
+export const stopsBackground = (stops: Stop[]) => (isSolid(stops) ? `rgb(${stops[0].rgb.join(',')})` : cssGradient(stops)!)
