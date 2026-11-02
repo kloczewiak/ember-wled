@@ -226,7 +226,8 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
                 'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1.5 text-[11px] font-semibold',
                 // no gap at the ends of the bar, where it would flatten the rounded corners
                 s.start === 0 && 'border-l-0', s.stop >= total && 'border-r-0',
-                live && 'text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.9)]',
+                // a solid outline drawn behind the letters keeps names readable on any live colour
+                live && 'text-white [-webkit-text-stroke:3px_#000] [paint-order:stroke_fill]',
               )}
               style={{
                 left: `${(s.start / total) * 100}%`,
