@@ -13,9 +13,11 @@ const QUICK = ['#ff0000', '#ffa000', '#ffc800', '#ffe0a0', '#ffffff', '#000000',
 const KELVIN_TRACK = `linear-gradient(to right, ${[1900, 3000, 4500, 6500, 8000, 10091].map((k) => rgbCss(kelvinToRgb(k))).join(',')})`
 const HUE_TRACK = 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'
 
-// Which colour slots to show: the effect's metadata decides, but the "* Color" palettes (ids 2-5) need their slots.
-export function visibleSlots(colors: (string | null)[], pal: number) {
-  return colors.map((label, i) => label !== null || (pal > 1 && pal < 6 && pal - 2 >= i))
+// Which colour slots to show: the effect's metadata decides, but the "* Color" palettes (ids 2-5) need their
+// slots, and so does the Default palette: for most effects it means colour 1 (color_from_palette() returns the
+// segment's colour on palette 0), even when the metadata declares no colours, e.g. Meteor.
+export function visibleSlots(colors: (string | null)[], pal: number, usesPalette: boolean) {
+  return colors.map((label, i) => label !== null || (pal > 1 && pal < 6 && pal - 2 >= i) || (pal === 0 && usesPalette && i === 0))
 }
 
 export function ColorPanel({ className }: { className?: string }) {
@@ -24,7 +26,7 @@ export function ColorPanel({ className }: { className?: string }) {
   const { csel, setCsel, colorMode, setColorMode } = useUi()
   const wide = useMedia('(min-width: 1100px)')
 
-  const visible = visibleSlots(meta.colors, main?.pal ?? 0)
+  const visible = visibleSlots(meta.colors, main?.pal ?? 0, meta.usesPalette)
   useEffect(() => {
     if (!visible[csel]) { const first = visible.indexOf(true); if (first >= 0) setCsel(first) }
   }, [visible, csel, setCsel])

@@ -47,6 +47,8 @@ function calls(body, name) {
   return out
 }
 
+const TRAITS = ['wheel', 'palAlways', 'palColour', 'palVariable', 'segcolor', 'palBranch']
+
 // what each function itself does with colours
 const own = new Map()
 for (const [name, body] of fns) {
@@ -58,6 +60,8 @@ for (const [name, body] of fns) {
     palColour: pal.some((m) => /^[012]$/.test(m)),
     palVariable: pal.some((m) => !/^\d+$/.test(m)),
     segcolor: /\bSEGCOLOR\s*\(/.test(body),
+    // checks for palette 0 itself, usually to use its own colours there
+    palBranch: /SEGMENT\.palette\s*(==|!=|>|\))|!SEGMENT\.palette/.test(body),
     callees: [...fns.keys()].filter((f) => f !== name && new RegExp(`\\b${f}\\s*\\(`).test(body)),
   })
 }
@@ -69,7 +73,7 @@ function traits(name, seen = new Set()) {
   for (const f of t.callees) {
     if (seen.has(f)) continue
     const u = traits(f, seen)
-    for (const k of ['wheel', 'palAlways', 'palColour', 'palVariable', 'segcolor']) t[k] ||= u[k]
+    for (const k of TRAITS) t[k] ||= u[k]
   }
   return t
 }
@@ -83,13 +87,14 @@ const rows = [...fxCpp.matchAll(/addEffect\(\s*(FX_MODE_\w+)\s*,\s*&(\w+)\s*,\s*
   return { id: ids[id], name, fn, palDefault: /(?:^|,)pal=(\d+)/.exec(parts[4] ?? '')?.[1], usesPalette: rest === '' || (parts[2] ?? '') !== '', ...traits(fn) }
 }).sort((a, b) => a.id - b.id)
 
-const flags = (r) => ['wheel', 'palAlways', 'palColour', 'palVariable', 'segcolor'].filter((k) => r[k]).join(' ')
+const flags = (r) => TRAITS.filter((k) => r[k]).join(' ')
 const list = (title, rs) => {
   console.log(`\n## ${title} (${rs.length})`)
   for (const r of rs) console.log(`${String(r.id).padStart(3)}  ${r.name.padEnd(22)} ${r.fn.padEnd(28)} ${flags(r)}`)
 }
 const candidates = rows.filter((r) => r.usesPalette)
-list('Uses the hue wheel: HUE_WHEEL candidates', candidates.filter((r) => r.wheel))
-list('Always draws from the palette: ALWAYS_PALETTE candidates', candidates.filter((r) => !r.wheel && r.palAlways))
+list('Uses the hue wheel: rainbow candidates', candidates.filter((r) => r.wheel))
+list('Always draws from the palette somewhere: palette candidates', candidates.filter((r) => !r.wheel && r.palAlways))
 list('Palette colour index is computed: read the code', candidates.filter((r) => !r.wheel && !r.palAlways && r.palVariable))
+list('Checks for palette 0 itself: read the code', candidates.filter((r) => r.palBranch))
 console.log(`\n${rows.length} effects, ${candidates.length} of them use a palette. The rest show colour 1 on the Default palette.`)

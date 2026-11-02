@@ -50,8 +50,10 @@ export function effectStops(seg: Segment, fxdata: string[], palx: Record<number,
     if (look === undefined) return solid
     if (look === 'rainbow') return evenly(RAINBOW)
     if (Array.isArray(look)) return evenly(look)
-    if (look === 'colors') {
+    if (look === 'colors' || look === 'colorsIfColor3') {
       const used = seg.col.slice(0, 3).map(rgbOf).filter(([r, g, b]) => r || g || b)
+      const third = rgbOf(seg.col[2]).some(Boolean)
+      if (look === 'colorsIfColor3' && !third) return solid
       return used.length ? evenly(used) : solid
     }
     // the effect's own palette (its "pal=" default, see Segment::setMode), else Party Colors
