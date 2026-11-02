@@ -36,4 +36,6 @@ Firmware OTA updates keep the file; a filesystem reset removes it. To go back to
 - `src/store.ts`: connection (WebSocket with HTTP fallback), loading, live view, toasts
 - `src/api/`: API types, the effect metadata parser, and the command merge used for optimistic updates
 - `src/components/`: one panel per section (Color, Palette, Effect, Segments, Presets, More sheet)
+- `src/settings/`: the settings screen (`#settings`). Pages read `/json/cfg` and save by posting the firmware's own
+  settings form fields to `/settings/<page>`, so the firmware's handler (`set.cpp`) validates and applies them
 - `mock/`: the fake device used by `npm run dev:mock`

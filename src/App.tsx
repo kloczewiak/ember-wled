@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { init, useStore } from './store'
 import { useHash, useMedia } from './hooks'
+import { useUi } from './ui'
 import { Header } from './components/Header'
 import { LivePreview, RealtimeBanner } from './components/Live'
 import { ColorPanel } from './components/ColorPanel'
@@ -9,6 +10,7 @@ import { EffectList, EffectPanel, EffectParams } from './components/EffectPanel'
 import { SegmentsPanel } from './components/SegmentsPanel'
 import { PresetsPanel } from './components/PresetsPanel'
 import { MoreSheet } from './components/MoreSheet'
+import { SettingsScreen } from './settings/SettingsScreen'
 import { Card, cx } from './components/controls'
 import { Toaster } from '@/components/ui/toast'
 
@@ -21,8 +23,12 @@ export default function App() {
   const conn = useStore((s) => s.conn)
   const peek = useStore((s) => s.peek)
   const wide = useMedia('(min-width: 1100px)')
+  const hash = useHash()
+  const settings = /^#settings(\/|$)/.test(hash)
 
   useEffect(() => { init() }, [])
+  // opening settings from the More sheet: don't leave the sheet open to reappear on the way back
+  useEffect(() => { if (settings) useUi.getState().setSheet(null) }, [settings])
 
   if (!ready) {
     return (
@@ -31,6 +37,16 @@ export default function App() {
         <p className="m-0 text-muted-foreground">{conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}</p>
         <Toasts />
       </div>
+    )
+  }
+
+  // #settings and #settings/<page> show the settings screen instead of the controls
+  if (settings) {
+    return (
+      <>
+        <SettingsScreen route={hash.replace(/^#settings\/?/, '')} />
+        <Toasts />
+      </>
     )
   }
 

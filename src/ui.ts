@@ -33,7 +33,7 @@ const STOCK_UI_DEFAULTS = {
   },
 }
 
-type Json = Record<string, unknown>
+export type Json = Record<string, unknown>
 const isObj = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v)
 // saved values win over defaults, nested objects are merged (like the stock UI's mergeDeep)
 function mergeDeep(defaults: Json, saved: unknown): Json {
@@ -43,12 +43,20 @@ function mergeDeep(defaults: Json, saved: unknown): Json {
   return out
 }
 
-interface StockComp { pid: boolean; fxdef: boolean; on: number; off: number; seglen: boolean; segpwr: boolean; segexp: boolean; idsort: boolean }
-function stockUiCfg(): StockComp {
+// The full stock UI settings object (saved values over defaults), for Settings → User interface.
+export function readStockUiCfg(): Json {
   let saved: unknown = null
   try { saved = JSON.parse(localStorage.getItem('wledUiCfg') ?? 'null') } catch { /* corrupt: replaced by defaults */ }
-  const cfg = mergeDeep(STOCK_UI_DEFAULTS, saved)
-  try { localStorage.setItem('wledUiCfg', JSON.stringify(cfg)) } catch { /* storage unavailable */ }
+  return mergeDeep(STOCK_UI_DEFAULTS, saved)
+}
+export function writeStockUiCfg(cfg: Json) {
+  localStorage.setItem('wledUiCfg', JSON.stringify(cfg))
+}
+
+interface StockComp { pid: boolean; fxdef: boolean; on: number; off: number; seglen: boolean; segpwr: boolean; segexp: boolean; idsort: boolean }
+function stockUiCfg(): StockComp {
+  const cfg = readStockUiCfg()
+  try { writeStockUiCfg(cfg) } catch { /* storage unavailable */ }
   const comp = cfg.comp as Json
   return {
     pid: comp.pid !== false, fxdef: comp.fxdef !== false, seglen: comp.seglen === true, segpwr: comp.segpwr === true,

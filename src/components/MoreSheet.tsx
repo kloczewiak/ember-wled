@@ -212,7 +212,7 @@ function NodeRow({ node }: { node: Node }) {
 }
 
 function Links() {
-  const links: [string, string][] = [['/settings', 'Settings'], ['/edit', 'File editor'], ['/cpal.htm', 'Custom palettes'], ['/pixelforge.htm', 'PixelForge']]
+  const links: [string, string][] = [['#settings', 'Settings'], ['/edit', 'File editor'], ['/cpal.htm', 'Custom palettes'], ['/pixelforge.htm', 'PixelForge']]
   return (
     <section className="grid grid-cols-2 gap-2">
       {links.map(([href, label]) => (

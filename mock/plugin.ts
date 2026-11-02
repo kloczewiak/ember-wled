@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import fixtures from './fixtures.json'
 import { applyCommand, isObj } from '../src/api/apply'
 import type { Command, Info, Presets, State } from '../src/api/types'
+import { cfg, cfgJson, checkPin, postSettings, scan, settingsJs } from './settings'
 
 const LEDS = 300
 
@@ -60,6 +61,7 @@ function currentInfo(): Info {
   info.uptime = Math.floor((Date.now() - start) / 1000) + 273600
   info.time = new Date().toLocaleString()
   info.fs.pmt = presetsVersion
+  info.name = cfg.id.name
   return info
 }
 
@@ -161,13 +163,23 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
   const url = new URL(req.url ?? '/', 'http://mock')
   const path = url.pathname
   if (req.method === 'POST' && (path === '/json/si' || path === '/json/state' || path === '/json')) {
-    try { handleCommand(JSON.parse(await readBody(req))) } catch { return send(res, { error: 9 }, 400) }
+    try { const body = JSON.parse(await readBody(req)); checkPin(body); handleCommand(body) } catch { return send(res, { error: 9 }, 400) }
     return send(res, path === '/json/state' ? state : { state, info: currentInfo() })
+  }
+  if (req.method === 'POST' && path.startsWith('/settings/')) {
+    const status = postSettings(path.slice('/settings/'.length), new URLSearchParams(await readBody(req)))
+    res.statusCode = status
+    res.setHeader('Content-Type', 'text/html')
+    res.end(status === 200 ? 'Settings saved.' : 'Access denied')
+    return
   }
   if (req.method === 'POST' && path === '/upload') {
     const body = await readBody(req)
-    const json = body.slice(body.indexOf('{'), body.lastIndexOf('}') + 1)
-    try { presets = JSON.parse(json); presetsVersion++ } catch { /* keep old presets */ }
+    // only presets.json changes the mock's data; other files (skin.css, holidays.json) are just accepted
+    if (/filename="\/?presets\.json"/.test(body)) {
+      const json = body.slice(body.indexOf('{'), body.lastIndexOf('}') + 1)
+      try { presets = JSON.parse(json); presetsVersion++ } catch { /* keep old presets */ }
+    }
     res.end('File Uploaded!')
     return
   }
@@ -182,6 +194,9 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
     case '/json/nodes': return send(res, { nodes })
     case '/json/live': return send(res, live())
     case '/presets.json': return send(res, presets)
+    case '/json/cfg': return send(res, cfgJson())
+    case '/json/net': return send(res, scan())
+    case '/settings/s.js': res.setHeader('Content-Type', 'application/javascript'); res.end(settingsJs(Number(url.searchParams.get('p')))); return
     case '/reset': res.end('Rebooting...'); return
   }
   next()

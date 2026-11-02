@@ -121,7 +121,7 @@ export function Header({ wide }: { wide: boolean }) {
         <div className="flex gap-2">
           <IconButton label="Info" onClick={() => setSheet('more')}><Icon.info /></IconButton>
           {info.ndc > 0 && <IconButton label="Other WLED devices" onClick={() => setSheet('more')}><Icon.nodes /></IconButton>}
-          <Button variant="outline" size="icon-lg" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="/settings" />}><Icon.settings /></Button>
+          <Button variant="outline" size="icon-lg" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="#settings" />}><Icon.settings /></Button>
         </div>
       </header>
     )
@@ -139,7 +139,7 @@ export function Header({ wide }: { wide: boolean }) {
         <Toggle pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
         <Toggle pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
         <Toggle pressed={peek} onPressedChange={() => setPeek(!peek)} aria-label="Peek (live preview)" title="Peek"><Icon.eye /></Toggle>
-        <Button variant="ghost" size="icon" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="/settings" />}><Icon.settings /></Button>
+        <Button variant="ghost" size="icon" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="#settings" />}><Icon.settings /></Button>
         <Button variant="ghost" size="icon" aria-label="Info, timer and more" title="More" onClick={() => setSheet('more')}><Icon.more /></Button>
       </div>
       <div className="flex items-center gap-3">
