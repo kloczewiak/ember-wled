@@ -22,23 +22,28 @@ const ETHERNET: [number, string][] = [[0, 'None'], [6, 'IoTorero/ESP32Deux/RGB2G
   [11, 'ESP32-POE-WROVER'], [7, 'KIT-VE'], [12, 'LILYGO T-POE Pro'], [4, 'QuinLED Uno/Quad'], [8, 'QuinLED Octa and T-ETH-POE'],
   [14, 'QuinLED v4 Uno/Quad'], [15, 'QuinLED v4 Octa'], [10, 'Serg74-ETH32'], [5, 'TwilightLord-ESP32'], [3, 'WESP32'], [1, 'WT32-ETH01'], [13, 'Gledopto']]
 
-// A stored password is shown as asterisks of its length; posting asterisks only keeps it (set.cpp).
+// Passwords never leave the light, only their length (pskl). An empty field keeps the stored password: we
+// post asterisks of its length, which set.cpp treats as "unchanged" (as the stock page's prefilled field
+// does). `remove` posts an empty password instead, like clearing the field on the stock page.
 const stars = (n: number) => '*'.repeat(n)
+type Secret = { pw: string; pskl: number; remove: boolean }
+const keep = (pskl: number): Secret => ({ pw: '', pskl, remove: false })
+const secretField = (s: Secret) => (s.remove ? '' : s.pw === '' ? stars(s.pskl) : s.pw)
 
-type Net = { ssid: string; pw: string; bssid: string; ip: number[]; gw: number[]; sn: number[]; enc: number; anon: string; ident: string }
+type Net = Secret & { ssid: string; bssid: string; ip: number[]; gw: number[]; sn: number[]; enc: number; anon: string; ident: string }
 type Form = {
   nets: Net[]; dns: number[]; mdns: string
-  ap: { ssid: string; hide: boolean; pw: string; chan: number; behav: number }
+  ap: Secret & { ssid: string; hide: boolean; chan: number; behav: number }
   phy: boolean; noSleep: boolean; band?: number; tx?: number; espnow?: boolean; remotes: string[]; eth?: number
 }
 
-const newNet = (): Net => ({ ssid: '', pw: '', bssid: '', ip: [0, 0, 0, 0], gw: [0, 0, 0, 0], sn: [255, 255, 255, 0], enc: 0, anon: '', ident: '' })
+const newNet = (): Net => ({ ssid: '', ...keep(0), bssid: '', ip: [0, 0, 0, 0], gw: [0, 0, 0, 0], sn: [255, 255, 255, 0], enc: 0, anon: '', ident: '' })
 
 function toForm(c: Cfg): Form {
   return {
-    nets: c.nw.ins.map((n) => ({ ssid: n.ssid, pw: stars(n.pskl), bssid: n.bssid, ip: n.ip, gw: n.gw, sn: n.sn, enc: n.enc_type ?? 0, anon: n.e_anon_ident ?? '', ident: n.e_ident ?? '' })),
+    nets: c.nw.ins.map((n) => ({ ssid: n.ssid, ...keep(n.pskl), bssid: n.bssid, ip: n.ip, gw: n.gw, sn: n.sn, enc: n.enc_type ?? 0, anon: n.e_anon_ident ?? '', ident: n.e_ident ?? '' })),
     dns: c.nw.dns, mdns: c.id.mdns,
-    ap: { ssid: c.ap.ssid, hide: !!c.ap.hide, pw: stars(c.ap.pskl), chan: c.ap.chan, behav: c.ap.behav },
+    ap: { ssid: c.ap.ssid, hide: !!c.ap.hide, ...keep(c.ap.pskl), chan: c.ap.chan, behav: c.ap.behav },
     phy: c.wifi.phy, noSleep: !c.wifi.sleep, band: c.wifi.band, tx: c.wifi.txpwr, espnow: c.nw.espnow, remotes: c.nw.linked_remote ?? [], eth: c.eth?.type,
   }
 }
@@ -47,12 +52,12 @@ function toForm(c: Cfg): Form {
 function toFields(f: Form, enterprise: boolean): [string, string][] {
   const out: [string, string][] = []
   f.nets.forEach((n, i) => {
-    out.push([`CS${i}`, n.ssid], [`PW${i}`, n.pw], [`BS${i}`, n.bssid])
+    out.push([`CS${i}`, n.ssid], [`PW${i}`, secretField(n)], [`BS${i}`, n.bssid])
     for (const [p, v] of [['IP', n.ip], ['GW', n.gw], ['SN', n.sn]] as const) v.forEach((x, j) => out.push([`${p}${i}${j}`, String(x)]))
     if (enterprise) out.push([`ET${i}`, String(n.enc)], [`EA${i}`, n.anon], [`EI${i}`, n.ident])
   })
   f.dns.forEach((x, j) => out.push([`D${j}`, String(x)]))
-  out.push(['CM', f.mdns], ['AS', f.ap.ssid], ['AP', f.ap.pw], ['AC', String(f.ap.chan)], ['AB', String(f.ap.behav)])
+  out.push(['CM', f.mdns], ['AS', f.ap.ssid], ['AP', secretField(f.ap)], ['AC', String(f.ap.chan)], ['AB', String(f.ap.behav)])
   if (f.ap.hide) out.push(['AH', 'on'])
   if (f.phy) out.push(['FG', 'on'])
   if (f.noSleep) out.push(['WS', 'on'])
@@ -75,11 +80,28 @@ function validate(f: Form): string[] {
     if (![n.ip, n.gw, n.sn].every(ipValid)) errors.push(`${name}: each part of the IP, gateway and subnet must be 0–255.`)
   })
   if (!ipValid(f.dns)) errors.push('Each part of the DNS server must be 0–255.')
+  // the stock rule (empty or 8–63 characters) applied to a newly typed AP password; empty keeps or removes it
   const ap = f.ap.pw
-  if (!(ap.length === 0 || (ap.length >= 8 && ap.length <= 63))) errors.push('The AP password must be empty or 8–63 characters.')
+  if (!f.ap.remove && ap !== '' && (ap.length < 8 || ap.length > 63)) errors.push('The AP password must be 8–63 characters.')
   if (!Number.isInteger(f.ap.chan) || f.ap.chan < 1 || f.ap.chan > 13) errors.push('The AP channel must be a whole number from 1 to 13.')
   if (f.remotes.some((m) => !/^[0-9a-f]{12}$/i.test(m))) errors.push('Linked remote MACs must be 12 hex characters.')
   return errors
+}
+
+// A password field whose stored value shows as placeholder dots. Remove (only when one is stored) clears it.
+function PasswordInput({ secret, maxLength, label, onChange }: { secret: Secret; maxLength: number; label: string; onChange: (p: Partial<Secret>) => void }) {
+  const placeholder = secret.remove ? 'Will be removed' : secret.pskl ? '•'.repeat(secret.pskl) : 'No password'
+  return (
+    <div className="flex gap-2">
+      <Input type="password" maxLength={maxLength} value={secret.pw} placeholder={placeholder} aria-label={label}
+        disabled={secret.remove} onChange={(e) => onChange({ pw: e.target.value })} />
+      {secret.pskl > 0 && (
+        <Button variant="outline" onClick={() => onChange(secret.remove ? { remove: false } : { remove: true, pw: '' })}>
+          {secret.remove ? 'Undo' : 'Remove'}
+        </Button>
+      )}
+    </div>
+  )
 }
 
 function SsidField({ value, onChange, scanned, label }: { value: string; onChange: (v: string) => void; scanned: ScannedNet[] | null; label: string }) {
@@ -147,8 +169,8 @@ export function WifiSettings() {
                 <Row label="Identity" stack><Input maxLength={64} value={n.ident} onChange={(e) => setNet(i, { ident: e.target.value })} /></Row>
               </>
             )}
-            <Row label="Password" hint="The dots keep the current password." stack>
-              <Input type="password" maxLength={64} value={n.pw} onChange={(e) => setNet(i, { pw: e.target.value })} aria-label={`Network ${i + 1} password`} />
+            <Row label="Password" hint={n.pskl ? 'Leave empty to keep the current password.' : undefined} stack>
+              <PasswordInput secret={n} maxLength={64} label={`Network ${i + 1} password`} onChange={(p) => setNet(i, p)} />
             </Row>
             <Row label="BSSID" hint="Optional: connect to this access point only" stack>
               <Input className="font-mono" maxLength={12} value={n.bssid} onChange={(e) => setNet(i, { bssid: e.target.value })} />
@@ -191,8 +213,8 @@ export function WifiSettings() {
           <Input maxLength={32} value={f.ap.ssid} onChange={(e) => setAp({ ssid: e.target.value })} />
         </Row>
         <Row label="Hide AP name"><Switch on={f.ap.hide} label="Hide AP name" onChange={(hide) => setAp({ hide })} /></Row>
-        <Row label="AP password" hint="Empty for an open AP, otherwise at least 8 characters" stack>
-          <Input type="password" maxLength={63} value={f.ap.pw} onChange={(e) => setAp({ pw: e.target.value })} aria-label="AP password" />
+        <Row label="AP password" hint={`At least 8 characters. ${f.ap.pskl ? 'Leave empty to keep the current one, or remove it for an open AP.' : 'Leave empty for an open AP.'}`} stack>
+          <PasswordInput secret={f.ap} maxLength={63} label="AP password" onChange={setAp} />
         </Row>
         <Row label="AP channel">
           <Input className="w-20" type="number" min={1} max={13} value={Number.isNaN(f.ap.chan) ? '' : f.ap.chan}
