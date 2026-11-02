@@ -209,7 +209,7 @@ export function SyncSettings() {
         {sw('Receive UDP realtime', f.live.en, (en) => setLive({ en }))}
         {sw('Use main segment only', f.live.mso, (mso) => setLive({ mso }))}
         {sw('Respect LED maps', f.live.rlm, (rlm) => setLive({ rlm }))}
-        <Row label="Timeout" hint="ms"><NumberInput label="Realtime timeout" min={100} max={65000} value={f.live.timeout} onChange={(timeout) => setLive({ timeout })} /></Row>
+        <Row label="Timeout"><NumberInput label="Realtime timeout" unit="ms" min={100} max={65000} value={f.live.timeout} onChange={(timeout) => setLive({ timeout })} /></Row>
         {sw('Force max brightness', f.live.maxbri, (maxbri) => setLive({ maxbri }))}
         {sw('Disable realtime gamma correction', f.live.nogc, (nogc) => setLive({ nogc }))}
         <Row label="Realtime LED offset"><NumberInput label="Realtime LED offset" min={-255} max={255} value={f.live.offset} onChange={(offset) => setLive({ offset })} /></Row>
@@ -317,7 +317,7 @@ export function SyncSettings() {
                 <p className="m-0 text-xs text-muted-foreground">Find the bridge IP and the light number in the About section of the Hue app.</p>
                 <Row label="Hue bridge IP" stack><IpInput label="Hue bridge IP" value={h.ip} onChange={(ip) => setH({ ip })} /></Row>
                 <Row label="Light number"><NumberInput label="Hue light number" min={1} max={99} value={h.id} onChange={(id) => setH({ id })} /></Row>
-                <Row label="Poll every" hint="ms"><NumberInput label="Hue poll interval" min={100} max={65000} value={h.ms} onChange={(ms) => setH({ ms })} /></Row>
+                <Row label="Poll every"><NumberInput label="Hue poll interval" unit="ms" min={100} max={65000} value={h.ms} onChange={(ms) => setH({ ms })} /></Row>
                 {sw('Receive on/off', h.on, (on) => setH({ on }))}
                 {sw('Receive brightness', h.bri, (bri) => setH({ bri }))}
                 {sw('Receive color', h.col, (col) => setH({ col }))}

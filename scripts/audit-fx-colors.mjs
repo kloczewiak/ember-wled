@@ -34,7 +34,7 @@ const fns = new Map()
 function calls(body, name) {
   const out = []
   const re = new RegExp(`\\b${name}\\s*\\(`, 'g')
-  for (let m; (m = re.exec(body));) {
+  while (re.exec(body)) {
     let depth = 1, arg = '', args = []
     for (let i = re.lastIndex; i < body.length && depth; i++) {
       const c = body[i]

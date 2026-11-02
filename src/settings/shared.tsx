@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { toast, useStore } from '../store'
 import { useUi } from '../ui'
 import { comparePresets } from '../lib/presets'
-import { Card, chipOnCls, SectionTitle, cx } from '../components/controls'
+import { Card, chipOnCls, SectionTitle, cx, UnitInput } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -62,14 +62,19 @@ export function Row({ label, hint, children, stack }: { label: ReactNode; hint?:
   )
 }
 
-// A number box that holds NaN while empty, so validation can report it.
-export function NumberInput({ value, onChange, label, min, max, step, className }: {
-  value: number; onChange: (v: number) => void; label: string; min?: number; max?: number; step?: number; className?: string
+// A number box that holds NaN while empty, so validation can report it. `unit` shows inside the box, after
+// the value (or before it with `unitStart`).
+export function NumberInput({ value, onChange, label, min, max, step, unit, unitStart, className }: {
+  value: number; onChange: (v: number) => void; label: string; min?: number; max?: number; step?: number
+  unit?: string; unitStart?: boolean; className?: string
 }) {
-  return (
-    <Input className={cx('w-24', className)} type="number" min={min} max={max} step={step} aria-label={label}
-      value={Number.isNaN(value) ? '' : value} onChange={(e) => onChange(e.target.value === '' ? NaN : Number(e.target.value))} />
-  )
+  const props = {
+    type: 'number', min, max, step, 'aria-label': label,
+    value: Number.isNaN(value) ? '' : value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value === '' ? NaN : Number(e.target.value)),
+  }
+  return unit
+    ? <UnitInput className={cx('w-28', className)} unit={unit} unitStart={unitStart} {...props} />
+    : <Input className={cx('w-24', className)} {...props} />
 }
 
 // An on/off chip for picking several of a set (groups, weekdays), filled when on like the main UI's chips.

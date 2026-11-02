@@ -1,9 +1,10 @@
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useState, type ButtonHTMLAttributes, type ComponentProps, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { Button as UiButton } from '@/components/ui/button'
 import { Card as UiCard, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
 import { Label } from '@/components/ui/label'
 import { Slider as UiSlider } from '@/components/ui/slider'
 import { Switch as UiSwitch } from '@/components/ui/switch'
@@ -141,6 +142,19 @@ export function Check({ checked, onChange, children, className }: { checked: boo
       <Checkbox checked={checked} onCheckedChange={(v) => onChange(v === true)} />
       {children}
     </Label>
+  )
+}
+
+// An input with its unit inside the box, after the value (or before it with `unitStart`), like the hex
+// field's "#". `className` sizes the box, `inputClassName` styles the text.
+export function UnitInput({ unit, unitStart, className, inputClassName, ...props }: Omit<ComponentProps<'input'>, 'className'> & {
+  unit: string; unitStart?: boolean; className?: string; inputClassName?: string
+}) {
+  return (
+    <InputGroup className={className}>
+      <InputGroupAddon align={unitStart ? 'inline-start' : 'inline-end'}><InputGroupText>{unit}</InputGroupText></InputGroupAddon>
+      <InputGroupInput className={inputClassName} {...props} />
+    </InputGroup>
   )
 }
 

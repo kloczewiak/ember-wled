@@ -124,7 +124,7 @@ function Coordinate({ value, onChange, label, max, pos, neg }: { value: number; 
   const abs = Math.abs(value)
   return (
     <div className="flex gap-2">
-      <NumberInput label={label} min={0} max={max} step={0.01} value={abs} onChange={(v) => onChange(negative ? -v : v)} />
+      <NumberInput label={label} unit="°" min={0} max={max} step={0.01} value={abs} onChange={(v) => onChange(negative ? -v : v)} />
       <NativeSelect aria-label={`${label} hemisphere`} value={negative ? neg : pos} onChange={(e) => onChange(e.target.value === neg ? -abs : abs)}>
         <option value={pos}>{pos}</option>
         <option value={neg}>{neg}</option>
@@ -149,9 +149,7 @@ function TimerCard({ t, i, onChange, onRemove }: { t: Timer; i: number; onChange
           <option value={SUNSET}>Sunset</option>
         </NativeSelect>
         {t.kind ? (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <NumberInput className="w-20" label={`${n} offset in minutes`} min={-120} max={120} value={t.min} onChange={(min) => onChange({ min })} />min
-          </span>
+          <NumberInput label={`${n} offset in minutes`} unit="min" min={-120} max={120} value={t.min} onChange={(min) => onChange({ min })} />
         ) : (
           <span className="flex items-center gap-1 font-mono">
             <NumberInput className="w-16" label={`${n} hour`} min={0} max={24} value={t.hour} onChange={(hour) => onChange({ hour })} />:
@@ -228,8 +226,8 @@ export function TimeSettings() {
             {TIME_ZONES.map((z, i) => <option key={z} value={i}>{z}</option>)}
           </NativeSelect>
         </Row>
-        <Row label="UTC offset" hint="Seconds, up to 18 hours">
-          <NumberInput label="UTC offset" min={-65500} max={65500} value={f.offset} onChange={(offset) => set({ offset })} />
+        <Row label="UTC offset" hint="Up to 18 hours">
+          <NumberInput label="UTC offset" unit="s" min={-65500} max={65500} value={f.offset} onChange={(offset) => set({ offset })} />
         </Row>
         <Row label="Local time"><span className="font-mono text-sm">{info?.time || 'Unknown'}</span></Row>
         <Row label="Latitude" hint="For sunrise and sunset timers">

@@ -5,7 +5,7 @@ import { useUi } from '../ui'
 import type { Info, Node } from '../api/types'
 import { formatCurrent } from '../lib/format'
 import { toggleSync, toggleTimer } from './Header'
-import { Button, Check, cx, Field, inputCls, SectionTitle, Switch } from './controls'
+import { Button, Check, cx, Field, inputCls, SectionTitle, Switch, UnitInput } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -80,8 +80,8 @@ function TimerSync() {
             {['Instant', 'Fade', 'Color fade', 'Sunrise'].map((n, i) => <option key={i} value={i}>{n}</option>)}
           </NativeSelect>
         </Field>
-        <Field label="Duration (min)">
-          <input className={cx(inputCls, 'font-mono')} inputMode="numeric" value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commitNum('dur', dur, 1, 255)} />
+        <Field label="Duration">
+          <UnitInput unit="min" inputClassName="font-mono" inputMode="numeric" aria-label="Timer duration in minutes" value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commitNum('dur', dur, 1, 255)} />
         </Field>
         <Field label="Target brightness">
           <input className={cx(inputCls, 'font-mono')} inputMode="numeric" value={tbri} onChange={(e) => setTbri(e.target.value)} onBlur={() => commitNum('tbri', tbri, 0, 255)} />

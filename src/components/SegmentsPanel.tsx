@@ -5,7 +5,7 @@ import { parseFxMeta } from '../api/fxmeta'
 import type { Segment } from '../api/types'
 import { useUi } from '../ui'
 import { segmentFill } from '../lib/segfill'
-import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch } from './controls'
+import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch, UnitInput } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -491,8 +491,8 @@ function TransitionField({ value }: { value: number }) {
     if (n !== value) send({ transition: n })
   }
   return (
-    <Field label="Transition (s)" className="w-28">
-      <input className={numCls} inputMode="decimal" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()} />
+    <Field label="Transition" className="w-28">
+      <UnitInput unit="s" inputClassName="font-mono" inputMode="decimal" aria-label="Transition in seconds" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()} />
     </Field>
   )
 }

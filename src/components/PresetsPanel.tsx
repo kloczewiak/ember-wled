@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { presetsBackup, presetsChanged, send, toast, uploadPresets, useStore } from '../store'
 import type { Command, Playlist, Preset, Presets } from '../api/types'
 import { useUi } from '../ui'
-import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTitle } from './controls'
+import { Button, Card, Check, cx, Field, Icon, inputCls, SearchField, SectionTitle, UnitInput } from './controls'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -332,7 +332,7 @@ function PlaylistEditor({ id, pl, setPl, presets }: { id: number; pl: PlaylistSt
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-[1fr_64px_56px_28px_28px] gap-1.5 text-[11px] text-muted-foreground">
-        <span>Preset</span><span>Duration (s)</span><span>Fade (s)</span><span /><span />
+        <span>Preset</span><span>Duration</span><span>Fade</span><span /><span />
       </div>
       {pl.ps.map((ps, i) => (
         <div key={i} className="grid grid-cols-[1fr_64px_56px_28px_28px] items-center gap-1.5">
@@ -340,9 +340,9 @@ function PlaylistEditor({ id, pl, setPl, presets }: { id: number; pl: PlaylistSt
             {!presets[ps] && <option value={ps}>Preset {ps}</option>}
             {options.map(([key, p]) => <option key={key} value={key}>{pName(presets, Number(key))}{isPlaylist(p) ? ' ▶' : ''}</option>)}
           </NativeSelect>
-          <input className={cx(inputCls, 'px-1.5 font-mono text-xs')} aria-label={`Entry ${i + 1} duration in seconds, 0 for forever`} inputMode="decimal"
+          <UnitInput unit="s" inputClassName="px-1.5 font-mono text-xs" aria-label={`Entry ${i + 1} duration in seconds, 0 for forever`} inputMode="decimal"
             defaultValue={pl.dur[i] / 10} readOnly={manual} key={`d${i}-${manual}`} onChange={(e) => setAt('dur', i, tenths(e.target.value))} />
-          <input className={cx(inputCls, 'px-1.5 font-mono text-xs')} aria-label={`Entry ${i + 1} transition in seconds`} inputMode="decimal"
+          <UnitInput unit="s" inputClassName="px-1.5 font-mono text-xs" aria-label={`Entry ${i + 1} transition in seconds`} inputMode="decimal"
             defaultValue={pl.transition[i] / 10} onChange={(e) => setAt('transition', i, Math.min(655, tenths(e.target.value)))} />
           <UiButton variant="ghost" size="icon-sm" aria-label={`Add entry after ${i + 1}`} onClick={() => add(i)}><Icon.plus /></UiButton>
           <UiButton variant="ghost" size="icon-sm" aria-label={`Remove entry ${i + 1}`} disabled={pl.ps.length < 2} onClick={() => del(i)}><Icon.x /></UiButton>
