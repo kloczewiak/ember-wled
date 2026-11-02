@@ -1,27 +1,9 @@
 import { useMemo, useState } from 'react'
 import { send, useStore } from '../store'
 import { useFxMeta, useScrollToSelected, useSelection } from '../hooks'
-import type { Color, PaletteStop } from '../api/types'
 import { Card, cx, SearchField, SectionTitle } from './controls'
 import { Button } from '@/components/ui/button'
-
-// CSS gradient for a palette preview from /json/palx data; "c1".."c3" stops use the segment's colour slots.
-function gradient(stops: PaletteStop[] | undefined, col: Color[]) {
-  if (!stops?.length) return undefined
-  const list = stops.length === 1 ? [stops[0], stops[0]] : stops
-  const parts = list.map((e, j) => {
-    let rgb: number[]
-    let pos: number
-    if (Array.isArray(e)) { pos = Math.round((e[0] / 255) * 100); rgb = e.slice(1) }
-    else {
-      pos = Math.round((j / (list.length - 1)) * 100)
-      rgb = e === 'r' ? [0, 1, 2].map(() => Math.floor(Math.random() * 255)) : (col[Number(e[1]) - 1] ?? [0, 0, 0]).slice(0, 3).map((v) => v ?? 0)
-    }
-    if (stops.length === 1 && j === 1) pos = 100
-    return `rgb(${rgb.join(',')}) ${pos}%`
-  })
-  return `linear-gradient(to right, ${parts.join(',')})`
-}
+import { cssGradient, paletteStops } from '../lib/segfill'
 
 // Search like the stock UI: matching names first, ordered by where the match is; Default and the selected
 // palette stay visible.
@@ -84,7 +66,7 @@ export function PalettePanel({ className }: { className?: string }) {
                   className="grid shrink-0 grid-cols-[minmax(0,120px)_1fr] gap-3 text-left font-normal"
                 >
                   <span className="truncate">{p.name}</span>
-                  <span className="h-3 rounded-full" style={{ background: gradient(palx[p.id], main?.col ?? []) }} />
+                  <span className="h-3 rounded-full" style={{ background: cssGradient(paletteStops(palx[p.id], main?.col ?? [])) }} />
                 </Button>
               )
             })}

@@ -4,6 +4,7 @@ import { useDraft, useSelection } from '../hooks'
 import { parseFxMeta } from '../api/fxmeta'
 import type { Segment } from '../api/types'
 import { useUi } from '../ui'
+import { segmentFill } from '../lib/segfill'
 import { Button, Card, Check, cx, Field, Icon, inputCls, SectionTitle, Slider, Switch } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
@@ -177,6 +178,9 @@ function fittingTicks(ticks: Tick[], total: number, width: number) {
 function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
   // With Peek on, the bar shows the strip's live colours (the frames Peek already streams) under the segments.
   const live = useStore((s) => s.peek)
+  const fxdata = useStore((s) => s.fxdata)
+  const palx = useStore((s) => s.palx)
+  const masterBri = useStore((s) => s.state?.bri ?? 255)
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     if (!live) return
@@ -208,7 +212,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
         <div className="absolute inset-px rounded-md bg-bg" />
         {live && <canvas ref={canvas} aria-hidden className="absolute inset-0 size-full" />}
         {segs.map((s) => {
-          const c = s.col[0]
+          const fill = live || !s.on ? null : segmentFill(s, fxdata, palx, (s.bri / 255) * (masterBri / 255))
           return (
             <button
               key={s.id}
@@ -227,8 +231,8 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
                 left: `${(s.start / total) * 100}%`,
                 width: `${((s.stop - s.start) / total) * 100}%`,
                 ...(live ? {} : {
-                  background: s.on ? `rgb(${c[0]},${c[1]},${c[2]})` : 'var(--color-line)',
-                  color: s.on && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 140 ? '#000' : '#fff',
+                  background: fill?.background ?? 'var(--color-line)',
+                  color: fill?.light ? '#000' : '#fff',
                 }),
               }}
             >
