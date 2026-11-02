@@ -1,5 +1,5 @@
 // Fake settings backend for the mock device: /json/cfg (read), the firmware's form POSTs to /settings/wifi
-// and /settings/ui (write, applied with the same rules as wled00/set.cpp), /settings/s.js and /json/net.
+// and /settings/ui (write, applied with the same rules as wled00/set.cpp), and /json/net.
 // Set WLED_MOCK_PIN to require a settings PIN, as the firmware does when one is configured.
 
 const PIN = process.env.WLED_MOCK_PIN ?? ''
@@ -28,13 +28,6 @@ export function cfgJson() {
     nw: { ...cfg.nw, ins: cfg.nw.ins.map((n, i) => ({ ...n, pskl: secrets.wifi[i].length })) },
     ap: { ...cfg.ap, pskl: secrets.ap.length },
   }
-}
-
-export function settingsJs(page: number) {
-  if (page !== 1) return ''
-  return 'd.getElementsByClassName("sip")[0].innerHTML="192.168.1.50";'
-    + 'd.getElementsByClassName("sip")[1].innerHTML="Not active";'
-    + 'd.getElementsByClassName("rlid")[0].innerHTML="0a1b2c3d4e5f";'
 }
 
 export function scan() {

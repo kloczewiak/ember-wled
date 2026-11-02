@@ -4,7 +4,7 @@ import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ArrowLeft, Bolt, ChevronRight, Clock, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
-import { loadSettingsScript } from './api'
+import { loadCfg } from './api'
 import { confirmLeave } from './shared'
 import { UiSettings } from './UiSettings'
 import { WifiSettings } from './WifiSettings'
@@ -13,14 +13,15 @@ import { WifiSettings } from './WifiSettings'
 // the rest link to the firmware's own settings pages until they are rebuilt.
 
 type Page = { id: string; title: string; icon: LucideIcon; render?: () => ReactNode; href?: string; show?: (b: Build) => boolean }
-type Build = { no2D: boolean; dmx: boolean }
+type Build = { dmx: boolean }
 
 const PAGES: Page[] = [
   { id: 'wifi', title: 'Wi-Fi and network', icon: Wifi, render: () => <WifiSettings /> },
   { id: 'ui', title: 'User interface', icon: Palette, render: () => <UiSettings /> },
   { id: 'leds', title: 'LED and hardware', icon: Lightbulb, href: '/settings/leds' },
   { id: 'pins', title: 'Pin info', icon: Bolt, href: '/settings/pins' },
-  { id: '2D', title: '2D configuration', icon: Grid3x3, href: '/settings/2D', show: (b) => !b.no2D },
+  // listed on every build: whether 2D is compiled in is only exposed by the settings script (see PARITY.md)
+  { id: '2D', title: '2D configuration', icon: Grid3x3, href: '/settings/2D' },
   { id: 'dmx', title: 'DMX output', icon: Layers, href: '/settings/dmx', show: (b) => b.dmx },
   { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, href: '/settings/sync' },
   { id: 'time', title: 'Time and macros', icon: Clock, href: '/settings/time' },
@@ -62,8 +63,9 @@ function Menu({ build, current }: { build: Build; current?: string }) {
 
 export function SettingsScreen({ route }: { route: string }) {
   const wide = useMedia('(min-width: 1100px)')
-  const [build, setBuild] = useState<Build>({ no2D: false, dmx: false })
-  useEffect(() => { loadSettingsScript(0).then((s) => setBuild({ no2D: s.no2D, dmx: s.dmx })).catch(() => {}) }, [])
+  const [build, setBuild] = useState<Build>({ dmx: false })
+  // the config only has a dmx section on builds with DMX output
+  useEffect(() => { loadCfg().then((c) => setBuild({ dmx: c.dmx !== undefined })).catch(() => {}) }, [])
   const page = PAGES.find((p) => p.render && p.id === route)
   const title = page?.title ?? 'Settings'
   // back goes from a page to the menu (on phones) and from the menu to the controls

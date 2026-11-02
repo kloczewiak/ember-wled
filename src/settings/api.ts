@@ -13,26 +13,13 @@ export interface Cfg {
   ap: { ssid: string; pskl: number; chan: number; hide: number; behav: number; ip: number[] }
   wifi: { sleep: boolean; phy: boolean; txpwr?: number; band?: number }
   eth?: { type: number }
+  dmx?: unknown // only on builds with DMX output (WLED_ENABLE_DMX)
 }
 
 export async function loadCfg(): Promise<Cfg> {
   const res = await fetch('/json/cfg', { signal: AbortSignal.timeout(8000) })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
-}
-
-// Values the firmware only puts into its settings script (/settings/s.js), not into the JSON API: the
-// current client and AP IPs, the last ESP-NOW device seen, and which menu entries this build has.
-export async function loadSettingsScript(page: number) {
-  const js = await fetch(`/settings/s.js?p=${page}`, { signal: AbortSignal.timeout(8000) }).then((r) => r.text())
-  const cls = (name: string, i: number) => js.match(new RegExp(`getElementsByClassName\\("${name}"\\)\\[${i}\\]\\.innerHTML="([^"]*)"`))?.[1]
-  return {
-    clientIp: cls('sip', 0),
-    apIp: cls('sip', 1),
-    lastRemote: cls('rlid', 0),
-    no2D: js.includes("gId('2dbtn').style.display='none'"),
-    dmx: js.includes("gId('dmxbtn').style.display=''"),
-  }
 }
 
 export interface ScannedNet { ssid: string; rssi: number; channel: number }

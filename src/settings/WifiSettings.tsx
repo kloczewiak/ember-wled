@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Icon } from '../components/controls'
-import { loadCfg, loadSettingsScript, scanNetworks, type Cfg, type ScannedNet } from './api'
+import { useStore } from '../store'
+import { loadCfg, scanNetworks, type Cfg, type ScannedNet } from './api'
 import { FieldError, IpInput, ipValid, Row, SaveBar, Section, useDraft, useLeaveGuard, useSaver } from './shared'
 
 // Settings → Wi-Fi and network, with the same fields, limits and conditional sections as the firmware's
@@ -100,14 +101,13 @@ function SsidField({ value, onChange, scanned, label }: { value: string; onChang
 
 export function WifiSettings() {
   const [cfg, setCfg] = useState<Cfg | null>(null)
-  const [live, setLive] = useState<Awaited<ReturnType<typeof loadSettingsScript>> | null>(null)
+  const info = useStore((s) => s.info)
   const [loadError, setLoadError] = useState(false)
   const [scanned, setScanned] = useState<ScannedNet[] | null>(null)
   const [scanning, setScanning] = useState(false)
   const reload = () => {
     setLoadError(false)
     loadCfg().then(setCfg).catch(() => setLoadError(true))
-    loadSettingsScript(1).then(setLive).catch(() => {})
   }
   useEffect(reload, [])
   const [loaded, setLoaded] = useState<Form | null>(null)
@@ -124,7 +124,8 @@ export function WifiSettings() {
   const set = (p: Partial<Form>) => setDraft({ ...f, ...p })
   const setNet = (i: number, p: Partial<Net>) => set({ nets: f.nets.map((n, j) => (j === i ? { ...n, ...p } : n)) })
   const setAp = (p: Partial<Form['ap']>) => set({ ap: { ...f.ap, ...p } })
-  const lastRemote = live?.lastRemote && /^[0-9a-f]{12}$/i.test(live.lastRemote) ? live.lastRemote : null
+  // the AP always runs at 4.3.2.1 (wled.cpp initAP); info.wifi.ap says whether it is up
+  const apIp = info?.wifi.ap ? '4.3.2.1' : 'Not active'
 
   return (
     <div className="flex flex-col gap-4">
@@ -191,7 +192,7 @@ export function WifiSettings() {
             http://<Input maxLength={32} value={f.mdns} onChange={(e) => set({ mdns: e.target.value })} aria-label="mDNS address" />.local
           </div>
         </Row>
-        <Row label="Client IP"><span className="font-mono text-sm">{live?.clientIp ?? '…'}</span></Row>
+        <Row label="Client IP"><span className="font-mono text-sm">{info?.ip || 'Not connected'}</span></Row>
       </Section>
 
       <Section title="Access point">
@@ -211,7 +212,7 @@ export function WifiSettings() {
             {AP_OPENS.map((l, i) => <option key={i} value={i}>{l}</option>)}
           </NativeSelect>
         </Row>
-        <Row label="AP IP"><span className="font-mono text-sm">{live?.apIp ?? '…'}</span></Row>
+        <Row label="AP IP"><span className="font-mono text-sm">{apIp}</span></Row>
       </Section>
 
       <Section title="Wi-Fi power">
@@ -246,14 +247,6 @@ export function WifiSettings() {
           </Row>
           {f.espnow && (
             <>
-              <Row label="Last device seen" hint={lastRemote ? undefined : 'None yet'}>
-                {lastRemote && (
-                  <Button variant="outline" disabled={f.remotes.length >= MAX_REMOTES || f.remotes.includes(lastRemote)}
-                    onClick={() => set({ remotes: [...f.remotes, lastRemote] })}>
-                    <Icon.plus /><span className="font-mono">{lastRemote}</span>
-                  </Button>
-                )}
-              </Row>
               <div className="text-xs font-medium text-muted-foreground">Linked remotes ({f.remotes.length} of {MAX_REMOTES})</div>
               {f.remotes.map((m, i) => (
                 <div key={i} className="flex gap-2">
@@ -262,6 +255,10 @@ export function WifiSettings() {
                   <Button variant="outline" size="icon-lg" aria-label={`Remove linked remote ${i + 1}`} onClick={() => set({ remotes: f.remotes.filter((_, j) => j !== i) })}><Icon.x /></Button>
                 </div>
               ))}
+              {/* the stock page adds the last ESP-NOW device seen, which only its settings script exposes (see PARITY.md) */}
+              {f.remotes.length < MAX_REMOTES && (
+                <Button variant="outline" className="self-start" onClick={() => set({ remotes: [...f.remotes, ''] })}><Icon.plus />Add remote</Button>
+              )}
             </>
           )}
         </Section>
