@@ -223,7 +223,7 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
               onClick={() => send({ seg: segs.map((g) => ({ id: g.id, sel: g.id === s.id })), mainseg: s.id })}
               className={cx(
                 // the border is the card colour, so neighbouring segments look separated by a gap
-                'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1.5 text-[11px] font-semibold',
+                'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1 text-[11px] font-semibold',
                 // no gap at the ends of the bar, where it would flatten the rounded corners
                 s.start === 0 && 'border-l-0', s.stop >= total && 'border-r-0',
                 // a solid outline drawn behind the letters keeps names readable on any live colour
@@ -238,7 +238,8 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
                 }),
               }}
             >
-              <span className="truncate">{segName(s)}</span>
+              {/* padded so the clipping that truncates long names doesn't cut off the outline */}
+              <span className="truncate px-0.5">{segName(s)}</span>
             </button>
           )
         })}
