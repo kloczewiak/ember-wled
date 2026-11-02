@@ -74,7 +74,7 @@ export function postSettings(page: string, form: URLSearchParams): number {
   if (ap.length === 0 || (ap.length > 7 && !asterisksOnly(ap))) secrets.ap = ap
   const ch = Number(arg('AC'))
   if (ch > 0 && ch < 14) cfg.ap.chan = ch
-  cfg.wifi.txpwr = Math.min(Math.max(Number(arg('TX')) || 0, 8), 84)
+  cfg.wifi.txpwr = Math.min(Math.max(Number(arg('TX')) || 0, 8), 78) // v16.0.1: 2 to 19.5 dBm
   cfg.wifi.phy = form.has('FG')
   cfg.wifi.sleep = !form.has('WS')
   cfg.nw.espnow = form.has('RE')

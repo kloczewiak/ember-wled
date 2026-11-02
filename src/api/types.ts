@@ -87,7 +87,7 @@ export interface Info {
   umpalcount?: number
   umpalnames?: string[]
   maps?: { id: number; n?: string }[]
-  wifi: { bssid?: string; rssi: number; signal: number; channel: number; band?: string; ap?: boolean }
+  wifi: { bssid?: string; rssi: number; signal: number; channel: number; ap?: boolean }
   fs: { u: number; t: number; pmt: number }
   ndc: number
   arch: string

@@ -1,7 +1,8 @@
 # Feature parity with the stock WLED UI
 
-Where this UI knowingly differs from the stock one (`wled-firmware/wled00/data`). Remove an entry once it's
-closed.
+The target is the stock UI of **WLED v16.0.1**, the released firmware (`wled-firmware` checked out at tag
+`v16.0.1`), not the development branch. Below is where this UI knowingly differs from it
+(`wled-firmware/wled00/data`). Remove an entry once it's closed.
 
 ## Settings
 

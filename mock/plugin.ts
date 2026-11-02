@@ -27,7 +27,7 @@ const info: Info = {
   name: 'WLED-Mock', simplifiedui: false, live: false, liveseg: -1, lm: '', lip: '', ws: -1,
   fxcount: fixtures.effects.length, palcount: fixtures.palettes.length, cpalcount: 0, umpalcount: 0,
   maps: [{ id: 0 }],
-  wifi: { bssid: '00:11:22:33:44:55', rssi: -61, signal: 78, channel: 6, band: '2.4GHz', ap: false },
+  wifi: { bssid: '00:11:22:33:44:55', rssi: -61, signal: 78, channel: 6, ap: false },
   fs: { u: 212, t: 960, pmt: 1 }, ndc: 2, arch: 'esp32', core: 'v4.4.7', clock: 240, flash: 4, lwip: 0,
   freeheap: 145200, uptime: 0, time: '', u: { 'Temperature': [23.5, '°C'] }, opt: 0x4d, brand: 'WLED',
   product: 'FOSS', mac: 'a4cf123e9b10', ip: '127.0.0.1',

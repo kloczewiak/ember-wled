@@ -135,7 +135,6 @@ function DeviceInfo() {
         {i.release && <Row k="Release">{i.release}</Row>}
         <Row k="Build">{i.vid}</Row>
         <Row k="Signal strength">{i.wifi.signal}% ({i.wifi.rssi} dBm)</Row>
-        {i.wifi.band && <Row k="WiFi band">{i.wifi.band} (Ch {i.wifi.channel})</Row>}
         <Row k="Uptime">{runtime(i.uptime)}</Row>
         <Row k="Time">{i.time}</Row>
         <Row k="Free heap">{(i.freeheap / 1024).toFixed(1)} kB</Row>

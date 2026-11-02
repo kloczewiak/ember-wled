@@ -10,14 +10,14 @@ import { useCfgForm } from './config'
 import { FieldError, IpInput, ipValid, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → Wi-Fi and network, with the same fields, limits and conditional sections as the firmware's
-// page (data/settings_wifi.htm, filled by xml.cpp, saved by set.cpp).
+// page in WLED v16.0.1 (data/settings_wifi.htm, filled by xml.cpp, saved by set.cpp).
 
 const MAX_NETWORKS = 3 // WLED_MAX_WIFI_COUNT
 const MAX_REMOTES = 10
 const AP_OPENS = ['No connection after boot', 'Disconnected', 'Always', 'Never (not recommended)', 'Temporary (no connection after boot)']
-const TX_POWER: [number, string][] = [[84, '21 dBm'], [82, '20.5 dBm'], [80, '20 dBm'], [78, '19.5 dBm'], [76, '19 dBm'], [74, '18.5 dBm'],
+// v16.0.1 caps TX power at 19.5 dBm (set.cpp clamps to WIFI_POWER_19_5dBm)
+const TX_POWER: [number, string][] = [[78, '19.5 dBm'], [76, '19 dBm'], [74, '18.5 dBm'],
   [68, '17 dBm'], [60, '15 dBm'], [52, '13 dBm'], [44, '11 dBm'], [34, '8.5 dBm'], [28, '7 dBm'], [20, '5 dBm'], [8, '2 dBm']]
-const BANDS: [number, string][] = [[1, '2.4 GHz only'], [2, '5 GHz only'], [3, 'Auto (both)']]
 const ETHERNET: [number, string][] = [[0, 'None'], [6, 'IoTorero/ESP32Deux/RGB2Go'], [9, 'ABC! WLED V43 and compatible'], [2, 'ESP32-POE'],
   [11, 'ESP32-POE-WROVER'], [7, 'KIT-VE'], [12, 'LILYGO T-POE Pro'], [4, 'QuinLED Uno/Quad'], [8, 'QuinLED Octa and T-ETH-POE'],
   [14, 'QuinLED v4 Uno/Quad'], [15, 'QuinLED v4 Octa'], [10, 'Serg74-ETH32'], [5, 'TwilightLord-ESP32'], [3, 'WESP32'], [1, 'WT32-ETH01'], [13, 'Gledopto']]
@@ -34,7 +34,7 @@ type Net = Secret & { ssid: string; bssid: string; ip: number[]; gw: number[]; s
 type Form = {
   nets: Net[]; dns: number[]; mdns: string
   ap: Secret & { ssid: string; hide: boolean; chan: number; behav: number }
-  phy: boolean; noSleep: boolean; band?: number; tx?: number; espnow?: boolean; remotes: string[]; eth?: number
+  phy: boolean; noSleep: boolean; tx?: number; espnow?: boolean; remotes: string[]; eth?: number
 }
 
 const newNet = (): Net => ({ ssid: '', ...keep(0), bssid: '', ip: [0, 0, 0, 0], gw: [0, 0, 0, 0], sn: [255, 255, 255, 0], enc: 0, anon: '', ident: '' })
@@ -44,7 +44,7 @@ function toForm(c: Cfg): Form {
     nets: c.nw.ins.map((n) => ({ ssid: n.ssid, ...keep(n.pskl), bssid: n.bssid, ip: n.ip, gw: n.gw, sn: n.sn, enc: n.enc_type ?? 0, anon: n.e_anon_ident ?? '', ident: n.e_ident ?? '' })),
     dns: c.nw.dns, mdns: c.id.mdns,
     ap: { ssid: c.ap.ssid, hide: !!c.ap.hide, ...keep(c.ap.pskl), chan: c.ap.chan, behav: c.ap.behav },
-    phy: c.wifi.phy, noSleep: !c.wifi.sleep, band: c.wifi.band, tx: c.wifi.txpwr, espnow: c.nw.espnow, remotes: c.nw.linked_remote ?? [], eth: c.eth?.type,
+    phy: c.wifi.phy, noSleep: !c.wifi.sleep, tx: c.wifi.txpwr, espnow: c.nw.espnow, remotes: c.nw.linked_remote ?? [], eth: c.eth?.type,
   }
 }
 
@@ -61,7 +61,6 @@ function toFields(f: Form, enterprise: boolean): [string, string][] {
   if (f.ap.hide) out.push(['AH', 'on'])
   if (f.phy) out.push(['FG', 'on'])
   if (f.noSleep) out.push(['WS', 'on'])
-  if (f.band !== undefined) out.push(['BM', String(f.band)])
   if (f.tx !== undefined) out.push(['TX', String(f.tx)])
   if (f.espnow !== undefined) {
     if (f.espnow) out.push(['RE', 'on'])
@@ -113,7 +112,7 @@ function SsidField({ value, onChange, scanned, label }: { value: string; onChang
       <NativeSelect className="w-full" value={value} aria-label={label}
         onChange={(e) => { if (e.target.value === '!Cs') setCustom(true); else onChange(e.target.value) }}>
         {value === '' && <option value="">Choose a network</option>}
-        {scanned.map((s) => <option key={s.ssid} value={s.ssid}>{`${s.ssid} (${s.rssi} dBm, Ch ${s.channel})`}</option>)}
+        {scanned.map((s) => <option key={s.ssid} value={s.ssid}>{`${s.ssid} (${s.rssi} dBm)`}</option>)}
         <option value="!Cs">Other network…</option>
       </NativeSelect>
     )
@@ -233,13 +232,6 @@ export function WifiSettings() {
         <Row label="Disable Wi-Fi sleep" hint="Uses more power, but can help with connection problems and sync.">
           <Switch on={f.noSleep} label="Disable Wi-Fi sleep" onChange={(noSleep) => set({ noSleep })} />
         </Row>
-        {f.band !== undefined && (
-          <Row label="Wi-Fi band" stack>
-            <NativeSelect className="w-full" value={f.band} onChange={(e) => set({ band: Number(e.target.value) })}>
-              {BANDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </NativeSelect>
-          </Row>
-        )}
         {f.tx !== undefined && (
           <>
             <Row label="Max TX power" stack>

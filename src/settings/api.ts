@@ -6,12 +6,12 @@
 export interface WifiNet { ssid: string; pskl: number; bssid: string; ip: number[]; gw: number[]; sn: number[]; enc_type?: number; e_anon_ident?: string; e_ident?: string }
 
 // The parts of /json/cfg the settings pages use. Optional keys only exist on firmware builds that support
-// the feature (ESP-NOW, WPA-Enterprise, 5 GHz, TX power on ESP32, Ethernet), mirroring what the stock page hides.
+// the feature (ESP-NOW, WPA-Enterprise, TX power on ESP32, Ethernet), mirroring what the stock page hides.
 export interface Cfg {
   id: { mdns: string; name: string; sui: boolean }
   nw: { espnow?: boolean; linked_remote?: string[]; ins: WifiNet[]; dns: number[] }
   ap: { ssid: string; pskl: number; chan: number; hide: number; behav: number; ip: number[] }
-  wifi: { sleep: boolean; phy: boolean; txpwr?: number; band?: number }
+  wifi: { sleep: boolean; phy: boolean; txpwr?: number }
   eth?: { type: number }
   dmx?: unknown // only on builds with DMX output (WLED_ENABLE_DMX)
 }
