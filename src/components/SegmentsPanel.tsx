@@ -44,6 +44,8 @@ export function SegmentsPanel({ className }: { className?: string }) {
   if (!state || !info) return null
 
   const segs = state.seg
+  // the groups (segment sets) in use; with only one, grouping means nothing and isn't shown
+  const groups = [...new Set(segs.map((s) => s.set))].sort((a, b) => a - b)
   let lowestUnused = 0
   for (const s of segs) if (s.id === lowestUnused) lowestUnused++
   const canAdd = lowestUnused < info.leds.maxseg
@@ -69,10 +71,10 @@ export function SegmentsPanel({ className }: { className?: string }) {
 
       {!isMatrix && segs.length > 0 && <StripMap segs={segs} total={ledCount} />}
 
-      {segs.length > 2 && (
+      {groups.length > 1 && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Select group
-          {[0, 1, 2, 3].map((g) => (
+          {groups.map((g) => (
             <UiButton
               key={g}
               variant="outline"
@@ -96,6 +98,7 @@ export function SegmentsPanel({ className }: { className?: string }) {
             open={expanded === s.id}
             onToggle={() => setExpanded(expanded === s.id ? null : s.id)}
             canDelete={segs.length > 1}
+            showGroup={groups.length > 1}
             canRepeat={!isMatrix && canAdd && i === segs.length - 1 && s.stop < ledCount}
           />
         ))}
@@ -257,8 +260,8 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
   )
 }
 
-function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
-  seg: Segment; main: boolean; open: boolean; onToggle: () => void; canDelete: boolean; canRepeat: boolean
+function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat, showGroup }: {
+  seg: Segment; main: boolean; open: boolean; onToggle: () => void; canDelete: boolean; canRepeat: boolean; showGroup: boolean
 }) {
   const info = useStore((s) => s.info)!
   const state = useStore((s) => s.state)!
@@ -284,7 +287,7 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat }: {
         <button className="min-w-0 flex-1 text-left" onClick={() => send({ seg: state.seg.map((g) => ({ id: g.id, sel: g.id === seg.id })), mainseg: seg.id })} title="Select only this segment">
           <div className="flex items-center gap-1.5 truncate font-semibold">
             {segName(seg)}
-            {seg.set > 0 && <span className="font-mono text-[11px]" style={{ color: SET_COLORS[seg.set] }}>G{seg.set + 1}</span>}
+            {showGroup && <span className="font-mono text-[11px]" style={{ color: SET_COLORS[seg.set] }}>G{seg.set + 1}</span>}
           </div>
           <div className="truncate text-xs text-muted-foreground">
             {isMatrix && seg.startY !== undefined ? `${seg.start},${seg.startY} – ${seg.stop},${seg.stopY}` : `LED ${seg.start}–${seg.stop - 1}`}
