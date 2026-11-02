@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useCfgForm } from './config'
-import { FieldError, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { FieldError, reloadAfterSave, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg).
@@ -34,7 +34,7 @@ export function UiSettings() {
     useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg() }))
   useLeaveGuard(dirty)
   // browser settings are read when the app starts, so reload after saving (the stock page asks you to refresh)
-  const { save, saving, dialog } = useSaver('ui', () => location.reload())
+  const { save, saving, dialog } = useSaver('ui', reloadAfterSave)
   // the image chosen before turning on "random image", restored when it's turned off again (like oldUrl)
   const oldUrl = useRef('')
   const cssFile = useRef<HTMLInputElement>(null)
@@ -86,7 +86,7 @@ export function UiSettings() {
     }
     // like the stock page, only post to the light when its own settings changed
     if (deviceChanged) save([['DS', draft.name], ...(draft.sui ? [['SU', 'on'] as [string, string]] : [])])
-    else { toast('Settings saved'); location.reload() }
+    else { toast('Settings saved'); reloadAfterSave() }
   }
 
   return (
