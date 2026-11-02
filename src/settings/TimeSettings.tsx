@@ -7,7 +7,7 @@ import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
 import type { Cfg } from './api'
 import { useCfgForm } from './config'
-import { ChoiceChip, FieldError, intIn, presetIdValid, NumberInput, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { ChoiceChip, intIn, presetIdValid, NumberInput, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → Time and macros, with the same fields and limits as the firmware's page in WLED v16.0.1
 // (data/settings_time.htm, filled by xml.cpp, saved by set.cpp and ntp.cpp addTimer). Presets are picked by
@@ -316,8 +316,7 @@ export function TimeSettings() {
         ) : <p className="m-0 text-xs text-muted-foreground">Counts down to a date and time, then applies its preset.</p>}
       </Section>
 
-      <SaveBar dirty={dirty} saving={saving} error={errors[0]} onSave={() => save(toFields(f))} onDiscard={discard} />
-      <FieldError>{errors.length > 1 ? errors.slice(1).join(' ') : undefined}</FieldError>
+      <SaveBar dirty={dirty} saving={saving} errors={errors} onSave={() => save(toFields(f))} onDiscard={discard} />
       {dialog}
     </div>
   )

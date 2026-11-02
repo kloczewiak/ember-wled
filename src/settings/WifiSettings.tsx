@@ -7,7 +7,7 @@ import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
 import { scanNetworks, type Cfg, type ScannedNet } from './api'
 import { useCfgForm } from './config'
-import { FieldError, IpInput, ipValid, keepSecret as keep, PasswordInput, Row, SaveBar, secretField, Section, useLeaveGuard, useSaver, type Secret } from './shared'
+import { IpInput, ipValid, keepSecret as keep, PasswordInput, Row, SaveBar, secretField, Section, useLeaveGuard, useSaver, type Secret } from './shared'
 
 // Settings → Wi-Fi and network, with the same fields, limits and conditional sections as the firmware's
 // page in WLED v16.0.1 (data/settings_wifi.htm, filled by xml.cpp, saved by set.cpp).
@@ -248,9 +248,8 @@ export function WifiSettings() {
       <Alert>
         <AlertDescription>Saving may reconnect the light, and it may get a new IP address. This page reconnects by itself if it can.</AlertDescription>
       </Alert>
-      <SaveBar dirty={dirty} saving={saving} error={errors[0]} saveLabel="Save and connect"
+      <SaveBar dirty={dirty} saving={saving} errors={errors} saveLabel="Save and connect"
         onSave={() => save(toFields(f, enterprise))} onDiscard={discard} />
-      <FieldError>{errors.length > 1 ? errors.slice(1).join(' ') : undefined}</FieldError>
       {dialog}
     </div>
   )

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useCfgForm } from './config'
-import { FieldError, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg),
@@ -193,8 +193,7 @@ export function UiSettings() {
         </Row>
       </Section>
 
-      <SaveBar dirty={dirty} saving={saving} error={errors[0]} onSave={onSave} onDiscard={discard} />
-      <FieldError>{errors.length > 1 ? errors.slice(1).join(' ') : undefined}</FieldError>
+      <SaveBar dirty={dirty} saving={saving} errors={errors} onSave={onSave} onDiscard={discard} />
       {dialog}
     </div>
   )

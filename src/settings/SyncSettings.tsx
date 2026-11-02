@@ -7,7 +7,7 @@ import { Switch } from '../components/controls'
 import type { Cfg } from './api'
 import { useCfgForm } from './config'
 import {
-  ChoiceChip, FieldError, intIn, IpInput, ipValid, keepSecret, NumberInput, PasswordInput, Row, SaveBar, secretField, Section,
+  ChoiceChip, intIn, IpInput, ipValid, keepSecret, NumberInput, PasswordInput, Row, SaveBar, secretField, Section,
   useLeaveGuard, useSaver, type Secret,
 } from './shared'
 
@@ -337,8 +337,7 @@ export function SyncSettings() {
         </Row>
       </Section>
 
-      <SaveBar dirty={dirty} saving={saving} error={errors[0]} onSave={() => save(toFields(f, espnowOn))} onDiscard={discard} />
-      <FieldError>{errors.length > 1 ? errors.slice(1).join(' ') : undefined}</FieldError>
+      <SaveBar dirty={dirty} saving={saving} errors={errors} onSave={() => save(toFields(f, espnowOn))} onDiscard={discard} />
       {dialog}
     </div>
   )

@@ -226,20 +226,27 @@ export function useSaver(page: string, onSaved: () => void) {
 // and passes it here; the save bar is drawn there, so it stays put instead of moving with the end of the page.
 export const SaveBarSlot = createContext<HTMLElement | null>(null)
 
-// The bar at the bottom of a settings page: what is unsaved, Discard and Save. The two buttons wrap to the
-// next line together. Without a footer (wide screens) it sticks to the bottom of the page.
-export function SaveBar({ dirty, saving, error, onSave, onDiscard, saveLabel = 'Save' }: {
-  dirty: boolean; saving: boolean; error?: string | null; onSave: () => void; onDiscard: () => void; saveLabel?: string
+// The bar at the bottom of a settings page: what is unsaved, or what has to be fixed before saving (a bulleted
+// list when there's more than one), then Discard and Save. The two buttons wrap to the next line together.
+// Without a footer (wide screens) it sticks to the bottom of the page.
+export function SaveBar({ dirty, saving, errors = [], onSave, onDiscard, saveLabel = 'Save' }: {
+  dirty: boolean; saving: boolean; errors?: string[]; onSave: () => void; onDiscard: () => void; saveLabel?: string
 }) {
   const slot = useContext(SaveBarSlot)
   const content = (
     <>
-      <span className={cx('mr-auto text-sm', error ? 'text-destructive' : 'text-muted-foreground')}>
-        {error ?? (dirty ? 'Unsaved changes' : 'No changes')}
-      </span>
+      {errors.length > 1 ? (
+        <ul className="m-0 mr-auto min-w-0 list-disc pl-4 text-sm text-destructive">
+          {errors.map((e) => <li key={e}>{e}</li>)}
+        </ul>
+      ) : (
+        <span className={cx('mr-auto min-w-0 text-sm', errors.length ? 'text-destructive' : 'text-muted-foreground')}>
+          {errors[0] ?? (dirty ? 'Unsaved changes' : 'No changes')}
+        </span>
+      )}
       <div className="flex gap-2">
         <Button variant="outline" disabled={!dirty || saving} onClick={onDiscard}>Discard</Button>
-        <Button disabled={!dirty || saving || !!error} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>
+        <Button disabled={!dirty || saving || errors.length > 0} onClick={onSave}>{saving ? 'Saving…' : saveLabel}</Button>
       </div>
     </>
   )
