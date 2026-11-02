@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useCfgForm } from './config'
-import { FieldError, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { FieldError, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg),
@@ -111,8 +111,12 @@ export function UiSettings() {
         {bool('comp.seglen', 'Set segment length instead of stop LED')}
         {bool('comp.segpwr', 'Hide segment power and brightness')}
         {bool('comp.segexp', 'Always expand first segment')}
-        <Row label="Power button preset for on" hint="0 turns the light on normally.">{num('comp.on', 0, 250, 1)}</Row>
-        <Row label="Power button preset for off" hint="0 turns the light off normally.">{num('comp.off', 0, 250, 1)}</Row>
+        <Row label="Power button preset for on" stack>
+          <PresetSelect label="Power button preset for on" none="None: turn the light on" value={Number(get(ui, 'comp.on'))} onChange={(v) => setUi('comp.on', v)} />
+        </Row>
+        <Row label="Power button preset for off" stack>
+          <PresetSelect label="Power button preset for off" none="None: turn the light off" value={Number(get(ui, 'comp.off'))} onChange={(v) => setUi('comp.off', v)} />
+        </Row>
         <Row
           label="Accurate Peek colours"
           hint="Peek shows the colours as the LEDs really get them, with the light's gamma correction, brightness and current limit, so the steps you see on the strip at low brightness show here too. Brightness is evened out, so dim colours stay visible."

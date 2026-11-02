@@ -7,6 +7,8 @@ import { ArrowLeft, Bolt, ChevronRight, Clock, ExternalLink, Grid3x3, Layers, Li
 import { refreshCfg, useCfg } from './config'
 import { confirmLeave, SaveBarSlot } from './shared'
 import { UiSettings } from './UiSettings'
+import { SyncSettings } from './SyncSettings'
+import { TimeSettings } from './TimeSettings'
 import { WifiSettings } from './WifiSettings'
 
 // The settings screen: #settings is the menu, #settings/<page> a page. Pages built here open in the app;
@@ -18,13 +20,13 @@ type Build = { dmx: boolean }
 const PAGES: Page[] = [
   { id: 'wifi', title: 'Wi-Fi and network', icon: Wifi, render: () => <WifiSettings /> },
   { id: 'ui', title: 'User interface', icon: Palette, render: () => <UiSettings /> },
+  { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, render: () => <SyncSettings /> },
+  { id: 'time', title: 'Time and macros', icon: Clock, render: () => <TimeSettings /> },
   { id: 'leds', title: 'LED and hardware', icon: Lightbulb, href: '/settings/leds' },
   { id: 'pins', title: 'Pin info', icon: Bolt, href: '/settings/pins' },
   // listed on every build: whether 2D is compiled in is only exposed by the settings script (see PARITY.md)
   { id: '2D', title: '2D configuration', icon: Grid3x3, href: '/settings/2D' },
   { id: 'dmx', title: 'DMX output', icon: Layers, href: '/settings/dmx', show: (b) => b.dmx },
-  { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, href: '/settings/sync' },
-  { id: 'time', title: 'Time and macros', icon: Clock, href: '/settings/time' },
   { id: 'um', title: 'Usermods', icon: Puzzle, href: '/settings/um' },
   { id: 'sec', title: 'Security and updates', icon: Lock, href: '/settings/sec' },
 ]

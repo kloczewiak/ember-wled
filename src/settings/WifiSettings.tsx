@@ -7,7 +7,7 @@ import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
 import { scanNetworks, type Cfg, type ScannedNet } from './api'
 import { useCfgForm } from './config'
-import { FieldError, IpInput, ipValid, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { FieldError, IpInput, ipValid, keepSecret as keep, PasswordInput, Row, SaveBar, secretField, Section, useLeaveGuard, useSaver, type Secret } from './shared'
 
 // Settings → Wi-Fi and network, with the same fields, limits and conditional sections as the firmware's
 // page in WLED v16.0.1 (data/settings_wifi.htm, filled by xml.cpp, saved by set.cpp).
@@ -21,14 +21,6 @@ const TX_POWER: [number, string][] = [[78, '19.5 dBm'], [76, '19 dBm'], [74, '18
 const ETHERNET: [number, string][] = [[0, 'None'], [6, 'IoTorero/ESP32Deux/RGB2Go'], [9, 'ABC! WLED V43 and compatible'], [2, 'ESP32-POE'],
   [11, 'ESP32-POE-WROVER'], [7, 'KIT-VE'], [12, 'LILYGO T-POE Pro'], [4, 'QuinLED Uno/Quad'], [8, 'QuinLED Octa and T-ETH-POE'],
   [14, 'QuinLED v4 Uno/Quad'], [15, 'QuinLED v4 Octa'], [10, 'Serg74-ETH32'], [5, 'TwilightLord-ESP32'], [3, 'WESP32'], [1, 'WT32-ETH01'], [13, 'Gledopto']]
-
-// Passwords never leave the light, only their length (pskl). An empty field keeps the stored password: we
-// post asterisks of its length, which set.cpp treats as "unchanged" (as the stock page's prefilled field
-// does). `remove` posts an empty password instead, like clearing the field on the stock page.
-const stars = (n: number) => '*'.repeat(n)
-type Secret = { pw: string; pskl: number; remove: boolean }
-const keep = (pskl: number): Secret => ({ pw: '', pskl, remove: false })
-const secretField = (s: Secret) => (s.remove ? '' : s.pw === '' ? stars(s.pskl) : s.pw)
 
 type Net = Secret & { ssid: string; bssid: string; ip: number[]; gw: number[]; sn: number[]; enc: number; anon: string; ident: string }
 type Form = {
@@ -85,22 +77,6 @@ function validate(f: Form): string[] {
   if (!Number.isInteger(f.ap.chan) || f.ap.chan < 1 || f.ap.chan > 13) errors.push('The AP channel must be a whole number from 1 to 13.')
   if (f.remotes.some((m) => !/^[0-9a-f]{12}$/i.test(m))) errors.push('Linked remote MACs must be 12 hex characters.')
   return errors
-}
-
-// A password field whose stored value shows as placeholder dots. Remove (only when one is stored) clears it.
-function PasswordInput({ secret, maxLength, label, onChange }: { secret: Secret; maxLength: number; label: string; onChange: (p: Partial<Secret>) => void }) {
-  const placeholder = secret.remove ? 'Will be removed' : secret.pskl ? '•'.repeat(secret.pskl) : 'No password'
-  return (
-    <div className="flex gap-2">
-      <Input type="password" maxLength={maxLength} value={secret.pw} placeholder={placeholder} aria-label={label}
-        disabled={secret.remove} onChange={(e) => onChange({ pw: e.target.value })} />
-      {secret.pskl > 0 && (
-        <Button variant="outline" onClick={() => onChange(secret.remove ? { remove: false } : { remove: true, pw: '' })}>
-          {secret.remove ? 'Undo' : 'Remove'}
-        </Button>
-      )}
-    </div>
-  )
 }
 
 function SsidField({ value, onChange, scanned, label }: { value: string; onChange: (v: string) => void; scanned: ScannedNet[] | null; label: string }) {

@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { toast } from '../store'
+import { toast, useStore } from '../store'
 import { Card, SectionTitle, cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Toggle } from '@/components/ui/toggle'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -35,10 +37,11 @@ export function useLeaveGuard(dirty: boolean) {
   }, [dirty])
 }
 
-export function Section({ title, children, className }: { title: ReactNode; children: ReactNode; className?: string }) {
+// A settings card. `action` sits next to the title, e.g. the switch that turns the whole section on.
+export function Section({ title, action, children, className }: { title: ReactNode; action?: ReactNode; children?: ReactNode; className?: string }) {
   return (
     <Card className={className}>
-      <SectionTitle>{title}</SectionTitle>
+      <SectionTitle right={action}>{title}</SectionTitle>
       {children}
     </Card>
   )
@@ -54,6 +57,73 @@ export function Row({ label, hint, children, stack }: { label: ReactNode; hint?:
       </div>
       {children}
     </div>
+  )
+}
+
+// A number box that holds NaN while empty, so validation can report it.
+export function NumberInput({ value, onChange, label, min, max, step, className }: {
+  value: number; onChange: (v: number) => void; label: string; min?: number; max?: number; step?: number; className?: string
+}) {
+  return (
+    <Input className={cx('w-24', className)} type="number" min={min} max={max} step={step} aria-label={label}
+      value={Number.isNaN(value) ? '' : value} onChange={(e) => onChange(e.target.value === '' ? NaN : Number(e.target.value))} />
+  )
+}
+
+// An on/off chip for picking several of a set (groups, weekdays). On is filled with the primary colour, since
+// the outline toggle's subtle "on" is hard to read when the whole point is which ones are picked.
+export function ChoiceChip({ on, onChange, label, children, className }: { on: boolean; onChange: (on: boolean) => void; label?: string; children: ReactNode; className?: string }) {
+  return (
+    <Toggle variant="outline" size="sm" pressed={on} onPressedChange={onChange} aria-label={label}
+      className={cx('aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground', className)}>
+      {children}
+    </Toggle>
+  )
+}
+
+// Whether a number is a whole number within a range (the stock pages' min/max on integer inputs).
+export const intIn = (v: number, min: number, max: number) => Number.isInteger(v) && v >= min && v <= max
+
+// Passwords never leave the light, only their length (pskl). An empty field keeps the stored password: we
+// post asterisks of its length, which set.cpp treats as "unchanged" (as the stock pages' prefilled fields
+// do). `remove` posts an empty password instead, like clearing the field on the stock page.
+export type Secret = { pw: string; pskl: number; remove: boolean }
+export const keepSecret = (pskl: number): Secret => ({ pw: '', pskl, remove: false })
+export const secretField = (s: Secret) => (s.remove ? '' : s.pw === '' ? '*'.repeat(s.pskl) : s.pw)
+
+// A password field whose stored value shows as placeholder dots. Remove (only when one is stored) clears it.
+export function PasswordInput({ secret, maxLength, label, onChange }: { secret: Secret; maxLength: number; label: string; onChange: (p: Partial<Secret>) => void }) {
+  const placeholder = secret.remove ? 'Will be removed' : secret.pskl ? '•'.repeat(secret.pskl) : 'No password'
+  return (
+    <div className="flex gap-2">
+      <Input type="password" maxLength={maxLength} value={secret.pw} placeholder={placeholder} aria-label={label}
+        disabled={secret.remove} onChange={(e) => onChange({ pw: e.target.value })} />
+      {secret.pskl > 0 && (
+        <Button variant="outline" onClick={() => onChange(secret.remove ? { remove: false } : { remove: true, pw: '' })}>
+          {secret.remove ? 'Undo' : 'Remove'}
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// A preset chosen by name, where the stock pages want its ID typed in. 0 is the default action (`none`); an
+// ID that isn't a saved preset stays selectable so loading a page never changes it.
+export function PresetSelect({ value, onChange, label, none, className }: {
+  value: number; onChange: (id: number) => void; label: string; none: string; className?: string
+}) {
+  const presets = useStore((s) => s.presets)
+  const list = Object.entries(presets ?? {})
+    .filter(([id]) => id !== '0')
+    .map(([id, p]) => ({ id: Number(id), name: p.n || `Preset ${id}` }))
+    .sort((a, b) => a.id - b.id)
+  const known = value === 0 || list.some((p) => p.id === value)
+  return (
+    <NativeSelect className={cx('w-full', className)} value={Number.isNaN(value) ? 0 : value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
+      <option value={0}>{none}</option>
+      {!known && <option value={value}>{value}: not a saved preset</option>}
+      {list.map((p) => <option key={p.id} value={p.id}>{p.id}: {p.name}</option>)}
+    </NativeSelect>
   )
 }
 

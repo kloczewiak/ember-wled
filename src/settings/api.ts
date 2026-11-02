@@ -8,16 +8,50 @@ export interface WifiNet { ssid: string; pskl: number; bssid: string; ip: number
 // The parts of /json/cfg the settings pages use. Optional keys only exist on firmware builds that support
 // the feature (ESP-NOW, WPA-Enterprise, TX power on ESP32, Ethernet), mirroring what the stock page hides.
 export interface Cfg {
-  id: { mdns: string; name: string; sui: boolean }
+  id: { mdns: string; name: string; sui: boolean; inv?: string }
   nw: { espnow?: boolean; linked_remote?: string[]; ins: WifiNet[]; dns: number[] }
   ap: { ssid: string; pskl: number; chan: number; hide: number; behav: number; ip: number[] }
   wifi: { sleep: boolean; phy: boolean; txpwr?: number }
   eth?: { type: number }
   dmx?: unknown // only on builds with DMX output (WLED_ENABLE_DMX)
   // read by accurate Peek (lib/ledoutput.ts): gamma, brightness factor and the outputs' current limits
-  light?: { 'scale-bri': number; gc: { col: number } }
-  hw?: { led: { maxpwr: number; ins: { start: number; len: number; type: number; ledma?: number; maxpwr?: number }[] } }
+  light?: { 'scale-bri': number; gc: { col: number }; nl?: { macro: number } }
+  hw?: {
+    led: { maxpwr: number; ins: { start: number; len: number; type: number; ledma?: number; maxpwr?: number }[] }
+    btn?: { ins: { type: number; macros: number[] }[]; mqtt?: boolean }
+    baud?: number // in hundreds, e.g. 1152
+  }
+  if?: Interfaces
+  ol?: { clock: number; cntdwn: boolean; min: number; max: number; o12pix: number; o5m: boolean; osec: boolean; osb: boolean }
+  timers?: {
+    cntdwn: { goal: number[]; macro: number } // goal: 2-digit year, month, day, hour, minute, second
+    ins: TimerCfg[]
+  }
 }
+
+// /json/cfg "if" (Sync interfaces). Optional parts only exist on builds with the feature.
+export interface Interfaces {
+  sync: {
+    port0: number; port1: number; espnow?: boolean
+    recv: { bri: boolean; col: boolean; fx: boolean; pal: boolean; grp: number; seg: boolean; sb: boolean }
+    send: { en: boolean; dir: boolean; btn: boolean; va: boolean; hue: boolean; grp: number; ret: number }
+  }
+  nodes: { list: boolean; bcast: boolean }
+  live: {
+    en: boolean; mso: boolean; rlm: boolean; port: number; mc: boolean
+    // inputRxPin/inputTxPin are swapped in the firmware: inputRxPin holds the transmit pin (cfg.cpp)
+    dmx: { uni: number; seqskip: boolean; e131prio: number; addr: number; dss: number; mode: number
+      inputRxPin?: number; inputTxPin?: number; inputEnablePin?: number; dmxInputPort?: number }
+    timeout: number; maxbri: boolean; 'no-gc': boolean; offset: number // timeout in 100 ms
+  }
+  va?: { alexa: boolean; macros: number[]; p: number }
+  mqtt?: { en: boolean; broker: string; port: number; user: string; pskl: number; cid: string; rtn: boolean; topics: { device: string; group: string } }
+  hue?: { en: boolean; id: number; iv: number; recv: { on: boolean; bri: boolean; col: boolean }; ip: number[] } // iv in 100 ms
+  ntp: { en: boolean; host: string; tz: number; offset: number; ampm: boolean; ln: number; lt: number }
+}
+
+// hour 255 = sunrise, 254 = sunset, 24 = every hour; dow: Monday = bit 0 … Sunday = bit 6
+export interface TimerCfg { en: number; hour: number; min: number; macro: number; dow: number; start: { mon: number; day: number }; end: { mon: number; day: number } }
 
 export async function loadCfg(): Promise<Cfg> {
   const res = await fetch('/json/cfg', { signal: AbortSignal.timeout(8000) })
