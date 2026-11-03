@@ -226,6 +226,10 @@ export function pins() {
     34: { o: 0x85, n: 'Button', t: 7, m: 0, s: 0, r: Math.round(1800 + Math.random() * 50) },
     5: { o: 0x87, n: 'Relay', m: 1, s: 1 },
     16: { o: 0x82, n: 'LED Digital' },
+    14: { o: 32, n: 'Usermod' },
+    15: { o: 32, n: 'Usermod' },
+    21: { o: 0x8b, n: 'I2C' },
+    22: { o: 0x8b, n: 'I2C' },
   }
   const all = [...usable, ...system].sort((a, b) => a - b)
   return {

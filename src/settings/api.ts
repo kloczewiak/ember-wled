@@ -18,7 +18,7 @@ export interface Cfg {
   light?: { 'scale-bri': number; gc: { col: number }; nl?: { macro: number } }
   hw?: {
     led: { maxpwr: number; ins: { start: number; len: number; type: number; ledma?: number; maxpwr?: number }[] }
-    btn?: { ins: { type: number; macros: number[] }[]; mqtt?: boolean }
+    btn?: { ins: { type: number; pin?: number[]; macros: number[] }[]; mqtt?: boolean }
     baud?: number // in hundreds, e.g. 1152
   }
   if?: Interfaces
