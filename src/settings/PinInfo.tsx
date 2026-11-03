@@ -172,7 +172,7 @@ function Tile({ p, label, selected, onClick }: { p: Pin; label?: string; selecte
     <Tag type={onClick ? 'button' : undefined} onClick={onClick} aria-pressed={onClick ? selected : undefined}
       aria-label={onClick ? `GPIO ${p.p}` : undefined}
       className={cx('relative flex h-11 flex-col items-center justify-center rounded-lg font-mono text-xs leading-tight', KINDS[k].tile,
-        k === 'free' && c & 0x20 && 'border-dashed text-muted-foreground', selected && 'outline-2 outline-offset-1 outline-foreground')}>
+        k === 'free' && c & 0x20 && 'border-dashed', selected && 'outline-2 outline-offset-1 outline-foreground')}>
       {p.p}
       {label !== undefined && <span className="h-3 font-sans text-[9px] opacity-85">{label}</span>}
       {k === 'free' && c & 0x02 ? <span className="absolute top-0.5 right-1 font-sans text-[9px] text-primary">A</span> : null}
