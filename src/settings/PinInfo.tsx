@@ -280,7 +280,8 @@ function PinMap({ pins, name }: Named) {
         {pins.some((q) => q.s !== undefined) && <LegendItem tile={KINDS.io.tile} mark="state">Pressed or on</LegendItem>}
         <FreeMarks />
       </div>
-      <div className="min-h-16 border-t pt-3" aria-live="polite">
+      {/* tall enough for a pin's details with three notes, so going from pin to pin doesn't resize it */}
+      <div className="min-h-24 border-t pt-3" aria-live="polite">
         {p ? <PinDetails p={p} name={name(p)} /> : <p className="m-0 text-sm text-muted-foreground">No pin selected.</p>}
       </div>
     </>
