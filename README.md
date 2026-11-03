@@ -30,7 +30,8 @@ WLED serves files on its filesystem in place of its built-in pages, so this UI r
 while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the
 firmware's own.
 Firmware OTA updates keep the file; a filesystem reset removes it. To go back to the stock UI, delete
-`/index.htm.gz` in the file editor.
+`/index.htm.gz` in the file editor, or open `http://<device>/edit?func=delete&path=/index.htm.gz` (with a
+settings PIN, enter it at `http://<device>/settings/sec` first).
 
 ## Firmware-specific data
 

@@ -27,6 +27,9 @@ type Failure = { kind: Kind; title: string; text: string }
 
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`
 
+// The version in a firmware file's name, like the release files' WLED_16.0.1_ESP32.bin
+const fileVersion = (name: string) => /_(\d+\.\d+\.\d+[^_]*)_/.exec(name)?.[1] ?? null
+
 // The light's reasons, in this page's words
 function reason(r: UploadReply): string {
   const text = r.reply?.text ?? ''
@@ -47,8 +50,8 @@ export function FirmwareUpdate() {
   const [failure, setFailure] = useState<Failure | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [skip, setSkip] = useState(false)
-  const [confirm, setConfirm] = useState<'revert' | 'bootloader' | null>(null)
-  const [boot, setBoot] = useState<File | null>(null) // the bootloader waiting for its confirmation
+  const [confirm, setConfirm] = useState<Job | null>(null) // what's waiting for its confirmation (kept while it closes)
+  const [confirming, setConfirming] = useState(false)
 
   const repo = info?.repo && info.repo !== 'unknown' ? info.repo : null
   const buildType = info?.release ?? ''
@@ -124,6 +127,12 @@ export function FirmwareUpdate() {
     <Alert variant="destructive"><AlertDescription><b className="font-medium">{failure.title}.</b> {failure.text}</AlertDescription></Alert>
   )
   const busy = step !== null || action.busy
+  // firmware other than what this UI is built for is installed after a warning, a bootloader after a confirmation
+  const start = (job: Job) => {
+    const version = job.kind === 'release' ? job.release.version : job.kind === 'file' ? fileVersion(job.file.name) : null
+    if ((job.kind === 'release' || job.kind === 'file') && version === BUILT_FOR) action.run(job)
+    else { setConfirm(job); setConfirming(true) }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -135,7 +144,7 @@ export function FirmwareUpdate() {
           </Row>
         )}
         {ota && !locked && !step && repo && buildType && <LatestRelease release={release} installed={info.ver} buildType={buildType} onCheck={check} disabled={busy}
-          onInstall={(r) => action.run({ kind: 'release', release: r })} />}
+          onInstall={(r) => start({ kind: 'release', release: r })} />}
         {failed('release')}
       </Section>
 
@@ -168,46 +177,70 @@ export function FirmwareUpdate() {
             </Row>
             {failed('file')}
             <div className="flex justify-end">
-              <Button variant="outline" disabled={!file || busy} onClick={() => file && action.run({ kind: 'file', file, skip })}>Install</Button>
+              <Button variant="outline" disabled={!file || busy} onClick={() => file && start({ kind: 'file', file, skip })}>Install</Button>
             </div>
           </Section>
 
           {esp32 && (
             <Section title="Previous version">
               <Row label="Go back to the previous version" hint="Restarts with the firmware from before the last update, if it's still on the light.">
-                <Button variant="outline" disabled={busy} onClick={() => setConfirm('revert')}>Revert…</Button>
+                <Button variant="outline" disabled={busy} onClick={() => start({ kind: 'revert' })}>Revert…</Button>
               </Row>
               {failed('revert')}
             </Section>
           )}
 
           {bootloader && <Bootloader sha={info.bootloaderSHA256} failure={failed('bootloader')} disabled={busy}
-            onInstall={(f) => { setBoot(f); setConfirm('bootloader') }} />}
+            onInstall={(file) => start({ kind: 'bootloader', file })} />}
         </>
       )}
 
-      <AlertDialog open={confirm !== null} onOpenChange={(o) => { if (!o) setConfirm(null) }}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirm === 'revert' ? 'Go back to the previous version?' : 'Install this bootloader?'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirm === 'revert'
-                ? `The light restarts with the firmware it had before the last update. Settings and presets stay as they are. This interface stays too, but it's built for WLED ${BUILT_FOR} and may not work properly on another version.`
-                : `${boot?.name ?? 'The file'} replaces the light's bootloader. If it's the wrong one, the light won't start and has to be flashed over USB.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant={confirm === 'bootloader' ? 'destructive' : 'default'} onClick={() => {
-              const kind = confirm
-              setConfirm(null)
-              if (kind === 'revert') action.run({ kind: 'revert' })
-              else if (boot) action.run({ kind: 'bootloader', file: boot })
-            }}>{confirm === 'revert' ? 'Revert and restart' : 'Install bootloader'}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>{confirm && <Confirm job={confirm} onConfirm={() => { setConfirming(false); action.run(confirm) }} />}</AlertDialogContent>
       </AlertDialog>
       {action.dialog}
+    </div>
+  )
+}
+
+// The confirmation before installing: for firmware this UI isn't built for (or that it can't tell), a warning
+// and how to remove this UI if it stops working; for a bootloader, what a wrong one does.
+function Confirm({ job, onConfirm }: { job: Job; onConfirm: () => void }) {
+  const version = job.kind === 'release' ? job.release.version : job.kind === 'file' ? fileVersion(job.file.name) : null
+  const warning = `This interface stays installed, but it's built for WLED ${BUILT_FOR} and may not work properly on ${version ? version : 'another version'}.`
+  const [title, text, label] = {
+    release: [`Update to WLED ${version}?`, `Settings and presets stay as they are. ${warning}`, `Update to ${version}`],
+    file: [`Install ${job.kind === 'file' ? job.file.name : ''}?`,
+      version ? `Settings and presets stay as they are. ${warning}` : `The file name doesn't say which version it is. Settings and presets stay as they are. ${warning}`, 'Install'],
+    revert: ['Go back to the previous version?', `The light restarts with the firmware it had before the last update. Settings and presets stay as they are. ${warning}`, 'Revert and restart'],
+    bootloader: ['Install this bootloader?', `${job.kind === 'bootloader' ? job.file.name : ''} replaces the light's bootloader. If it's the wrong one, the light won't start and has to be flashed over USB.`, 'Install bootloader'],
+  }[job.kind]
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle className="break-all">{title}</AlertDialogTitle>
+        <AlertDialogDescription>{text}</AlertDialogDescription>
+      </AlertDialogHeader>
+      {job.kind !== 'bootloader' && <RemoveUi />}
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction variant={job.kind === 'bootloader' ? 'destructive' : 'default'} onClick={onConfirm}>{label}</AlertDialogAction>
+      </AlertDialogFooter>
+    </>
+  )
+}
+
+// How to go back to WLED's own interface if this one stops working: the firmware's file editor deletes
+// /index.htm.gz with one address, and works without this UI (createEditHandler in wled_server.cpp). With a
+// settings PIN it needs unlocking first, which the firmware's own settings pages do.
+function RemoveUi() {
+  const base = `${location.protocol}//${location.host}`
+  return (
+    <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+      <span>If this interface stops working, open this address to remove it. The light then shows WLED's own interface.</span>
+      <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/index.htm.gz</span>
+      <span>With a settings PIN, enter it here first:</span>
+      <span className="font-mono break-all text-foreground select-all">{base}/settings/sec</span>
     </div>
   )
 }
