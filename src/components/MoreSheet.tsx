@@ -38,10 +38,11 @@ export function MoreSheet() {
   useEffect(() => { if (sheet) refresh() }, [sheet])
 
   // a drawer from the right on wide screens and from the bottom on phones, closed by swiping it back (or with
-  // the X, Escape or a tap outside). Touch swipes work anywhere on it; a mouse drags it by the handle.
+  // the X, Escape or a tap outside). Touch swipes work anywhere on it. The handle shows on phones only, like
+  // shadcn's example.
   return (
     <Drawer open={sheet === 'more'} onOpenChange={(open) => setSheet(open ? 'more' : null)}
-      swipeDirection={wide ? 'right' : 'down'} showSwipeHandle>
+      swipeDirection={wide ? 'right' : 'down'} showSwipeHandle={!wide}>
       <DrawerContent>
         <DrawerHeader className="flex-row items-center justify-between pb-3 text-left">
           <DrawerTitle>More</DrawerTitle>
