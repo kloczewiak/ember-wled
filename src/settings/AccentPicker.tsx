@@ -26,7 +26,7 @@ export function AccentPicker({ value, onChange }: { value: string; onChange: (he
     if (toHex(hsvToRgb(hsv)) !== value) setHsv(rgbToHsv(fromHex(value)!))
   }
   const rgb = hsvToRgb(hsv)
-  // every change previews at once (the form applies the draft to the page)
+  // every change previews at once, while dragging too: unlike the light's colour it's only a CSS variable
   const pickHsv = (next: HSV) => { setHsv(next); onChange(toHex(hsvToRgb(next))) }
   const pickRgb = (c: RGB) => { setHsv(rgbToHsv(c)); onChange(toHex(c)) }
 
@@ -57,23 +57,23 @@ export function AccentPicker({ value, onChange }: { value: string; onChange: (he
               <TabsTrigger value="rgb">RGB</TabsTrigger>
             </TabsList>
             <TabsContent value="wheel" className="flex justify-center py-1">
-              <ColorWheel hsv={hsv} size={200} onChange={setHsv} onCommit={pickHsv} />
+              <ColorWheel hsv={hsv} size={200} onChange={pickHsv} onCommit={pickHsv} />
             </TabsContent>
             <TabsContent value="hsv" className="flex flex-col gap-3">
               <LabeledSlider label="Hue" value={Math.round(hsv.h)} max={359} track={HUE_TRACK} display={`${Math.round(hsv.h)}°`}
-                onInput={(h) => setHsv({ ...hsv, h })} onCommit={(h) => pickHsv({ ...hsv, h })} />
+                onInput={(h) => pickHsv({ ...hsv, h })} onCommit={(h) => pickHsv({ ...hsv, h })} />
               <LabeledSlider label="Saturation" value={Math.round(hsv.s)} max={100} track={`linear-gradient(to right, #aaa, ${rgbCss(hsvToRgb({ h: hsv.h, s: 100, v: 100 }))})`}
-                display={`${Math.round(hsv.s)}%`} onInput={(s) => setHsv({ ...hsv, s })} onCommit={(s) => pickHsv({ ...hsv, s })} />
+                display={`${Math.round(hsv.s)}%`} onInput={(s) => pickHsv({ ...hsv, s })} onCommit={(s) => pickHsv({ ...hsv, s })} />
             </TabsContent>
             <TabsContent value="rgb" className="flex flex-col gap-3">
               {(['r', 'g', 'b'] as const).map((k) => (
                 <LabeledSlider key={k} label={{ r: 'Red', g: 'Green', b: 'Blue' }[k]} value={rgb[k]}
                   track={`linear-gradient(to right, ${rgbCss({ ...rgb, [k]: 0 })}, ${rgbCss({ ...rgb, [k]: 255 })})`}
-                  onInput={(v) => setHsv(rgbToHsv({ ...rgb, [k]: v }))} onCommit={(v) => pickRgb({ ...rgb, [k]: v })} />
+                  onInput={(v) => pickRgb({ ...rgb, [k]: v })} onCommit={(v) => pickRgb({ ...rgb, [k]: v })} />
               ))}
             </TabsContent>
             <LabeledSlider label="Value" value={Math.round(hsv.v)} max={100} track={`linear-gradient(to right, #000, ${rgbCss(pure)})`}
-              display={`${Math.round(hsv.v)}%`} onInput={(v) => setHsv({ ...hsv, v })} onCommit={(v) => pickHsv({ ...hsv, v })} />
+              display={`${Math.round(hsv.v)}%`} onInput={(v) => pickHsv({ ...hsv, v })} onCommit={(v) => pickHsv({ ...hsv, v })} />
           </Tabs>
 
           <div className="flex flex-wrap items-center gap-2">
