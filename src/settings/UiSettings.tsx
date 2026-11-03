@@ -1,18 +1,19 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { refresh, toast } from '../store'
-import { readStockUiCfg, useUi, type Json } from '../ui'
+import { readStockUiCfg, showAccent, useUi, type Json } from '../ui'
 import { Switch } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useCfgForm } from './config'
+import { AccentPicker } from './AccentPicker'
 import { PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 
 // Settings → User interface, with the same options as the firmware's page (data/settings_ui.htm):
 // the device name and simplified UI are stored on the light, everything else in this browser (wledUiCfg),
-// plus this UI's own accurate Peek option (also in this browser).
+// plus this UI's own options (also in this browser): the accent colour and accurate Peek.
 
-type Form = { name: string; sui: boolean; ui: Json; accuratePeek: boolean }
+type Form = { name: string; sui: boolean; ui: Json; accent: string; accuratePeek: boolean }
 
 const get = (o: Json, path: string): unknown => path.split('.').reduce<unknown>((v, k) => (v as Json)?.[k], o)
 function set(o: Json, path: string, value: unknown): Json {
@@ -32,7 +33,7 @@ const RANDOM_BG = 'https://picsum.photos/1920/1080'
 
 export function UiSettings() {
   const { base: loaded, draft, setDraft, dirty, discard, error, retry, reloadAfterSave } =
-    useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg(), accuratePeek: useUi.getState().accuratePeek }))
+    useCfgForm((c): Form => ({ name: c.id.name, sui: c.id.sui, ui: readStockUiCfg(), accent: useUi.getState().accent, accuratePeek: useUi.getState().accuratePeek }))
   useLeaveGuard(dirty)
   // after saving the light's settings: fetch fresh info (the header shows the device name) and re-read the form
   const { save, saving, dialog } = useSaver('ui', () => { refresh(); reloadAfterSave() })
@@ -40,6 +41,10 @@ export function UiSettings() {
   const oldUrl = useRef('')
   const cssFile = useRef<HTMLInputElement>(null)
   const holidaysFile = useRef<HTMLInputElement>(null)
+  // the page shows the accent being edited; leaving goes back to the saved one
+  const accent = draft?.accent
+  useEffect(() => { if (accent) showAccent(accent) }, [accent])
+  useEffect(() => () => showAccent(useUi.getState().accent), [])
 
   if (error && !draft) return <p className="text-sm text-muted-foreground">Couldn't load the settings. <Button variant="link" onClick={retry}>Try again</Button></p>
   if (!draft || !loaded) return <p className="text-sm text-muted-foreground">Loading settings…</p>
@@ -86,6 +91,7 @@ export function UiSettings() {
     try {
       if (JSON.stringify(draft.ui) !== JSON.stringify(loaded.ui)) useUi.getState().setStockCfg(draft.ui)
       if (draft.accuratePeek !== loaded.accuratePeek) useUi.getState().setAccuratePeek(draft.accuratePeek)
+      if (draft.accent !== loaded.accent) useUi.getState().setAccent(draft.accent)
     } catch { toast('Couldn\'t save to this browser\'s storage.', true); return }
     // like the stock page, only post to the light when its own settings changed
     if (deviceChanged) save([['DS', draft.name], ...(draft.sui ? [['SU', 'on'] as [string, string]] : [])])
@@ -117,6 +123,7 @@ export function UiSettings() {
         <Row label="Power button preset for off" stack>
           <PresetSelect label="Power button preset for off" none="Turn the light off" value={Number(get(ui, 'comp.off'))} onChange={(v) => setUi('comp.off', v)} />
         </Row>
+        <AccentPicker value={draft.accent} onChange={(accent) => setDraft({ ...draft, accent })} />
         <Row
           label="Accurate Peek colours"
           hint="Peek shows the colours as the LEDs really get them, with the light's gamma correction, brightness and current limit, so the steps you see on the strip at low brightness show here too. Brightness is evened out, so dim colours stay visible."

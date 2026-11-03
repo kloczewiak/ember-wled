@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { applyAccent, DEFAULT_ACCENT } from './lib/accent'
+import { fromHex, toHex } from './lib/color'
 
 // Local UI preferences and selections that are not part of the device state.
 
@@ -15,6 +17,8 @@ interface Ui {
   setStockCfg: (cfg: Json) => void // stores the whole wledUiCfg object and applies it at once
   accuratePeek: boolean // Peek shows the colours as the LEDs get them (lib/ledoutput.ts)
   setAccuratePeek: (on: boolean) => void
+  accent: string // accent colour as RRGGBB (lib/accent.ts)
+  setAccent: (hex: string) => void
 }
 
 const read = (key: string, fallback: string) => {
@@ -76,6 +80,12 @@ function toComp(cfg: Json): StockComp {
   }
 }
 
+// shows an accent on the page (the settings page also previews unsaved ones with it)
+export const showAccent = (hex: string) => applyAccent(hex === DEFAULT_ACCENT ? null : fromHex(hex))
+const storedAccent = fromHex(read('wledUiAccent', ''))
+const accent = storedAccent ? toHex(storedAccent) : DEFAULT_ACCENT
+showAccent(accent)
+
 export const useUi = create<Ui>((set) => ({
   csel: 0,
   colorMode: read('wledUiColorMode', 'wheel') as ColorMode,
@@ -95,5 +105,11 @@ export const useUi = create<Ui>((set) => ({
   setAccuratePeek: (accuratePeek) => {
     localStorage.setItem('wledUiAccuratePeek', accuratePeek ? '1' : '') // throws if storage is unavailable; the caller reports it
     set({ accuratePeek })
+  },
+  accent,
+  setAccent: (accent) => {
+    localStorage.setItem('wledUiAccent', accent === DEFAULT_ACCENT ? '' : accent) // throws if storage is unavailable; the caller reports it
+    showAccent(accent)
+    set({ accent })
   },
 }))
