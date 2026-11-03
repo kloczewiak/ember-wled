@@ -245,13 +245,14 @@ function ByUse({ pins, name }: Named) {
   )
 }
 
-// Every GPIO as a tile; tapping one shows what it is below.
+// Every GPIO as a tile; selecting one shows what it is below.
 function PinMap({ pins, name }: Named) {
   const [sel, setSel] = useState<number | null>(null)
   const kinds = new Set(pins.map(kind))
   const p = pins.find((q) => q.p === sel)
   return (
     <>
+      <p className="m-0 text-xs text-muted-foreground">Select a pin to see what uses it and if it's free.</p>
       <div className={tileGrid}>
         {pins.map((q) => <Tile key={q.p} p={q} label={short(q)} selected={q.p === sel} onClick={() => setSel(q.p === sel ? null : q.p)} />)}
       </div>
@@ -263,7 +264,7 @@ function PinMap({ pins, name }: Named) {
         ))}
       </div>
       <div className="min-h-16 border-t pt-3" aria-live="polite">
-        {p ? <PinDetails p={p} name={name(p)} /> : <p className="m-0 text-sm text-muted-foreground">Tap a pin for details.</p>}
+        {p ? <PinDetails p={p} name={name(p)} /> : <p className="m-0 text-sm text-muted-foreground">No pin selected.</p>}
       </div>
     </>
   )
