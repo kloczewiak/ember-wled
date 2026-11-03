@@ -239,6 +239,8 @@ function RemoveUi() {
     <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
       <span>If this interface stops working, open this address to remove it. The light then shows WLED's own interface.</span>
       <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/index.htm.gz</span>
+      <span>Or open the file editor and delete index.htm.gz there:</span>
+      <span className="font-mono break-all text-foreground select-all">{base}/edit</span>
       <span>With a settings PIN, enter it here first:</span>
       <span className="font-mono break-all text-foreground select-all">{base}/settings/sec</span>
     </div>
