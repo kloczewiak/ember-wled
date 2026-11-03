@@ -31,10 +31,11 @@ function Slider({
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-pan-y items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
+        {/* the track (h-1.5) is thicker than stock for touch use */}
         <SliderPrimitive.Track
           style={trackStyle}
           data-slot="slider-track"
-          className="relative grow overflow-hidden rounded-2xl bg-input/90 select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+          className="relative grow overflow-hidden rounded-2xl bg-input/90 select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
         >
           {!trackStyle && <SliderPrimitive.Indicator
             data-slot="slider-range"
