@@ -84,36 +84,31 @@ export function SettingsScreen({ route }: { route: string }) {
         <Button variant="ghost" size="icon" aria-label={page && !wide ? 'Back to settings' : 'Back to controls'} onClick={back}><ArrowLeft /></Button>
         <h1 className="m-0 text-[15px] font-semibold">{wide ? 'Settings' : title}</h1>
       </header>
-      {wide ? (
-        // only the page scrolls, below its title, so the menu and the title stay put (like the columns of the
-        // main desktop layout); p-px keeps the cards' outline ring from being clipped by the scroll area
-        <div className="mx-auto grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[260px_minmax(0,1fr)] gap-6 px-4 pt-2">
-          <nav aria-label="Settings pages"><Menu build={build} current={page?.id} /></nav>
-          <div className="flex min-h-0 min-w-0 flex-col">
-            {page && <h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>}
-            {/* keyed by page, so every page opens at the top */}
-            <div key={page?.id ?? 'none'} className="scroll-thin min-h-0 flex-1 overflow-y-auto rounded-xl p-px pb-4">
+      {/* One tree for both layouts, with only the classes changing, so crossing the breakpoint (resizing, rotating
+          a tablet) keeps the open page, its loaded data and unsaved changes instead of building it anew.
+          Wide: the menu on the left and only the page scrolling, below its title, like the columns of the main
+          desktop layout (p-px keeps the cards' outline ring from being clipped by the scroll area).
+          Phones: the menu or a page, with the page's save bar in a footer below its scroll area. */}
+      <div className={wide ? 'mx-auto grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[260px_minmax(0,1fr)] gap-6 px-4 pt-2' : 'flex min-h-0 flex-1 flex-col'}>
+        {wide && <nav aria-label="Settings pages"><Menu build={build} current={page?.id} /></nav>}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {wide && page && <h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>}
+          {/* a new scroll area for each view, so every page opens at the top: sharing one kept the page's scroll
+              position (and iOS's momentum) when going back, leaving the shorter menu scrolled past its end */}
+          <div key={page?.id ?? 'menu'} className={cx('scroll-thin min-h-0 flex-1 overflow-y-auto', wide && 'rounded-xl p-px pb-4')}>
+            {/* on phones the menu's bottom padding keeps its end clear of the home indicator; on a page the footer
+                does that */}
+            <div className={wide ? undefined : cx('mx-auto max-w-2xl px-4 pt-2', page ? 'pb-4' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]')}>
               {page
-                ? <main className="min-w-0">{page.render!()}</main>
-                : <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>}
+                ? <main className="min-w-0"><SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider></main>
+                : wide
+                  ? <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>
+                  : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
             </div>
           </div>
+          {!wide && page && <div ref={setFooter} className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] empty:hidden" />}
         </div>
-      ) : (
-        <>
-          {/* a new scroll area for each view: sharing one kept the page's scroll position (and iOS's momentum)
-              when going back, leaving the shorter menu scrolled past its end. The menu's bottom padding keeps its
-              end clear of the home indicator; on a page the footer does that. */}
-          <div key={page?.id ?? 'menu'} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-            <div className={cx('mx-auto max-w-2xl px-4 pt-2', page ? 'pb-4' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]')}>
-              {page
-                ? <main className="min-w-0"><SaveBarSlot.Provider value={footer}>{page.render!()}</SaveBarSlot.Provider></main>
-                : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
-            </div>
-          </div>
-          {page && <div ref={setFooter} className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] empty:hidden" />}
-        </>
-      )}
+      </div>
     </div>
   )
 }
