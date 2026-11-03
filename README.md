@@ -27,7 +27,8 @@ Open `http://<device>/edit`, upload `dist/index.htm.gz` to the filesystem root a
 To make it installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, `dist/icon-192.png`,
 `dist/icon-512.png` and `dist/apple-touch-icon.png`. `npm run gen:icons` redraws the icons.
 WLED serves files on its filesystem in place of its built-in pages, so this UI replaces the stock one at `/`
-while Settings, Update, `/cpal.htm` and the rest stay the firmware's own pages.
+while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the
+firmware's own.
 Firmware OTA updates keep the file; a filesystem reset removes it. To go back to the stock UI, delete
 `/index.htm.gz` in the file editor.
 
@@ -41,6 +42,7 @@ copied or derived from that firmware's source, so check these after every firmwa
 | Effect colours on the Default palette (`src/lib/fxcolors.ts`), used by the segment bar | v16.0.1 | Follow `src/lib/fxcolors.md` (`npm run audit:fx-colors` lists what to review) |
 | Mock effect and palette lists (`mock/fixtures.json`) | v16.0.1 | `npm run gen:fixtures` |
 | Settings pages and the rest of the stock UI's behaviour | v16.0.1 | Diff `wled00/data` and `wled00/set.cpp` against the previous release; gaps go in `PARITY.md` |
+| The version the UI says it's built for, e.g. when going back to older firmware (`BUILT_FOR` in `src/lib/firmware.ts`) | v16.0.1 | Set it once the rows above are checked |
 
 ## Layout
 

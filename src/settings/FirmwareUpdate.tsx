@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Check, ChevronDown, Lock } from 'lucide-react'
 import type { Info } from '../api/types'
+import { BUILT_FOR } from '../lib/firmware'
 import {
   compareVersions, download, latestRelease, revertFirmware, updateAccess, uploadFirmware, waitForRestart,
   type Release, type SaveResult, type UploadReply,
@@ -191,7 +192,7 @@ export function FirmwareUpdate() {
             <AlertDialogTitle>{confirm === 'revert' ? 'Go back to the previous version?' : 'Install this bootloader?'}</AlertDialogTitle>
             <AlertDialogDescription>
               {confirm === 'revert'
-                ? 'The light restarts with the firmware it had before the last update. Settings, presets and this interface stay as they are.'
+                ? `The light restarts with the firmware it had before the last update. Settings and presets stay as they are. This interface stays too, but it's built for WLED ${BUILT_FOR} and may not work properly on another version.`
                 : `${boot?.name ?? 'The file'} replaces the light's bootloader. If it's the wrong one, the light won't start and has to be flashed over USB.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
