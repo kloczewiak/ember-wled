@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { init, useStore } from './store'
 import { useAccuratePeek, useHash, useMedia } from './hooks'
 import { useUi } from './ui'
@@ -72,14 +72,39 @@ export default function App() {
   )
 }
 
+// Whether a column has at least `min` px left below its first child.
+function useRoomBelowFirst(col: HTMLElement | null, min: number) {
+  const [roomy, setRoomy] = useState(true)
+  useEffect(() => {
+    if (!col) return
+    const first = col.firstElementChild
+    const check = () => {
+      const s = getComputedStyle(col)
+      const room = col.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom) - parseFloat(s.rowGap)
+        - (first?.getBoundingClientRect().height ?? 0)
+      setRoomy(room >= min)
+    }
+    const ro = new ResizeObserver(check)
+    ro.observe(col)
+    if (first) ro.observe(first)
+    return () => ro.disconnect()
+  }, [col, min])
+  return roomy
+}
+
 function DesktopLayout() {
+  // The palette list fills the room below the colour card and scrolls on its own. When the window is too short
+  // to leave it 320px, the list is shown in full and the whole column scrolls instead, so there's only ever one
+  // scroll area (like the Colors tab on phones).
+  const [left, setLeft] = useState<HTMLDivElement | null>(null)
+  const roomy = useRoomBelowFirst(left, 320)
   // p-px on the scrolling columns: shadcn Cards draw their edge with a ring (a box-shadow just outside the
   // card), which a scroll container would otherwise clip
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 px-4 pb-4">
-      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
+      <div ref={setLeft} className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
         <ColorPanel className="shrink-0" />
-        <PalettePanel className="min-h-80 flex-1" />
+        <PalettePanel className={roomy ? 'flex-1' : 'shrink-0'} />
       </div>
       <EffectPanel />
       <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
