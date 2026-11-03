@@ -141,7 +141,7 @@ function PinTable({ pins, name }: Named) {
         </thead>
         <tbody>
           {pins.map((p) => (
-            <tr key={p.p} className="border-t even:bg-muted/40">
+            <tr key={p.p} className={cx('border-t even:bg-muted/40', kind(p) === 'sys' && 'text-muted-foreground')}>
               <td className="px-3 py-2 font-mono">{p.p}</td>
               <td className="border-l px-3 py-2">
                 {p.a ? (
