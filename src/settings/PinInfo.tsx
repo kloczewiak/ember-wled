@@ -184,13 +184,30 @@ function Tile({ p, label, selected, onClick }: { p: Pin; label?: string; selecte
 
 const tileGrid = 'grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1.5'
 
-function FreeLegend() {
+// Legend entries are small copies of the cells, so a colour reads as a cell and a dot as a marker on one.
+function LegendItem({ tile, mark, children }: { tile: string; mark?: 'analog' | 'boot' | 'state'; children: string }) {
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-      <span><span className="text-primary">A</span> analog</span>
-      <span>Dashed: input only</span>
-      <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-amber-500" />Boot pin</span>
-    </div>
+    <span className="flex items-center gap-1.5">
+      <span className={cx('relative h-4 w-5 shrink-0 rounded-[5px]', tile)}>
+        {mark === 'analog' && <span className="absolute top-px right-0.5 font-sans text-[8px] leading-none text-primary">A</span>}
+        {mark === 'boot' && <span className="absolute top-0.5 left-0.5 size-1 rounded-full bg-amber-500" />}
+        {mark === 'state' && <span className="absolute top-0.5 right-0.5 size-1 rounded-full bg-green-400" />}
+      </span>
+      {children}
+    </span>
+  )
+}
+
+const legendRow = 'flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-muted-foreground'
+
+// the marks on free pins
+function FreeMarks() {
+  return (
+    <>
+      <LegendItem tile={KINDS.free.tile} mark="analog">Analog</LegendItem>
+      <LegendItem tile={cx(KINDS.free.tile, 'border-dashed')}>Input only</LegendItem>
+      <LegendItem tile={KINDS.free.tile} mark="boot">Boot pin</LegendItem>
+    </>
   )
 }
 
@@ -240,7 +257,7 @@ function ByUse({ pins, name }: Named) {
         <span>{free.length} {free.length === 1 ? 'pin' : 'pins'}</span>
       </div>
       {free.length ? <div className={tileGrid}>{free.map((p) => <Tile key={p.p} p={p} />)}</div> : <p className="m-0 text-sm text-muted-foreground">No free pins.</p>}
-      <FreeLegend />
+      <div className={legendRow}><FreeMarks /></div>
     </>
   )
 }
@@ -256,12 +273,12 @@ function PinMap({ pins, name }: Named) {
       <div className={tileGrid}>
         {pins.map((q) => <Tile key={q.p} p={q} label={short(q)} selected={q.p === sel} onClick={() => setSel(q.p === sel ? null : q.p)} />)}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {(Object.keys(KINDS) as Kind[]).filter((k) => kinds.has(k)).map((k) => (
-          <span key={k} className="flex items-center gap-1.5">
-            <span className={cx('size-2.5 rounded-sm', k === 'free' ? 'border border-muted-foreground' : k === 'sys' ? 'bg-muted ring-1 ring-muted-foreground/40' : KINDS[k].tile)} />{KINDS[k].label}
-          </span>
-        ))}
+      <div className={legendRow}>
+        {(Object.keys(KINDS) as Kind[]).filter((k) => kinds.has(k)).map((k) => <LegendItem key={k} tile={KINDS[k].tile}>{KINDS[k].label}</LegendItem>)}
+      </div>
+      <div className={legendRow}>
+        {pins.some((q) => q.s !== undefined) && <LegendItem tile={KINDS.io.tile} mark="state">Pressed or on</LegendItem>}
+        <FreeMarks />
       </div>
       <div className="min-h-16 border-t pt-3" aria-live="polite">
         {p ? <PinDetails p={p} name={name(p)} /> : <p className="m-0 text-sm text-muted-foreground">No pin selected.</p>}
