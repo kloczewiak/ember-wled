@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { postSettings, unlockSettings } from './api'
+import { postSettings, unlockSettings, type SaveResult } from './api'
 
 // A form's working copy next to the values it was loaded with; `dirty` drives the save bar.
 export function useDraft<T>(loaded: T | null) {
@@ -200,19 +200,19 @@ function PinDialog({ open, onSubmit, onCancel, wrong }: { open: boolean; onSubmi
   )
 }
 
-// Saving with the firmware's form handler, including the PIN round trip: a 401 opens the PIN dialog, and
-// the save is retried once the PIN is entered.
-export function useSaver(page: string, onSaved: () => void) {
-  const [saving, setSaving] = useState(false)
-  const [pending, setPending] = useState<[string, string][] | null>(null)
+// Runs something the light may refuse until the settings PIN is entered (a settings form, an upload): a 401
+// opens the PIN dialog, and the action is retried once the PIN is entered.
+export function usePinAction<A>(action: (a: A) => Promise<SaveResult>, onDone: (a: A) => void) {
+  const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState<{ a: A } | null>(null)
   const [wrongPin, setWrongPin] = useState(false)
 
-  const run = async (fields: [string, string][]) => {
-    setSaving(true)
-    const result = await postSettings(page, fields)
-    setSaving(false)
-    if (result === 'ok') { setPending(null); setWrongPin(false); toast('Settings saved'); onSaved(); return }
-    if (result === 'pin') { setWrongPin(pending !== null); setPending(fields); return }
+  const run = async (a: A) => {
+    setBusy(true)
+    const result = await action(a)
+    setBusy(false)
+    if (result === 'ok') { setPending(null); setWrongPin(false); onDone(a); return }
+    if (result === 'pin') { setWrongPin(pending !== null); setPending({ a }); return }
     setPending(null)
     toast(result === 'locked' ? 'Wi-Fi settings are locked. Unlock OTA in Security and updates first.' : 'Couldn\'t save the settings. Try again.', true)
   }
@@ -221,10 +221,20 @@ export function useSaver(page: string, onSaved: () => void) {
       open={pending !== null}
       wrong={wrongPin}
       onCancel={() => { setPending(null); setWrongPin(false) }}
-      onSubmit={async (pin) => { await unlockSettings(pin); if (pending) run(pending) }}
+      onSubmit={async (pin) => { await unlockSettings(pin); if (pending) run(pending.a) }}
     />
   )
-  return { save: run, saving, dialog }
+  return { run, busy, dialog }
+}
+
+// Saving with the firmware's form handler, including the PIN round trip. `quiet` leaves the "saved" message
+// to the page.
+export function useSaver(page: string, onSaved: () => void, quiet = false) {
+  const { run, busy, dialog } = usePinAction((fields: [string, string][]) => postSettings(page, fields), () => {
+    if (!quiet) toast('Settings saved')
+    onSaved()
+  })
+  return { save: run, saving: busy, dialog }
 }
 
 // On phones the settings screen puts a footer below the page's scroll area (like the tab bar on the controls)

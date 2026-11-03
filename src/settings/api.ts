@@ -23,6 +23,8 @@ export interface Cfg {
   }
   if?: Interfaces
   ol?: { clock: number; cntdwn: boolean; min: number; max: number; o12pix: number; o5m: boolean; osec: boolean; osb: boolean }
+  // Security and updates; aota only on builds with OTA (it does something only with ArduinoOTA compiled in)
+  ota: { lock: boolean; 'lock-wifi': boolean; pskl: number; aota?: boolean; 'same-subnet': boolean }
   timers?: {
     cntdwn: { goal: number[]; macro: number } // goal: 2-digit year, month, day, hour, minute, second
     ins: TimerCfg[]
@@ -90,6 +92,19 @@ export async function postSettings(page: string, fields: [string, string][]): Pr
     return 'error'
   } catch {
     return 'error'
+  }
+}
+
+// Uploads a file to the light's filesystem (needs the settings PIN, like the settings forms). JSON is checked
+// and minified first, like the stock pages' uploadFile() (common.js); `text` is the light's reply.
+export async function uploadFile(file: Blob, path: string): Promise<{ result: SaveResult; text: string }> {
+  const data = new FormData()
+  data.append('data', file, path)
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: data, signal: AbortSignal.timeout(20000) })
+    return { result: res.ok ? 'ok' : res.status === 401 ? 'pin' : 'error', text: await res.text() }
+  } catch {
+    return { result: 'error', text: '' }
   }
 }
 

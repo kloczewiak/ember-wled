@@ -5,7 +5,7 @@
 const PIN = process.env.WLED_MOCK_PIN ?? ''
 let pinOk = PIN === ''
 
-const secrets = { wifi: ['hunter22', '', ''], ap: 'wled1234', mqtt: 'brokerpass' }
+const secrets = { wifi: ['hunter22', '', ''], ap: 'wled1234', mqtt: 'brokerpass', ota: 'wledota' }
 
 type Net = { ssid: string; bssid: string; ip: number[]; gw: number[]; sn: number[] }
 
@@ -45,6 +45,7 @@ export const cfg = {
     hue: { en: false, id: 1, iv: 25, recv: { on: true, bri: true, col: true }, ip: [192, 168, 1, 0] },
     ntp: { en: true, host: '0.wled.pool.ntp.org', tz: 2, offset: 0, ampm: false, ln: 20.86, lt: 51.8 },
   },
+  ota: { lock: false, 'lock-wifi': false, aota: true, 'same-subnet': true },
   ol: { clock: 0, cntdwn: false, min: 0, max: 29, o12pix: 0, o5m: false, osec: false, osb: false },
   timers: {
     cntdwn: { goal: [26, 12, 24, 18, 0, 0], macro: 0 },
@@ -62,6 +63,7 @@ export function cfgJson() {
     nw: { ...cfg.nw, ins: cfg.nw.ins.map((n, i) => ({ ...n, pskl: secrets.wifi[i].length })) },
     ap: { ...cfg.ap, pskl: secrets.ap.length },
     if: { ...cfg.if, mqtt: { ...cfg.if.mqtt, pskl: secrets.mqtt.length } },
+    ota: { ...cfg.ota, pskl: secrets.ota.length },
   }
 }
 
@@ -93,6 +95,7 @@ export function postSettings(page: string, form: URLSearchParams): number {
   }
   if (page === 'sync') return postSync(form)
   if (page === 'time') return postTime(form)
+  if (page === 'sec') return postSec(form)
   if (page !== 'wifi') return 404
   const nets: Net[] = []
   for (let n = 0; n < 3; n++) {
@@ -188,9 +191,45 @@ function postTime(form: URLSearchParams): number {
   return 200
 }
 
+// set.cpp's SUBPAGE_SEC (a factory reset only logs here, the mock keeps its data)
+let lastSecEdit = 0
+function postSec(form: URLSearchParams): number {
+  const arg = (k: string) => form.get(k) ?? ''
+  if (form.has('RS')) { console.log('[mock] factory reset requested'); return 200 }
+  if (form.has('PIN')) {
+    const pin = arg('PIN')
+    if ((pin.length === 4 && pin !== '0000') || pin.length === 0) console.log(`[mock] settings PIN ${pin ? 'set' : 'removed'}`)
+  }
+  let ok = !cfg.ota.lock
+  if (form.has('OP')) {
+    if (cfg.ota.lock && arg('OP') === secrets.ota && Date.now() - lastSecEdit > 3000) ok = true
+    if (!cfg.ota.lock && arg('OP').length > 0) secrets.ota = arg('OP').slice(0, 32)
+  }
+  lastSecEdit = Date.now()
+  if (ok) {
+    cfg.ota.lock = form.has('NO')
+    cfg.ota['lock-wifi'] = form.has('OW')
+    cfg.ota.aota = form.has('AO')
+    cfg.ota['same-subnet'] = form.has('SU')
+  }
+  return 200
+}
+
 // /json/pins: usable GPIOs (an ESP32 without the flash pins), with the button pins allocated
 export function pins() {
   const usable = [0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39]
-  const owners: Record<number, string> = { 0: 'Button', 13: 'Button', 34: 'Button', 16: 'LED' }
-  return { pins: usable.map((p) => ({ p, c: p >= 34 ? 0x22 : 0, a: p in owners, ...(p in owners ? { n: owners[p] } : {}) })) }
+  const system = [6, 7, 8, 9, 10, 11]
+  const caps = (p: number) => (p >= 34 ? 0x22 : 0) | (p === 0 ? 0x08 : 0) | (p === 2 || p === 12 ? 0x10 : 0) | ([32, 33].includes(p) ? 0x02 : 0)
+  const used: Record<number, object> = {
+    0: { o: 0x85, n: 'Button', t: 2, m: 0, s: Math.random() < 0.2 ? 1 : 0 },
+    13: { o: 0x85, n: 'Button', t: 4, m: 0, s: 1 },
+    34: { o: 0x85, n: 'Button', t: 7, m: 0, s: 0, r: Math.round(1800 + Math.random() * 50) },
+    5: { o: 0x87, n: 'Relay', m: 1, s: 1 },
+    16: { o: 0x82, n: 'LED Digital' },
+  }
+  const all = [...usable, ...system].sort((a, b) => a - b)
+  return {
+    pins: all.map((p) => system.includes(p) ? { p, c: 0, a: true, o: 0, n: 'System' }
+      : { p, c: caps(p), a: p in used, ...used[p] }),
+  }
 }

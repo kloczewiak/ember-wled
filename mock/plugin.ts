@@ -180,7 +180,7 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
       const json = body.slice(body.indexOf('{'), body.lastIndexOf('}') + 1)
       try { presets = JSON.parse(json); presetsVersion++ } catch { /* keep old presets */ }
     }
-    res.end('File Uploaded!')
+    res.end(/filename="\/?cfg\.json"/.test(body) ? 'Config restore ok.\nRebooting...' : 'File Uploaded!')
     return
   }
   switch (path) {
@@ -195,6 +195,7 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
     case '/json/live': return send(res, live())
     case '/presets.json': return send(res, presets)
     case '/json/cfg': return send(res, cfgJson())
+    case '/cfg.json': return send(res, cfg)
     case '/json/net': return send(res, scan())
     case '/json/pins': return send(res, pins())
     case '/reset': res.end('Rebooting...'); return

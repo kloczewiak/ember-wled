@@ -10,6 +10,8 @@ import { UiSettings } from './UiSettings'
 import { SyncSettings } from './SyncSettings'
 import { TimeSettings } from './TimeSettings'
 import { WifiSettings } from './WifiSettings'
+import { SecSettings } from './SecSettings'
+import { PinInfo } from './PinInfo'
 
 // The settings screen: #settings is the menu, #settings/<page> a page. Pages built here open in the app;
 // the rest link to the firmware's own settings pages until they are rebuilt.
@@ -23,12 +25,12 @@ const PAGES: Page[] = [
   { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, render: () => <SyncSettings /> },
   { id: 'time', title: 'Time and macros', icon: Clock, render: () => <TimeSettings /> },
   { id: 'leds', title: 'LED and hardware', icon: Lightbulb, href: '/settings/leds' },
-  { id: 'pins', title: 'Pin info', icon: Bolt, href: '/settings/pins' },
+  { id: 'pins', title: 'Pin info', icon: Bolt, render: () => <PinInfo /> },
   // listed on every build: whether 2D is compiled in is only exposed by the settings script (see PARITY.md)
   { id: '2D', title: '2D configuration', icon: Grid3x3, href: '/settings/2D' },
   { id: 'dmx', title: 'DMX output', icon: Layers, href: '/settings/dmx', show: (b) => b.dmx },
   { id: 'um', title: 'Usermods', icon: Puzzle, href: '/settings/um' },
-  { id: 'sec', title: 'Security and updates', icon: Lock, href: '/settings/sec' },
+  { id: 'sec', title: 'Security and updates', icon: Lock, render: () => <SecSettings /> },
 ]
 
 // navigates within the app, asking first if the open page has unsaved changes

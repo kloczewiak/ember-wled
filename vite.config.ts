@@ -32,7 +32,7 @@ export default defineConfig({
   server: mock ? undefined : {
     proxy: {
       ...Object.fromEntries(
-        ['/json', '/presets.json', '/upload', '/reset', '/win', '/edit', '/settings', '/update', '/cpal.htm', '/pixelforge.htm']
+        ['/json', '/presets.json', '/cfg.json', '/upload', '/reset', '/win', '/edit', '/settings', '/update', '/cpal.htm', '/pixelforge.htm']
           .map((p) => [p, { target: `http://${host}`, changeOrigin: true }]),
       ),
       '/ws': { target: `ws://${host}`, ws: true, changeOrigin: true },

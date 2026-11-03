@@ -19,6 +19,9 @@ there:
 | Settings menu: the **2D configuration** entry is hidden on builds without 2D (`WLED_DISABLE_2D`) | `s.js?p=0` hides the button | Always listed. On a build without 2D, the link doesn't lead to a 2D page. |
 | Sync interfaces → Philips Hue: the connection status ("Active", "Unauthorized", …) | `hueError`, written to `s.js?p=4` only | Not shown. |
 | Time and macros: today's sunrise and sunset times | `s.js?p=5` only (`xml.cpp`) | Not shown; the local time comes from `info.time`. |
+| Security and updates: the ArduinoOTA checkbox, shown only on builds with ArduinoOTA (`WLED_ENABLE_AOTA`) | `s.js?p=6` hides it otherwise | Not shown. Saving keeps its current value (`ota.aota` in `/json/cfg`). |
+| Security and updates: whether a settings PIN is set | `s.js?p=6` fills the PIN field with "0000" | Keep / Change / Remove instead of a prefilled field. |
+| Pin info: "Touch" in the notes, and "Usermod" for pins a usermod reserves but isn't using | `s.js?p=11` (`d.touch`, `d.um_p`) | Not shown. Pins in use show their owner from `/json/pins`. |
 
 These would need the firmware to expose the values in its JSON API.
 
@@ -41,8 +44,8 @@ These would need the firmware to expose the values in its JSON API.
 
 ### Pages not rebuilt yet
 
-These link to the firmware's own pages: LED and hardware, Pin info, 2D configuration, DMX output, Usermods,
-Security and updates.
+These link to the firmware's own pages: LED and hardware, 2D configuration, DMX output, Usermods. The firmware
+update page (`/update`) is also the firmware's own.
 
 ## Main UI
 
