@@ -93,7 +93,12 @@ export function AccentPicker({ value, onChange }: { value: string; onChange: (he
                 className="size-7 rounded-full border aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-card" style={{ background: `#${q}` }} />
             ))}
           </div>
-          {adjusted && <p className="m-0 text-xs text-muted-foreground">Shown slightly {adjusted} so it stays visible and text on it stays readable.</p>}
+          {/* always there, so the layout doesn't jump while dragging across the adjusted range */}
+          <p className="m-0 text-xs text-muted-foreground">
+            {adjusted
+              ? `Shown slightly ${adjusted} so it stays visible and text on it stays readable.`
+              : 'Very dark and very pale colours are adjusted so text on them stays readable.'}
+          </p>
           <Preview />
         </>
       )}
