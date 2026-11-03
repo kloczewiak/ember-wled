@@ -197,12 +197,14 @@ function BackupRow({ label, path, file, hint }: { label: string; path: string; f
 }
 
 // set.cpp formats the filesystem when RS is posted to the Security page and restarts the light.
+// RS formats the whole filesystem, so this UI (/index.htm.gz) goes too and the firmware's built-in stock UI is
+// served again
 function FactoryReset() {
   const [confirming, setConfirming] = useState(false)
   const { save, saving, dialog } = useSaver('sec', () => toast('Factory reset. The light restarts as the WLED-AP access point.'), true)
   return (
     <Section title="Factory reset" className="ring-destructive/40">
-      <Row label="Erase everything" hint="All settings and presets are erased. The light restarts as the WLED-AP access point, to be set up again.">
+      <Row label="Erase everything" hint="Every file on the light is erased: settings, presets and this interface. It restarts as the WLED-AP access point with the stock WLED interface, to be set up again.">
         <Button variant="destructive" disabled={saving} onClick={() => setConfirming(true)}>Reset…</Button>
       </Row>
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
@@ -210,8 +212,9 @@ function FactoryReset() {
           <AlertDialogHeader>
             <AlertDialogTitle>Factory reset?</AlertDialogTitle>
             <AlertDialogDescription>
-              All settings and presets on this light are erased, including Wi-Fi. It restarts as the WLED-AP access point,
-              and this page loses its connection. Consider backing up first.
+              Every file on this light is erased: settings (Wi-Fi too), presets, custom palettes and this interface, which
+              goes back to the stock WLED one until you upload it again. The light restarts as the WLED-AP access point and
+              this page loses its connection. Consider backing up first.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
