@@ -188,7 +188,7 @@ const tileGrid = 'grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1.5
 function LegendItem({ tile, mark, children }: { tile: string; mark?: 'analog' | 'boot' | 'state'; children: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={cx('relative h-4 w-5 shrink-0 rounded-[5px]', tile)}>
+      <span className={cx('relative size-4 shrink-0 rounded-[5px]', tile)}>
         {mark === 'analog' && <span className="absolute top-px right-0.5 font-sans text-[8px] leading-none text-primary">A</span>}
         {mark === 'boot' && <span className="absolute top-0.5 left-0.5 size-1 rounded-full bg-amber-500" />}
         {mark === 'state' && <span className="absolute top-0.5 right-0.5 size-1 rounded-full bg-green-400" />}
