@@ -293,7 +293,8 @@ function PinDetails({ p, name }: { p: Pin; name: string }) {
   const lines = [
     k === 'free' ? (c & 0x20 ? 'Free, input only: for buttons and sensors, not LEDs or a relay.' : 'Free to use.')
       : k === 'sys' ? 'Used by the chip itself (flash memory or other internals), so it can\'t be used.'
-      : `Used by ${name}${p.t !== undefined ? ` (${BUTTON_TYPES[p.t] ?? '?'})` : ''}. It can't be used for anything else until it's freed in the settings.`,
+      : `Used by ${name}${p.t !== undefined ? ` (${BUTTON_TYPES[p.t] ?? '?'})` : ''}.`,
+    k !== 'free' && k !== 'sys' && 'It can\'t be used for anything else until it\'s freed in the settings.',
     c & 0x02 && 'Can read analog values.',
     c & 0x08 && 'Flash boot pin: held low at power-on, the chip starts in download mode instead of WLED.',
     c & 0x10 && 'Bootstrap pin: what it\'s connected to at power-on can change how the chip starts.',
