@@ -170,4 +170,10 @@ body {
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 dropped the pointer cursor on buttons; give it back to everything clickable */
+  :is(button, [role='button'], [role='tab'], [role='switch'], [role='checkbox'], [role='option'], [role='menuitem'],
+    select, summary, label:has(input, [role='checkbox'], [role='switch']),
+    input:is([type='checkbox'], [type='radio'], [type='color'], [type='file'])):not(:disabled, [aria-disabled='true'], [data-disabled]) {
+    cursor: pointer;
+  }
 }
