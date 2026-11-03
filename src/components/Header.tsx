@@ -119,8 +119,7 @@ export function Header({ wide }: { wide: boolean }) {
           <div className="ml-2 flex gap-2">{toggles}</div>
         </div>
         <div className="flex gap-2">
-          <IconButton label="Info" onClick={() => setSheet('more')}><Icon.info /></IconButton>
-          {info.ndc > 0 && <IconButton label="Other WLED devices" onClick={() => setSheet('more')}><Icon.nodes /></IconButton>}
+          <IconButton label="Info, timer and more" onClick={() => setSheet('more')}><Icon.info /></IconButton>
           <Button variant="outline" size="icon-lg" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="#settings" />}><Icon.settings /></Button>
         </div>
       </header>

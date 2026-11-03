@@ -11,7 +11,7 @@ import { Switch as UiSwitch } from '@/components/ui/switch'
 import { Toggle } from '@/components/ui/toggle'
 import {
   Check as CheckIcon, ChevronDown, Dices, Ellipsis, Eye, Info, List, Moon, Pencil, Play, Plus, Power, RefreshCw,
-  Repeat, Rows2, Search, SlidersHorizontal, Snowflake, Square, Star, Trash2, X,
+  Repeat, Search, SlidersHorizontal, Snowflake, Square, Star, Trash2, X,
 } from 'lucide-react'
 
 // The app's controls, built on the shadcn components in ./ui. Panels use these rather than the
@@ -211,7 +211,6 @@ export const Icon = {
   sync: icon(RefreshCw),
   eye: icon(Eye),
   info: icon(Info),
-  nodes: icon(Rows2),
   settings: icon(SlidersHorizontal),
   search: icon(Search),
   plus: icon(Plus),
