@@ -27,8 +27,9 @@ function tags(flags: string, usesPalette: boolean) {
   return t
 }
 
-// The effect list: two columns once the list itself is at least 32rem wide (a container query, so it
-// adapts to the column it sits in, not the window).
+// The effect list: as many columns as fit in the list's own width (not the window's), each at least 15rem,
+// which fits the longest effect name with all its tags. On huge screens that keeps the tags next to the name
+// instead of a wide gap away.
 export function EffectList({ className }: { className?: string }) {
   const { main, segLmax, has2D, isMatrix } = useSelection()
   const effects = useStore((s) => s.effects)
@@ -63,7 +64,7 @@ export function EffectList({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cx('@container flex min-h-0 flex-col gap-3', className)}>
+    <div className={cx('flex min-h-0 flex-col gap-3', className)}>
       <SearchField value={query} onChange={(q) => { setQuery(q); if (q) setFilters([]) }} placeholder={`Search ${effects.length} effects`} />
       <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
         {FILTERS.filter((f) => f.flag !== '2' || isMatrix).map((f) => (
@@ -74,7 +75,7 @@ export function EffectList({ className }: { className?: string }) {
         ref={listRef}
         role="listbox"
         aria-label="Effects"
-        className="scroll-thin -mx-1 grid min-h-0 flex-1 grid-cols-1 content-start gap-1 overflow-y-auto px-1 @lg:grid-cols-2"
+        className="scroll-thin -mx-1 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] content-start gap-1 overflow-y-auto px-1"
       >
         {filtered.map((e) => {
           const sel = e.id === selected
