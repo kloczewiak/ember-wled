@@ -7,7 +7,8 @@ import { formatCurrent } from '../lib/format'
 import { toggleSync, toggleTimer } from './Header'
 import { Button, Check, cx, Field, inputCls, SectionTitle, Switch, UnitInput } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
+import { XIcon } from 'lucide-react'
 import { NativeSelect } from '@/components/ui/native-select'
 
 // Usermod HTML uses glyphs from the stock UI's icon font, which this UI doesn't ship; the power glyph
@@ -36,21 +37,25 @@ export function MoreSheet() {
 
   useEffect(() => { if (sheet) refresh() }, [sheet])
 
+  // a drawer from the right on wide screens and from the bottom on phones, closed by swiping it back (or with
+  // the X, Escape or a tap outside). Touch swipes work anywhere on it; a mouse drags it by the handle.
   return (
-    <Sheet open={sheet === 'more'} onOpenChange={(open) => setSheet(open ? 'more' : null)}>
-      <SheetContent side={wide ? 'right' : 'bottom'} className={cx('gap-0', !wide && 'max-h-[92dvh]')}>
-        <SheetHeader>
-          <SheetTitle>More</SheetTitle>
-          <SheetDescription className="sr-only">Timer, sync, device info and other devices</SheetDescription>
-        </SheetHeader>
-        <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6">
+    <Drawer open={sheet === 'more'} onOpenChange={(open) => setSheet(open ? 'more' : null)}
+      swipeDirection={wide ? 'right' : 'down'} showSwipeHandle>
+      <DrawerContent>
+        <DrawerHeader className="flex-row items-center justify-between pb-3 text-left">
+          <DrawerTitle>More</DrawerTitle>
+          <DrawerDescription className="sr-only">Timer, sync, device info and other devices</DrawerDescription>
+          <DrawerClose render={<UiButton variant="ghost" size="icon-sm" />}><XIcon /><span className="sr-only">Close</span></DrawerClose>
+        </DrawerHeader>
+        <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <TimerSync />
           <DeviceInfo />
           <Nodes />
           <Links />
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   )
 }
 
