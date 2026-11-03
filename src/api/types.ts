@@ -101,6 +101,7 @@ export interface Info {
   time: string
   u?: Record<string, unknown>
   opt: number
+  bootloaderSHA256?: string // ESP32
   brand: string
   product: string
   mac: string

@@ -179,14 +179,14 @@ export function IpInput({ value, onChange, label }: { value: number[]; onChange:
 export const ipValid = (v: number[]) => v.length === 4 && v.every((x) => Number.isInteger(x) && x >= 0 && x <= 255)
 export const ipText = (v: number[]) => v.map((x) => (Number.isNaN(x) ? '' : String(x))).join('.')
 
-function PinDialog({ open, onSubmit, onCancel, wrong }: { open: boolean; onSubmit: (pin: string) => void; onCancel: () => void; wrong: boolean }) {
+function PinDialog({ open, onSubmit, onCancel, wrong, verb }: { open: boolean; onSubmit: (pin: string) => void; onCancel: () => void; wrong: boolean; verb: string }) {
   const [pin, setPin] = useState('')
   return (
     <AlertDialog open={open} onOpenChange={(o) => { if (!o) onCancel() }}>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>Settings PIN</AlertDialogTitle>
-          <AlertDialogDescription>This light has a settings PIN. Enter it to save.</AlertDialogDescription>
+          <AlertDialogDescription>This light has a settings PIN. Enter it to {verb}.</AlertDialogDescription>
         </AlertDialogHeader>
         <Input autoFocus inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           onKeyDown={(e) => { if (e.key === 'Enter' && pin.length === 4) onSubmit(pin) }} aria-label="PIN" />
@@ -201,27 +201,32 @@ function PinDialog({ open, onSubmit, onCancel, wrong }: { open: boolean; onSubmi
 }
 
 // Runs something the light may refuse until the settings PIN is entered (a settings form, an upload): a 401
-// opens the PIN dialog, and the action is retried once the PIN is entered.
-export function usePinAction<A>(action: (a: A) => Promise<SaveResult>, onDone: (a: A) => void) {
+// opens the PIN dialog, and the action is retried once the PIN is entered. `verb` finishes the dialog's
+// "Enter it to …"; `onFail` replaces the error toast.
+export function usePinAction<A>(action: (a: A) => Promise<SaveResult>, onDone: (a: A) => void,
+  { verb = 'save', onFail }: { verb?: string; onFail?: (result: SaveResult) => void } = {}) {
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ a: A } | null>(null)
   const [wrongPin, setWrongPin] = useState(false)
 
-  const run = async (a: A) => {
+  const run = async (a: A, retry = false) => {
     setBusy(true)
     const result = await action(a)
     setBusy(false)
     if (result === 'ok') { setPending(null); setWrongPin(false); onDone(a); return }
-    if (result === 'pin') { setWrongPin(pending !== null); setPending({ a }); return }
+    if (result === 'pin') { setWrongPin(retry); setPending({ a }); return }
     setPending(null)
+    if (onFail) { onFail(result); return }
     toast(result === 'locked' ? 'Wi-Fi settings are locked. Unlock OTA in Security and updates first.' : 'Couldn\'t save the settings. Try again.', true)
   }
   const dialog = (
     <PinDialog
       open={pending !== null}
       wrong={wrongPin}
+      verb={verb}
       onCancel={() => { setPending(null); setWrongPin(false) }}
-      onSubmit={async (pin) => { await unlockSettings(pin); if (pending) run(pending.a) }}
+      // closes while the action runs again (an upload can take a while), and opens again if the PIN was wrong
+      onSubmit={async (pin) => { if (!pending) return; setPending(null); await unlockSettings(pin); run(pending.a, true) }}
     />
   )
   return { run, busy, dialog }

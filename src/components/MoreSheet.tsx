@@ -155,7 +155,7 @@ function DeviceInfo() {
       )}
       <div className="flex gap-2">
         <Button className="flex-1" onClick={() => refresh()}>Refresh</Button>
-        {(i.opt & 1) !== 0 && <UiButton variant="outline" size="lg" className="flex-1" nativeButton={false} render={<a href="/update" />}>Update WLED</UiButton>}
+        {(i.opt & 1) !== 0 && <UiButton variant="outline" size="lg" className="flex-1" nativeButton={false} render={<a href="#settings/update" onClick={() => useUi.getState().setSheet(null)} />}>Update WLED</UiButton>}
         <Button
           className="flex-1"
           variant={confirmReboot ? 'danger' : 'default'}

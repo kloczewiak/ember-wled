@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Download, ExternalLink, Lock, Upload } from 'lucide-react'
+import { Download, Lock, Upload } from 'lucide-react'
 import { uploadFile, type Cfg } from './api'
 import { refreshCfg, useCfg, useCfgForm } from './config'
 import { ChoiceChip, Row, SaveBar, Section, useLeaveGuard, usePinAction, useSaver } from './shared'
@@ -112,7 +112,7 @@ export function SecSettings() {
             <Switch on={f.sameSubnet} label="Only allow updates from the same network" onChange={(sameSubnet) => patch({ sameSubnet })} />
           </Row>
           <Row label="Firmware" hint={info ? `WLED ${info.ver}${info.release ? ` · ${info.release}` : ''} · build ${info.vid}` : undefined}>
-            <Button variant="outline" nativeButton={false} render={<a href="/update" />}>Update <ExternalLink /></Button>
+            <Button variant="outline" nativeButton={false} render={<a href="#settings/update" />}>Update</Button>
           </Row>
           <Alert><AlertDescription>Settings are sent unencrypted, so someone on the same network could read them. Lock updates when you're not updating.</AlertDescription></Alert>
         </Section>

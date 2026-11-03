@@ -3,7 +3,8 @@ import { useMedia } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Bolt, ChevronRight, Clock, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Bolt, ChevronRight, Clock, Download, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
+import { useStore } from '../store'
 import { refreshCfg, useCfg } from './config'
 import { confirmLeave, SaveBarSlot } from './shared'
 import { UiSettings } from './UiSettings'
@@ -12,12 +13,13 @@ import { TimeSettings } from './TimeSettings'
 import { WifiSettings } from './WifiSettings'
 import { SecSettings } from './SecSettings'
 import { PinInfo } from './PinInfo'
+import { FirmwareUpdate } from './FirmwareUpdate'
 
 // The settings screen: #settings is the menu, #settings/<page> a page. Pages built here open in the app;
 // the rest link to the firmware's own settings pages until they are rebuilt.
 
 type Page = { id: string; title: string; icon: LucideIcon; render?: () => ReactNode; href?: string; show?: (b: Build) => boolean }
-type Build = { dmx: boolean }
+type Build = { dmx: boolean; ota: boolean }
 
 const PAGES: Page[] = [
   { id: 'wifi', title: 'Wi-Fi and network', icon: Wifi, render: () => <WifiSettings /> },
@@ -31,6 +33,7 @@ const PAGES: Page[] = [
   { id: 'dmx', title: 'DMX output', icon: Layers, href: '/settings/dmx', show: (b) => b.dmx },
   { id: 'um', title: 'Usermods', icon: Puzzle, href: '/settings/um' },
   { id: 'sec', title: 'Security and updates', icon: Lock, render: () => <SecSettings /> },
+  { id: 'update', title: 'Firmware update', icon: Download, render: () => <FirmwareUpdate />, show: (b) => b.ota },
 ]
 
 // navigates within the app, asking first if the open page has unsaved changes
@@ -68,7 +71,8 @@ function Menu({ build, current }: { build: Build; current?: string }) {
 export function SettingsScreen({ route }: { route: string }) {
   const wide = useMedia('(min-width: 1100px)')
   // the config only has a dmx section on builds with DMX output
-  const build: Build = { dmx: useCfg((s) => s.cfg?.dmx !== undefined) }
+  // and the info says whether it can be updated over the network (OTA)
+  const build: Build = { dmx: useCfg((s) => s.cfg?.dmx !== undefined), ota: useStore((s) => !s.info || (s.info.opt & 0x01) !== 0) }
   // loaded when settings open (shared with the pages, which refresh it in the background)
   useEffect(() => { refreshCfg() }, [])
   const page = PAGES.find((p) => p.render && p.id === route)

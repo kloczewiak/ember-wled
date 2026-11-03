@@ -82,6 +82,8 @@ export function checkPin(body: Record<string, unknown>) {
   if (typeof body.pin === 'string') pinOk = PIN === '' || body.pin === PIN
 }
 
+export const settingsUnlocked = () => pinOk
+
 const asterisksOnly = (s: string) => s.length > 0 && /^\*+$/.test(s)
 
 // Applies a settings form POST; returns the HTTP status the firmware would.

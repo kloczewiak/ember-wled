@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import fixtures from './fixtures.json'
 import { applyCommand, isObj } from '../src/api/apply'
 import type { Command, Info, Presets, State } from '../src/api/types'
-import { cfg, cfgJson, checkPin, pins, postSettings, scan } from './settings'
+import { cfg, cfgJson, checkPin, pins, postSettings, scan, settingsUnlocked } from './settings'
 
 const LEDS = 300
 
@@ -30,6 +30,7 @@ const info: Info = {
   wifi: { bssid: '00:11:22:33:44:55', rssi: -61, signal: 78, channel: 6, ap: false },
   fs: { u: 212, t: 960, pmt: 1 }, ndc: 2, arch: 'esp32', core: 'v4.4.7', clock: 240, flash: 4, lwip: 0,
   freeheap: 145200, uptime: 0, time: '', u: { 'Temperature': [23.5, '°C'] }, opt: 0x4d, brand: 'WLED',
+  bootloaderSHA256: '3f1a9c0d5e7b2486a1c9e0f4d7b3a5c8e2f6091b4d7a3c5e8f0b2d4a6c8e1f3a',
   product: 'FOSS', mac: 'a4cf123e9b10', ip: '127.0.0.1',
 }
 
@@ -48,6 +49,9 @@ const nodes = [
 ]
 
 const start = Date.now()
+let booted = start - 273600 * 1000 // for the uptime, which a restart starts again
+let down = 0 // while restarting (until this time), the mock doesn't answer
+let previousVer: string | null = null // what /update?revert goes back to
 
 function seg(id: number, n: string, startLed: number, stop: number, extra: Partial<State['seg'][number]>): State['seg'][number] {
   return {
@@ -58,7 +62,7 @@ function seg(id: number, n: string, startLed: number, stop: number, extra: Parti
 }
 
 function currentInfo(): Info {
-  info.uptime = Math.floor((Date.now() - start) / 1000) + 273600
+  info.uptime = Math.floor((Date.now() - booted) / 1000)
   info.time = new Date().toLocaleString()
   info.fs.pmt = presetsVersion
   info.name = cfg.id.name
@@ -151,6 +155,58 @@ function send(res: ServerResponse, body: unknown, status = 200) {
   res.end(JSON.stringify(body))
 }
 
+// The firmware's message page (data/msg.htm): a heading and a line of detail.
+function message(res: ServerResponse, status: number, head: string, sub: string) {
+  res.statusCode = status
+  res.setHeader('Content-Type', 'text/html')
+  res.end(`<!DOCTYPE html><html><head><title>WLED Message</title></head><body><h2>${head}</h2>${sub}<br><br><button type="button" onclick="B()">Back</button></body></html>`)
+}
+
+function restart() {
+  setTimeout(() => { down = Date.now() + 5000; booted = down }, 500)
+}
+
+// A firmware upload, read slowly so the page's progress has something to show. Latin-1 keeps the bytes.
+function readUpload(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    let data = ''
+    req.setEncoding('latin1')
+    req.on('data', (c: string) => { data += c; req.pause(); setTimeout(() => req.resume(), 120) })
+    req.on('end', () => resolve(data))
+  })
+}
+
+// /update and /updatebootloader, with the firmware's checks (wled_server.cpp, ota_update.cpp). A firmware
+// file is valid when it's named like a release for the mock's build type, WLED_<version>_ESP32.bin.
+async function update(req: IncomingMessage, res: ServerResponse, path: string, url: URL) {
+  const denied = cfg.ota.lock ? 'Please unlock OTA in security settings!' : !settingsUnlocked() ? 'Please unlock settings using PIN code!' : null
+  if (req.method === 'GET') {
+    if (denied) return message(res, 401, 'Access Denied', denied)
+    if (url.searchParams.has('revert')) {
+      if (previousVer) { [info.ver, previousVer] = [previousVer, null]; restart(); return message(res, 200, 'Reverted to previous version!', 'Rebooting now...') }
+    }
+    res.setHeader('Content-Type', 'text/html')
+    return res.end('<!DOCTYPE html><html><head><title>WLED Update</title></head><body><h2>WLED Software Update</h2></body></html>')
+  }
+  const body = await readUpload(req)
+  if (denied) return message(res, 401, 'Access Denied', denied)
+  const name = /filename="([^"]*)"/.exec(body)?.[1] ?? ''
+  if (path === '/updatebootloader') {
+    if (!name.endsWith('.bin')) return message(res, 500, 'Bootloader update failed!', 'Invalid bootloader image')
+    restart()
+    return message(res, 200, 'Bootloader updated successfully!', 'Rebooting now...')
+  }
+  const skip = /name="skipValidation"\r\n\r\n1\r\n/.test(body)
+  const m = /_(\d+\.\d+\.\d+[^_]*)_([^_]+)\.bin$/.exec(name)
+  if (!skip && m?.[2] !== info.release) {
+    return message(res, 500, 'Update failed!', `Firmware release name mismatch: current='${info.release}', uploaded='${m?.[2] ?? 'unknown'}'. Enable 'Ignore firmware validation' to proceed anyway.`)
+  }
+  previousVer = info.ver
+  if (m) info.ver = m[1]
+  restart()
+  message(res, 200, 'Update successful!', 'Rebooting now...')
+}
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve) => {
     let data = ''
@@ -162,6 +218,8 @@ function readBody(req: IncomingMessage): Promise<string> {
 const middleware: Connect.NextHandleFunction = async (req, res, next) => {
   const url = new URL(req.url ?? '/', 'http://mock')
   const path = url.pathname
+  if (Date.now() < down) { req.socket.destroy(); return }
+  if (path === '/update' || path === '/updatebootloader') return update(req, res, path, url)
   if (req.method === 'POST' && (path === '/json/si' || path === '/json/state' || path === '/json')) {
     try { const body = JSON.parse(await readBody(req)); checkPin(body); handleCommand(body) } catch { return send(res, { error: 9 }, 400) }
     return send(res, path === '/json/state' ? state : { state, info: currentInfo() })

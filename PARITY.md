@@ -44,8 +44,7 @@ These would need the firmware to expose the values in its JSON API.
 
 ### Pages not rebuilt yet
 
-These link to the firmware's own pages: LED and hardware, 2D configuration, DMX output, Usermods. The firmware
-update page (`/update`) is also the firmware's own.
+These link to the firmware's own pages: LED and hardware, 2D configuration, DMX output, Usermods.
 
 ## Main UI
 
