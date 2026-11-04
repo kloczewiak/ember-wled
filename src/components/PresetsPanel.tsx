@@ -71,10 +71,10 @@ export function PresetsPanel({ className }: { className?: string }) {
         right={
           <div className="flex gap-1.5">
             <Button size="sm" onClick={() => setEditing('newpl')}>
-              <Icon.plus className="size-3.5" />Playlist
+              <Icon.plus data-icon="inline-start" className="size-3.5" />Playlist
             </Button>
             <Button size="sm" variant="primary" onClick={() => setEditing('new')}>
-              <Icon.plus className="size-3.5" />Preset
+              <Icon.plus data-icon="inline-start" className="size-3.5" />Preset
             </Button>
           </div>
         }

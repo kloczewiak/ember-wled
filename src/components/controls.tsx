@@ -201,9 +201,10 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
 
 // ---------------------------------------------------------------- icons (lucide)
 
-type IconProps = { className?: string }
-const icon = (C: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>) =>
-  ({ className }: IconProps) => <C className={className} aria-hidden />
+// data-icon="inline-start" / "inline-end" tells a button its icon leads or trails, for the padding
+type IconProps = { className?: string; 'data-icon'?: 'inline-start' | 'inline-end' }
+const icon = (C: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean; 'data-icon'?: string }>) =>
+  ({ className, 'data-icon': dataIcon }: IconProps) => <C className={className} aria-hidden data-icon={dataIcon} />
 
 export const Icon = {
   power: icon(Power),

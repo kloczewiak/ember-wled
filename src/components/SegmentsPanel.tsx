@@ -61,7 +61,7 @@ export function SegmentsPanel({ className }: { className?: string }) {
               {allSel ? 'Select none' : 'Select all'}
             </Button>
             <Button size="sm" variant="primary" disabled={!canAdd} onClick={() => setAdding(true)} title={canAdd ? 'Add segment' : 'Maximum number of segments reached'}>
-              <Icon.plus className="size-3.5" />Add
+              <Icon.plus data-icon="inline-start" className="size-3.5" />Add
             </Button>
           </div>
         }
@@ -309,7 +309,7 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat, showGrou
             aria-label={live ? `Override live data on ${segName(seg)}` : seg.frz ? `Unfreeze ${segName(seg)}` : `Freeze ${segName(seg)}`}
             title={live ? 'Receiving live data: tap to show the effect instead' : seg.frz ? 'Effect paused: tap to resume' : 'Pause the effect on its current frame'}
           >
-            <Icon.snow />
+            <Icon.snow data-icon="inline-start" />
             {live ? 'Live' : seg.frz ? 'Frozen' : 'Freeze'}
           </Toggle>
         {!segpwr && <Slider label={`${segName(seg)} brightness`} value={seg.bri} min={1} onCommit={(bri) => send({ seg: { id: seg.id, bri } })} className="min-w-0 flex-1" />}

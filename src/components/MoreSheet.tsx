@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { loadNodes, refresh, send, useStore } from '../store'
-import { useDraft, useMedia } from '../hooks'
+import { useDraft, useMedia, WIDE } from '../hooks'
 import { useUi } from '../ui'
 import type { Info, Node } from '../api/types'
 import { formatCurrent } from '../lib/format'
@@ -33,7 +33,7 @@ const chip = (t: number) => ({ 2: 'ESP32', 32: 'ESP32', 3: 'ESP32-S2', 33: 'ESP3
 export function MoreSheet() {
   const sheet = useUi((s) => s.sheet)
   const setSheet = useUi((s) => s.setSheet)
-  const wide = useMedia('(min-width: 1100px)')
+  const wide = useMedia(WIDE)
 
   useEffect(() => { if (sheet) refresh() }, [sheet])
 

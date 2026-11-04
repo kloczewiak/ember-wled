@@ -43,6 +43,9 @@ export function useFxMeta(fx: number | undefined) {
   return useMemo(() => parseFxMeta(fx ?? 0, fxdata[fx ?? 0]), [fx, fxdata])
 }
 
+// Where the desktop layout (three columns, settings menu beside the page) takes over from the phone layout
+export const WIDE = '(min-width: 1140px)'
+
 export function useMedia(query: string) {
   return useSyncExternalStore(
     (cb) => { const m = matchMedia(query); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) },

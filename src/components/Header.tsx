@@ -93,9 +93,9 @@ export function Header({ wide }: { wide: boolean }) {
   )
   const toggles = (
     <>
-      <Toggle variant="outline" pressed={state.nl.on} onPressedChange={toggleTimer}><Icon.moon />Timer</Toggle>
-      <Toggle variant="outline" pressed={state.udpn.send} onPressedChange={toggleSync}><Icon.sync />Sync</Toggle>
-      <Toggle variant="outline" pressed={peek} onPressedChange={() => setPeek(!peek)}><Icon.eye />Peek</Toggle>
+      <Toggle variant="outline" size="lg" pressed={state.nl.on} onPressedChange={toggleTimer}><Icon.moon data-icon="inline-start" />Timer</Toggle>
+      <Toggle variant="outline" size="lg" pressed={state.udpn.send} onPressedChange={toggleSync}><Icon.sync data-icon="inline-start" />Sync</Toggle>
+      <Toggle variant="outline" size="lg" pressed={peek} onPressedChange={() => setPeek(!peek)}><Icon.eye data-icon="inline-start" />Peek</Toggle>
     </>
   )
   const bri = dragBri ?? state.bri
@@ -135,9 +135,10 @@ export function Header({ wide }: { wide: boolean }) {
           <div className="truncate text-[15px] font-semibold">{info.name}</div>
           <DeviceStatus />
         </div>
-        <Toggle pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
-        <Toggle pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
-        <Toggle pressed={peek} onPressedChange={() => setPeek(!peek)} aria-label="Peek (live preview)" title="Peek"><Icon.eye /></Toggle>
+        {/* icon only: no side padding, so they're square (min-w-8) like the icon buttons beside them */}
+        <Toggle className="px-0" pressed={state.nl.on} onPressedChange={toggleTimer} aria-label="Timer" title="Timer"><Icon.moon /></Toggle>
+        <Toggle className="px-0" pressed={state.udpn.send} onPressedChange={toggleSync} aria-label="Sync" title="Sync"><Icon.sync /></Toggle>
+        <Toggle className="px-0" pressed={peek} onPressedChange={() => setPeek(!peek)} aria-label="Peek (live preview)" title="Peek"><Icon.eye /></Toggle>
         <Button variant="ghost" size="icon" aria-label="Settings" title="Settings" nativeButton={false} render={<a href="#settings" />}><Icon.settings /></Button>
         <Button variant="ghost" size="icon" aria-label="Info, timer and more" title="More" onClick={() => setSheet('more')}><Icon.more /></Button>
       </div>

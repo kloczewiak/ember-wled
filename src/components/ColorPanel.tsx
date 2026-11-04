@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { send } from '../store'
 import { useUi } from '../ui'
-import { useDraft, useFxMeta, useMedia, useSelection } from '../hooks'
+import { useDraft, useFxMeta, useMedia, WIDE, useSelection } from '../hooks'
 import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, rgbToKelvin, toHex, type HSV, type RGB } from '../lib/color'
 import { ColorWheel } from './ColorWheel'
 import { Card, cx, Icon, LabeledSlider, SectionTitle } from './controls'
@@ -24,7 +24,7 @@ export function ColorPanel({ className }: { className?: string }) {
   const { main, hasRGB, hasWhite, hasCCT } = useSelection()
   const meta = useFxMeta(main?.fx)
   const { csel, setCsel, colorMode, setColorMode } = useUi()
-  const wide = useMedia('(min-width: 1100px)')
+  const wide = useMedia(WIDE)
 
   const visible = visibleSlots(meta.colors, main?.pal ?? 0, meta.usesPalette)
   useEffect(() => {

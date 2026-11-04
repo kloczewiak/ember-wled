@@ -158,8 +158,8 @@ export function WifiSettings() {
           </div>
         ))}
         <div className="flex gap-2">
-          {f.nets.length < MAX_NETWORKS && <Button variant="outline" onClick={() => set({ nets: [...f.nets, newNet()] })}><Icon.plus />Add network</Button>}
-          {f.nets.length > 1 && <Button variant="outline" onClick={() => set({ nets: f.nets.slice(0, -1) })}><Icon.trash />Remove last</Button>}
+          {f.nets.length < MAX_NETWORKS && <Button variant="outline" onClick={() => set({ nets: [...f.nets, newNet()] })}><Icon.plus data-icon="inline-start" />Add network</Button>}
+          {f.nets.length > 1 && <Button variant="outline" onClick={() => set({ nets: f.nets.slice(0, -1) })}><Icon.trash data-icon="inline-start" />Remove last</Button>}
         </div>
       </Section>
 
@@ -238,7 +238,7 @@ export function WifiSettings() {
               ))}
               {/* the stock page adds the last ESP-NOW device seen, which only its settings script exposes (see PARITY.md) */}
               {f.remotes.length < MAX_REMOTES && (
-                <Button variant="outline" className="self-start" onClick={() => set({ remotes: [...f.remotes, ''] })}><Icon.plus />Add remote</Button>
+                <Button variant="outline" className="self-start" onClick={() => set({ remotes: [...f.remotes, ''] })}><Icon.plus data-icon="inline-start" />Add remote</Button>
               )}
             </>
           )}

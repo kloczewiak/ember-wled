@@ -170,10 +170,10 @@ function BackupRow({ label, path, file, hint }: { label: string; path: string; f
         <div className="text-xs break-all text-muted-foreground">{file}{hint && <span className="break-normal"> · {hint}</span>}</div>
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" nativeButton={false} render={<a href={path} download={file} />}><Download /> Back up</Button>
+        <Button variant="outline" nativeButton={false} render={<a href={path} download={file} />}><Download data-icon="inline-start" /> Back up</Button>
         <input ref={input} type="file" accept=".json,application/json" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pick(f) }} />
-        <Button variant="outline" disabled={restore.busy} onClick={() => input.current?.click()}><Upload /> Restore…</Button>
+        <Button variant="outline" disabled={restore.busy} onClick={() => input.current?.click()}><Upload data-icon="inline-start" /> Restore…</Button>
       </div>
       <AlertDialog open={picked !== null} onOpenChange={(o) => { if (!o) setPicked(null) }}>
         <AlertDialogContent size="sm">

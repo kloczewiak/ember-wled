@@ -245,7 +245,7 @@ export function TimeSettings() {
           <TimerCard key={i} t={t} i={i} onChange={(p) => setTimer(i, p)} onRemove={() => set({ timers: f.timers.filter((_, j) => j !== i) })} />
         ))}
         {f.timers.length < maxTimers && (
-          <Button variant="outline" className="self-start" onClick={() => set({ timers: [...f.timers, newTimer()] })}><Icon.plus />Add timer</Button>
+          <Button variant="outline" className="self-start" onClick={() => set({ timers: [...f.timers, newTimer()] })}><Icon.plus data-icon="inline-start" />Add timer</Button>
         )}
       </Section>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { init, useStore } from './store'
-import { useAccuratePeek, useHash, useMedia } from './hooks'
+import { useAccuratePeek, useHash, useMedia, WIDE } from './hooks'
 import { useUi } from './ui'
 import { Header } from './components/Header'
 import { LivePreview, RealtimeBanner } from './components/Live'
@@ -22,7 +22,7 @@ export default function App() {
   const ready = useStore((s) => !!s.state && !!s.info)
   const conn = useStore((s) => s.conn)
   const peek = useStore((s) => s.peek)
-  const wide = useMedia('(min-width: 1100px)')
+  const wide = useMedia(WIDE)
   const hash = useHash()
   const settings = /^#settings(\/|$)/.test(hash)
 
