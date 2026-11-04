@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import fixtures from './fixtures.json'
 import { applyCommand, isObj } from '../src/api/apply'
 import type { Command, Info, Presets, State } from '../src/api/types'
-import { cfg, cfgJson, checkPin, pins, postSettings, scan, settingsUnlocked } from './settings'
+import { cfg, cfgJson, checkPin, ledScript, pins, postSettings, scan, settingsUnlocked } from './settings'
 
 const LEDS = 300
 
@@ -256,6 +256,11 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
     case '/cfg.json': return send(res, cfg)
     case '/json/net': return send(res, scan())
     case '/json/pins': return send(res, pins())
+    case '/settings/s.js':
+      if (url.searchParams.get('p') !== '2') break
+      res.setHeader('Content-Type', 'application/javascript')
+      res.end(ledScript())
+      return
     case '/reset': res.end('Rebooting...'); return
   }
   next()

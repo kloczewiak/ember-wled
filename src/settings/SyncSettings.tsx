@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -6,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '../components/controls'
 import type { Cfg } from './api'
 import { useCfgForm } from './config'
+import { OWNER, PinPicker, usePins } from './pins'
 import {
   ChoiceChip, intIn, IpInput, ipValid, keepSecret, NumberInput, PasswordInput, Row, SaveBar, secretField, Section,
   useLeaveGuard, useSaver, type Secret,
@@ -116,29 +116,6 @@ function validate(f: Form): string[] {
   return e
 }
 
-// GPIO choices for the wired DMX input, like the stock page's pin dropdowns: pins from /json/pins, minus
-// input-only pins for TX and enable, with pins used by something else or by the other two fields disabled.
-type PinInfo = { p: number; c: number; a: boolean; n?: string }
-function usePins() {
-  const [pins, setPins] = useState<PinInfo[] | null>(null)
-  useEffect(() => { fetch('/json/pins').then((r) => r.json()).then((j) => setPins(j.pins ?? [])).catch(() => setPins([])) }, [])
-  return pins
-}
-function PinSelect({ value, onChange, pins, own, others, output, label }: {
-  value: number; onChange: (v: number) => void; pins: PinInfo[]; own: number[]; others: number[]; output: boolean; label: string
-}) {
-  const choices = pins.filter((p) => !output || !(p.c & 0x20)) // PIN_CAP_INPUT_ONLY
-  return (
-    <NativeSelect className="w-full" value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))}>
-      <option value={-1}>Unused</option>
-      {choices.map((p) => {
-        const taken = p.p !== value && ((p.a && !own.includes(p.p)) || others.includes(p.p))
-        return <option key={p.p} value={p.p} disabled={taken}>{p.p}{taken && p.n ? ` (${p.n})` : ''}</option>
-      })}
-    </NativeSelect>
-  )
-}
-
 function Groups({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
   return (
     <div className="flex flex-wrap gap-1" role="group" aria-label={label}>
@@ -246,10 +223,11 @@ export function SyncSettings() {
       {f.dmxIn && (
         <Section title="Wired DMX input">
           {pins === null ? <p className="m-0 text-sm text-muted-foreground">Loading pins…</p> : (
-            ([['rx', 'RX pin (RO)', false], ['tx', 'TX pin (DI)', true], ['en', 'Enable pin (RE+DE)', true]] as const).map(([k, label, output]) => (
-              <Row key={k} label={label} stack>
-                <PinSelect label={label} pins={pins} own={ownPins} output={output} value={f.dmxIn![k]}
-                  others={(['rx', 'tx', 'en'] as const).filter((o) => o !== k).map((o) => f.dmxIn![o]).filter((p) => p >= 0)}
+            ([['rx', 'RX pin (RO)', 'any'], ['tx', 'TX pin (DI)', 'output'], ['en', 'Enable pin (RE+DE)', 'output']] as const).map(([k, label, need]) => (
+              <Row key={k} label={label}>
+                <PinPicker label={label} pins={pins} own={ownPins} need={need} none="Unused" value={f.dmxIn![k]}
+                  used={new Map((['rx', 'tx', 'en'] as const).filter((o) => o !== k && f.dmxIn![o] >= 0)
+                    .map((o) => [f.dmxIn![o], { o: OWNER.dmxIn, label: 'DMX', name: 'the DMX input' }]))}
                   onChange={(v) => set({ dmxIn: { ...f.dmxIn!, [k]: v } })} />
               </Row>
             ))

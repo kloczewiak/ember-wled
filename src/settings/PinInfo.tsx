@@ -2,51 +2,13 @@ import { useEffect, useState } from 'react'
 import { Card, cx } from '../components/controls'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Cable, Cpu, Lightbulb, Puzzle, ToggleRight, type LucideIcon } from 'lucide-react'
-import { useCfg } from './config'
+import { BUTTON_TYPES, capNotes, FreeMarks, kind, KINDS, LegendItem, legendRow, pinNotes, short, Tile, tileGrid, usePinName, type Kind, type Pin } from './pins'
 
 // Settings → Pin info: which GPIOs are used and by what, like the firmware's page in WLED v16.0.1
 // (data/settings_pininfo.htm), refreshed 4 times a second so button and relay states show live. Three
 // styles: a table like the stock page, the pins grouped by use, and a map of every GPIO. Touch capability and
 // pins reserved by usermods come only from the settings script, so they aren't shown.
 
-// /json/pins (serializePins() in json.cpp)
-interface Pin {
-  p: number // GPIO
-  c?: number // capabilities: 0x02 analog, 0x08 flash boot, 0x10 bootstrap, 0x20 input only
-  a: boolean // allocated
-  o?: number // owner (PinOwner in pin_manager.h): 0 system, below 0x80 a usermod's ID
-  n?: string // owner name
-  t?: number // button type
-  m?: number // 0 input, 1 output
-  s?: number // state, for buttons and outputs
-  r?: number // raw touch or analog reading
-}
-
-type Kind = 'led' | 'io' | 'hw' | 'um' | 'sys' | 'free'
-const KINDS: Record<Kind, { label: string; tile: string }> = {
-  led: { label: 'LEDs', tile: 'bg-primary text-primary-foreground' },
-  io: { label: 'Buttons, IR, relay', tile: 'bg-emerald-900 text-emerald-100' },
-  hw: { label: 'Other hardware', tile: 'bg-sky-900 text-sky-100' },
-  um: { label: 'Usermods', tile: 'bg-violet-900 text-violet-100' },
-  sys: { label: 'System', tile: 'bg-muted text-muted-foreground' },
-  free: { label: 'Free', tile: 'border text-foreground' },
-}
-
-function kind(p: Pin): Kind {
-  if (!p.a) return 'free'
-  if (!p.o) return 'sys'
-  if (p.o < 0x80) return 'um'
-  if ([0x82, 0x83, 0x84, 0x8e].includes(p.o)) return 'led' // digital, on/off, PWM, HUB75
-  if ([0x85, 0x86, 0x87].includes(p.o)) return 'io' // button, IR, relay
-  return 'hw' // Ethernet, SPI RAM, debug, DMX, I2C, SPI
-}
-
-const SHORT: Record<number, string> = { 0x81: 'Eth', 0x85: 'Btn', 0x86: 'IR', 0x87: 'Relay', 0x88: 'RAM', 0x89: 'Dbg', 0x8a: 'DMX', 0x8b: 'I2C', 0x8c: 'SPI', 0x8d: 'DMX' }
-const short = (p: Pin) => ({ led: 'LED', um: 'UM', sys: '', free: '' } as Partial<Record<Kind, string>>)[kind(p)] ?? SHORT[p.o!] ?? ''
-
-const BUTTON_TYPES = ['None', 'Reserved', 'Push', 'Push inverted', 'Switch', 'PIR', 'Touch', 'Analog', 'Analog inverted', 'Touch switch']
-
-const capNotes = (c = 0) => [c & 0x02 && 'Analog', c & 0x20 && 'Input only', c & 0x08 && 'Flash boot', c & 0x10 && 'Bootstrap'].filter(Boolean) as string[]
 const stateText = (p: Pin) => (p.s === undefined ? '' : p.o === 0x85 ? (p.s ? 'Pressed' : 'Released') : p.s ? 'On' : 'Off')
 
 // runs of three or more pins as "6–11", the rest one by one
@@ -72,12 +34,7 @@ export function PinInfo() {
   const [pins, setPins] = useState<Pin[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [style, setStyle] = useState<Style>(readStyle)
-  // buttons are named by their place in the button list, like on LED and hardware
-  const buttons = useCfg((s) => s.cfg?.hw?.btn?.ins)
-  const name = (p: Pin) => {
-    if (p.o === 0x85) { const i = buttons?.findIndex((b) => b.pin?.[0] === p.p) ?? -1; return i >= 0 ? `Button ${i + 1}` : 'Button' }
-    return p.n || (p.o ? `Usermod ${p.o}` : 'System')
-  }
+  const name = usePinName()
 
   useEffect(() => {
     let stop = false
@@ -162,55 +119,6 @@ function PinTable({ pins, name }: Named) {
   )
 }
 
-// A grid cell; every one is the same size. Free pins show their capabilities: "A" analog, a dashed outline
-// for input only, a dot for boot pins.
-function Tile({ p, label, selected, onClick }: { p: Pin; label?: string; selected?: boolean; onClick?: () => void }) {
-  const k = kind(p)
-  const c = p.c ?? 0
-  const Tag = onClick ? 'button' : 'div'
-  return (
-    <Tag type={onClick ? 'button' : undefined} onClick={onClick} aria-pressed={onClick ? selected : undefined}
-      aria-label={onClick ? `GPIO ${p.p}` : undefined}
-      className={cx('relative flex h-11 flex-col items-center justify-center rounded-lg font-mono text-xs leading-tight', KINDS[k].tile,
-        k === 'free' && c & 0x20 && 'border-dashed', selected && 'outline-2 outline-offset-1 outline-foreground')}>
-      {p.p}
-      {label !== undefined && <span className="h-3 font-sans text-[9px] opacity-85">{label}</span>}
-      {k === 'free' && c & 0x02 ? <span className="absolute top-0.5 right-1 font-sans text-[9px] text-primary">A</span> : null}
-      {k === 'free' && c & 0x18 ? <span className="absolute top-1 left-1 size-1.5 rounded-full bg-amber-500" /> : null}
-      {p.s !== undefined && <span className={cx('absolute top-1 right-1 size-1.5 rounded-full', p.s ? 'bg-green-400' : 'bg-black/30')} />}
-    </Tag>
-  )
-}
-
-const tileGrid = 'grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1.5'
-
-// Legend entries are small copies of the cells, so a colour reads as a cell and a dot as a marker on one.
-function LegendItem({ tile, mark, children }: { tile: string; mark?: 'analog' | 'boot' | 'state'; children: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className={cx('relative size-4 shrink-0 rounded-[5px]', tile)}>
-        {mark === 'analog' && <span className="absolute top-px right-0.5 font-sans text-[8px] leading-none text-primary">A</span>}
-        {mark === 'boot' && <span className="absolute top-0.5 left-0.5 size-1 rounded-full bg-amber-500" />}
-        {mark === 'state' && <span className="absolute top-0.5 right-0.5 size-1 rounded-full bg-green-400" />}
-      </span>
-      {children}
-    </span>
-  )
-}
-
-const legendRow = 'flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-muted-foreground'
-
-// the marks on free pins
-function FreeMarks() {
-  return (
-    <>
-      <LegendItem tile={KINDS.free.tile} mark="analog">Analog</LegendItem>
-      <LegendItem tile={cx(KINDS.free.tile, 'border-dashed')}>Input only</LegendItem>
-      <LegendItem tile={KINDS.free.tile} mark="boot">Boot pin</LegendItem>
-    </>
-  )
-}
-
 const ICONS: Record<Exclude<Kind, 'free'>, LucideIcon> = { led: Lightbulb, io: ToggleRight, hw: Cable, um: Puzzle, sys: Cpu }
 
 // What uses which pins, then the free ones.
@@ -289,17 +197,7 @@ function PinMap({ pins, name }: Named) {
 }
 
 function PinDetails({ p, name }: { p: Pin; name: string }) {
-  const k = kind(p)
-  const c = p.c ?? 0
-  const lines = [
-    k === 'free' ? (c & 0x20 ? 'Free, input only: for buttons and sensors, not LEDs or a relay.' : 'Free to use.')
-      : k === 'sys' ? 'Used by the chip itself (flash memory or other internals), so it can\'t be used.'
-      : `Used by ${name}${p.t !== undefined ? ` (${BUTTON_TYPES[p.t] ?? '?'})` : ''}.`,
-    k !== 'free' && k !== 'sys' && 'It can\'t be used for anything else until it\'s freed in the settings.',
-    c & 0x02 && 'Can read analog values.',
-    c & 0x08 && 'Flash boot pin: held low at power-on, the chip starts in download mode instead of WLED.',
-    c & 0x10 && 'Bootstrap pin: what it\'s connected to at power-on can change how the chip starts.',
-  ].filter(Boolean) as string[]
+  const lines = pinNotes(p, name)
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 text-sm">

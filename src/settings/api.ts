@@ -16,11 +16,23 @@ export interface Cfg {
   wifi: { sleep: boolean; phy: boolean; txpwr?: number }
   eth?: { type: number }
   dmx?: unknown // only on builds with DMX output (WLED_ENABLE_DMX)
-  // read by accurate Peek (lib/ledoutput.ts): gamma, brightness factor and the outputs' current limits
-  light?: { 'scale-bri': number; gc: { col: number }; nl?: { macro: number } }
+  // LED and hardware and Defaults; light and hw.led are also read by accurate Peek (lib/ledoutput.ts): gamma,
+  // brightness factor and the outputs' current limits
+  light?: {
+    'scale-bri': number; 'pal-mode': number; aseg: boolean; gc: { bri: number; col: number; val: number }
+    tr: { dur: number; rpc: number; hrp: boolean } // dur in 100 ms
+    nl: { mode: number; dur: number; tbri: number; macro: number }
+  }
+  def: { ps: number; on: boolean; bri: number }
   hw?: {
-    led: { maxpwr: number; ins: { start: number; len: number; type: number; ledma?: number; maxpwr?: number }[] }
-    btn?: { ins: { type: number; pin?: number[]; macros: number[] }[]; mqtt?: boolean }
+    led: {
+      maxpwr: number; cct: boolean; cr: boolean; ic: boolean; cb: number; fps: number; rgbwm: number
+      ins: LedOutputCfg[]
+    }
+    com?: { start: number; len: number; order: number }[]
+    btn?: { ins: { type: number; pin?: number[]; macros: number[] }[]; mqtt?: boolean; pull?: boolean; tt?: number }
+    ir?: { pin?: number; type?: number; sel: boolean } // pin and type only on builds with IR
+    relay?: { pin: number; rev: boolean; odrain: boolean }
     baud?: number // in hundreds, e.g. 1152
   }
   if?: Interfaces
@@ -31,6 +43,12 @@ export interface Cfg {
     cntdwn: { goal: number[]; macro: number } // goal: 2-digit year, month, day, hour, minute, second
     ins: TimerCfg[]
   }
+}
+
+// /json/cfg hw.led.ins: an LED output (serializeConfig() in cfg.cpp)
+export interface LedOutputCfg {
+  start: number; len: number; pin: number[]; order: number; rev: boolean; skip: number; type: number; ref: boolean
+  rgbwm: number; freq: number; maxpwr?: number; ledma?: number; drv?: number; text?: string
 }
 
 // /json/cfg "if" (Sync interfaces). Optional parts only exist on builds with the feature.

@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useMedia } from '../hooks'
+import { useMedia, WIDE } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Bolt, ChevronRight, Clock, Download, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Bolt, Power, ChevronRight, Clock, Download, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
 import { useStore } from '../store'
 import { refreshCfg, useCfg } from './config'
 import { confirmLeave, SaveBarSlot } from './shared'
@@ -14,6 +14,8 @@ import { WifiSettings } from './WifiSettings'
 import { SecSettings } from './SecSettings'
 import { PinInfo } from './PinInfo'
 import { FirmwareUpdate } from './FirmwareUpdate'
+import { LedSettings } from './LedSettings'
+import { DefaultsSettings } from './DefaultsSettings'
 
 // The settings screen: #settings is the menu, #settings/<page> a page. Pages built here open in the app;
 // the rest link to the firmware's own settings pages until they are rebuilt.
@@ -26,7 +28,8 @@ const PAGES: Page[] = [
   { id: 'ui', title: 'User interface', icon: Palette, render: () => <UiSettings /> },
   { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, render: () => <SyncSettings /> },
   { id: 'time', title: 'Time and macros', icon: Clock, render: () => <TimeSettings /> },
-  { id: 'leds', title: 'LED and hardware', icon: Lightbulb, href: '/settings/leds' },
+  { id: 'leds', title: 'LED and hardware', icon: Lightbulb, render: () => <LedSettings /> },
+  { id: 'defaults', title: 'Defaults', icon: Power, render: () => <DefaultsSettings /> },
   { id: 'pins', title: 'Pin info', icon: Bolt, render: () => <PinInfo /> },
   // listed on every build: whether 2D is compiled in is only exposed by the settings script (see PARITY.md)
   { id: '2D', title: '2D configuration', icon: Grid3x3, href: '/settings/2D' },
@@ -54,22 +57,22 @@ function Menu({ build, current }: { build: Build; current?: string }) {
       </>
     )
     return p.render
-      ? <Button key={p.id} variant={active ? 'secondary' : 'ghost'} size="lg" className="w-full justify-start font-normal" aria-current={active ? 'page' : undefined}
+      ? <Button key={p.id} variant={active ? 'secondary' : 'ghost'} size="lg" className="h-10 w-full justify-start rounded-full font-normal" aria-current={active ? 'page' : undefined}
           onClick={() => go(`#settings/${p.id}`)}>{inner}</Button>
-      : <Button key={p.id} variant="ghost" size="lg" className="w-full justify-start font-normal" nativeButton={false}
+      : <Button key={p.id} variant="ghost" size="lg" className="h-10 w-full justify-start rounded-full font-normal" nativeButton={false}
           render={<a href={p.href} onClick={(e) => { if (!confirmLeave()) e.preventDefault() }} />}>{inner}</Button>
   }
   return (
     <div className="flex flex-col gap-3">
-      <Card className="gap-0 px-1 py-1">{visible.filter((p) => p.render).map(item)}</Card>
+      <Card className="gap-0 p-1">{visible.filter((p) => p.render).map(item)}</Card>
       <div className="px-1 text-xs font-medium text-muted-foreground">Firmware pages</div>
-      <Card className="gap-0 px-1 py-1">{visible.filter((p) => !p.render).map(item)}</Card>
+      <Card className="gap-0 p-1">{visible.filter((p) => !p.render).map(item)}</Card>
     </div>
   )
 }
 
 export function SettingsScreen({ route }: { route: string }) {
-  const wide = useMedia('(min-width: 1100px)')
+  const wide = useMedia(WIDE)
   // the config only has a dmx section on builds with DMX output
   // and the info says whether it can be updated over the network (OTA)
   const build: Build = { dmx: useCfg((s) => s.cfg?.dmx !== undefined), ota: useStore((s) => !s.info || (s.info.opt & 0x01) !== 0) }
