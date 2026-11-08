@@ -7,10 +7,17 @@ import { defineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { mockWled } from './mock/plugin'
 
-// `npm run dev` proxies API calls to a real device (WLED_HOST, default wled-filip.local);
-// `npm run dev:mock` serves a fake device from mock/plugin.ts instead.
-const host = process.env.WLED_HOST ?? 'wled-filip.local'
+// `npm run dev` proxies API calls to a real device, the one in WLED_HOST (there's no default, so it never
+// talks to a light by accident); `npm run dev:mock` serves a fake device from mock/plugin.ts instead.
 const mock = process.env.WLED_MOCK === '1'
+const deviceHost = () => {
+  const host = process.env.WLED_HOST?.trim()
+  if (!host)
+    throw new Error(
+      "Set WLED_HOST to your light's address, e.g. `WLED_HOST=192.168.1.42 npm run dev`, or use `npm run dev:mock` for the fake device.",
+    )
+  return host
+}
 
 // Ember's version (package.json, bumped by hand for a release) and the WLED release it's built and tested for
 // (WLED-VERSION, set by hand once a new release is checked). Both go into the app and the start page.
@@ -54,32 +61,38 @@ function emberOutput(): Plugin {
   }
 }
 
-export default defineConfig({
+// builds need no light; the dev server and `vite preview` proxy to one unless the mock is on
+export default defineConfig(({ command }) => ({
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
   define: { __EMBER_VERSION__: JSON.stringify(emberVersion), __WLED_VERSION__: JSON.stringify(wledVersion) },
   plugins: [react(), tailwindcss(), viteSingleFile(), emberOutput(), ...(mock ? [mockWled()] : [])],
-  server: mock
-    ? undefined
-    : {
-        proxy: {
-          ...Object.fromEntries(
-            [
-              '/json',
-              '/presets.json',
-              '/cfg.json',
-              '/upload',
-              '/reset',
-              '/win',
-              '/edit',
-              '/settings',
-              '/update',
-              '/cpal.htm',
-              '/pixelforge.htm',
-            ].map((p) => [p, { target: `http://${host}`, changeOrigin: true }]),
-          ),
-          // custom palette files (palette0.json, palette1.json, …)
-          '^/palette\\d+\\.json$': { target: `http://${host}`, changeOrigin: true },
-          '/ws': { target: `ws://${host}`, ws: true, changeOrigin: true },
+  server:
+    mock || command !== 'serve'
+      ? undefined
+      : {
+          proxy: proxyTo(deviceHost()),
         },
-      },
-})
+}))
+
+function proxyTo(host: string) {
+  return {
+    ...Object.fromEntries(
+      [
+        '/json',
+        '/presets.json',
+        '/cfg.json',
+        '/upload',
+        '/reset',
+        '/win',
+        '/edit',
+        '/settings',
+        '/update',
+        '/cpal.htm',
+        '/pixelforge.htm',
+      ].map((p) => [p, { target: `http://${host}`, changeOrigin: true }]),
+    ),
+    // custom palette files (palette0.json, palette1.json, …)
+    '^/palette\\d+\\.json$': { target: `http://${host}`, changeOrigin: true },
+    '/ws': { target: `ws://${host}`, ws: true, changeOrigin: true },
+  }
+}

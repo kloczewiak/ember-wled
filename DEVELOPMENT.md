@@ -11,7 +11,7 @@ npm run dev           # proxies API calls to a real device
 WLED_HOST=192.168.1.42 npm run dev
 ```
 
-`npm run dev` defaults to `wled-filip.local`. mDNS names can be slow or fail to resolve from Node, so set `WLED_HOST` to the device's IP if the proxy times out (`.claude/launch.json` does this for the preview). `npm run gen:fixtures` refreshes the mock's effect and palette lists from `../wled-firmware/wled00`.
+`npm run dev` (and `npm run preview`) needs `WLED_HOST`, the light's address: there's no default, and without it the dev server doesn't start. mDNS names can be slow or fail to resolve from Node, so use the IP if the proxy times out (`.claude/launch.json` sets it for the preview). `npm run gen:fixtures` refreshes the mock's effect and palette lists from `../wled-firmware/wled00`.
 
 After any change, run `npm run format` (Prettier; see `AGENTS.md`).
 
