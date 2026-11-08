@@ -418,19 +418,20 @@ export function PalettesScreen() {
           <span className="pr-2 text-xs text-muted-foreground">{slotsText(used, max)}</span>,
         )}
       </div>
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-6xl items-start gap-6 px-4 pt-2 pb-6">
-          <aside className="w-85 shrink-0">{list}</aside>
-          <main className="min-w-0 flex-1">
-            {editor ?? (
-              <Card>
-                <p className="m-0 py-10 text-center text-sm text-muted-foreground">
-                  Choose a palette on the left, or make a new one.
-                </p>
-              </Card>
-            )}
-          </main>
-        </div>
+      {/* the list and the editor scroll on their own, like the columns of the main desktop layout, so a long list
+          doesn't push the editor out of view (p-px keeps the cards' outline ring from being clipped, and the corners
+          follow that ring: rounded-card-area in index.css) */}
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 gap-6 px-4 pt-2">
+        <aside className="scroll-thin w-85 shrink-0 overflow-y-auto rounded-card-area px-px pt-px pb-6">{list}</aside>
+        <main className="scroll-thin min-w-0 flex-1 overflow-y-auto rounded-card-area px-px pt-px pb-6">
+          {editor ?? (
+            <Card>
+              <p className="m-0 py-10 text-center text-sm text-muted-foreground">
+                Choose a palette on the left, or make a new one.
+              </p>
+            </Card>
+          )}
+        </main>
       </div>
       {dialogs}
     </div>
@@ -469,7 +470,7 @@ function PaletteList({
   return (
     <div className="flex flex-col gap-3">
       {count > 10 && (
-        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-200">
+        <Alert className="rounded-card border-amber-500/30 bg-amber-500/10 text-amber-200">
           <TriangleAlert aria-hidden />
           <AlertDescription className="text-current">
             Many custom palettes use the light's memory and can make it unstable.{' '}

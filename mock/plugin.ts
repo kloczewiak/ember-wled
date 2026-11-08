@@ -174,6 +174,9 @@ const palFiles: (string | null)[] = [
   JSON.stringify({ palette: [0, '1b1464', 90, 'c2185b', 170, 'ff7043', 255, 'ffd54f'] }),
   JSON.stringify({ palette: [0, '00c9a7', 128, '1e88e5', 255, '7c4dff'] }),
 ]
+// MOCK_CUSTOM_PALETTES=20 starts with that many custom palettes (the two above, repeated), for testing long lists
+for (let n = Number(process.env.MOCK_CUSTOM_PALETTES) || 0, i = palFiles.length; i < Math.min(n, 129); i++)
+  palFiles.push(palFiles[i % 2])
 const palCount = () => palFiles.reduce((n, f, i) => (f ? i + 1 : n), 0)
 // a custom palette's 16 entries in the /json/palx format (a gap is the firmware's grey placeholder)
 function customPalx(slot: number) {

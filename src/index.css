@@ -128,6 +128,10 @@ body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* a card's corners (components/ui/card.tsx), and a scroll area around cards: 1px more, because the area's p-px
+     leaves room for the card's 1px outline ring, so its corners follow the ring's outer edge */
+  --radius-card: min(var(--radius-4xl), 24px);
+  --radius-card-area: calc(var(--radius-card) + 1px);
 }
 
 :root {

@@ -142,12 +142,12 @@ function DesktopLayout() {
   // card), which a scroll container would otherwise clip
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)_420px] gap-4 px-4 pb-4">
-      <div ref={setLeft} className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
+      <div ref={setLeft} className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-card-area p-px">
         <ColorPanel className="shrink-0" />
         <PalettePanel className={roomy ? 'flex-1' : 'shrink-0'} />
       </div>
       <EffectPanel />
-      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-xl p-px">
+      <div className="scroll-thin flex min-h-0 flex-col gap-4 overflow-y-auto rounded-card-area p-px">
         <SegmentsPanel className="shrink-0" />
         <PresetsPanel className="shrink-0" />
       </div>
@@ -206,7 +206,7 @@ function PhoneLayout({ top }: { top: ReactNode }) {
               className={cx(
                 'mx-auto w-full max-w-2xl',
                 !short && 'flex min-h-0 flex-1 flex-col',
-                !short && t !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px',
+                !short && t !== 'Effects' && 'scroll-thin overflow-y-auto rounded-card-area p-px',
               )}
             >
               <div className={cx('flex flex-col gap-4', !short && t === 'Effects' && 'h-full')}>{panels[t]}</div>

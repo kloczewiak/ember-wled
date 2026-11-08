@@ -182,7 +182,7 @@ export function SettingsScreen({ route }: { route: string }) {
               position (and iOS's momentum) when going back, leaving the shorter menu scrolled past its end */}
           <div
             key={page?.id ?? 'menu'}
-            className={cx('scroll-thin min-h-0 flex-1 overflow-y-auto', wide && 'rounded-xl p-px pb-4')}
+            className={cx('scroll-thin min-h-0 flex-1 overflow-y-auto', wide && 'rounded-card-area p-px pb-4')}
           >
             {/* on phones the menu's bottom padding keeps its end clear of the home indicator; on a page the footer
                 does that */}
