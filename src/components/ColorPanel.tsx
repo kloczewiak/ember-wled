@@ -4,7 +4,7 @@ import { useUi } from '../ui'
 import { useDraft, useFxMeta, useMedia, WIDE, useSelection } from '../hooks'
 import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, toHex, type HSV, type RGB } from '../lib/color'
 import { ColorControls, HexRow } from './ColorPicker'
-import { Card, cx, LabeledSlider } from './controls'
+import { Card, cx, LabeledSlider, SectionTitle } from './controls'
 
 // Which colour slots to show: the effect's metadata decides, but the "* Color" palettes (ids 2-5) need their
 // slots, and so does the Default palette: for most effects it means colour 1 (color_from_palette() returns the
@@ -71,6 +71,26 @@ export function ColorPanel({ className }: { className?: string }) {
     commit(c)
   }
 
+  const whiteBalance = hasCCT && main && (
+    <LabeledSlider
+      label="White balance"
+      value={main.cct}
+      track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
+      onCommit={(cct) => send({ seg: { cct } })}
+    />
+  )
+
+  // an effect that uses none of the colour slots (with this palette) gets no picker, like the palette card;
+  // white balance is the segment's, so it stays
+  if (!visible.some(Boolean))
+    return (
+      <Card className={className}>
+        <SectionTitle>Color</SectionTitle>
+        <p className="m-0 text-[13px] text-muted-foreground">This effect does not use colors.</p>
+        {whiteBalance}
+      </Card>
+    )
+
   return (
     <Card className={className}>
       <ColorControls
@@ -91,14 +111,7 @@ export function ColorPanel({ className }: { className?: string }) {
             onCommit={(v) => commit(rgb, v)}
           />
         )}
-        {hasCCT && main && (
-          <LabeledSlider
-            label="White balance"
-            value={main.cct}
-            track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
-            onCommit={(cct) => send({ seg: { cct } })}
-          />
-        )}
+        {whiteBalance}
       </ColorControls>
 
       <div className="flex gap-2">

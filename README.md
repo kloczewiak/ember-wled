@@ -1,8 +1,8 @@
-# WLED UI
+# Ember for WLED
 
-A replacement for WLED's main control page, built with React, Vite and Tailwind. It talks to the device's
-JSON API and WebSocket, the same way the stock UI does, and builds into a single gzipped file that the ESP
-serves from its own filesystem.
+Ember is a replacement for WLED's main control page, built with React, Vite and Tailwind. It talks to the
+device's JSON API and WebSocket, the same way the stock UI does, and is served by the ESP from its own
+filesystem. It isn't part of the WLED project.
 
 ## Development
 
@@ -20,18 +20,38 @@ lists from `../wled-firmware/wled00`.
 ## Putting it on the device
 
 ```bash
-npm run build         # writes dist/index.htm.gz
+npm run build         # writes dist/index.htm.gz and dist/ui.bin
 ```
 
-Open `http://<device>/edit`, upload `dist/index.htm.gz` to the filesystem root and reload `http://<device>/`.
-To make it installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, `dist/icon-192.png`,
+Open `http://<device>/edit` and upload `dist/ui.bin`, then `dist/index.htm.gz`, to the filesystem root (in
+that order, so nobody gets a new start page with an old app), and reload `http://<device>/`. To make it
+installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, `dist/icon-192.png`,
 `dist/icon-512.png` and `dist/apple-touch-icon.png`. `npm run gen:icons` redraws the icons.
-WLED serves files on its filesystem in place of its built-in pages, so this UI replaces the stock one at `/`
+
+The two files only work as a pair:
+
+- `index.htm.gz` is Ember's start page (`boot/index.html`, about 5 kB), which WLED serves at `/`. It shows a
+  splash, checks the light's WLED version against the one Ember was built for (`../wled-firmware`'s, or
+  `WLED_VERSION`), and starts the app.
+- `ui.bin` is the app: gzip of its CSS and JS, sent as plain bytes so the start page can show real progress
+  and unpack it in the browser. The start page carries its hash and refuses a `ui.bin` from another build.
+
+Each device keeps a copy of the app (IndexedDB), so later visits start almost instantly and don't download
+`ui.bin` again until a new build is uploaded. On another WLED version the start page warns first, with
+"Try opening Ember" (optionally not asking again for that version and build) and "Remove Ember". Removing
+deletes Ember's files through the file editor (asking for the settings PIN if there is one) and the light
+goes back to its standard interface.
+
+WLED serves files on its filesystem in place of its built-in pages, so Ember replaces the stock UI at `/`
 while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the
-firmware's own.
-Firmware OTA updates keep the file; a filesystem reset removes it. To go back to the stock UI, delete
-`/index.htm.gz` in the file editor, or open `http://<device>/edit?func=delete&path=/index.htm.gz` (with a
-settings PIN, enter it at `http://<device>/settings/sec` first).
+firmware's own. Firmware OTA updates keep the files; a filesystem reset removes them. To go back to the stock
+UI by hand, delete `/index.htm.gz` in the file editor, or open
+`http://<device>/edit?func=delete&path=/index.htm.gz` (with a settings PIN, enter it at
+`http://<device>/settings/sec` first).
+
+`npm run preview:mock` serves the built files with the fake device, the way the light does (start page at `/`,
+`ui.bin` as plain bytes, deleting files behind the settings PIN). `MOCK_WLED_VER=16.1.0` makes it another WLED
+version, and `GET /mock/ui-bin?other=1` makes it serve a `ui.bin` from another build.
 
 ## Firmware-specific data
 

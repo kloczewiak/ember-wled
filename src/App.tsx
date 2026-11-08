@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { init, useStore } from './store'
 import { useAccuratePeek, useHash, useMedia, WIDE } from './hooks'
 import { useUi } from './ui'
@@ -30,6 +30,8 @@ export default function App() {
 
   useEffect(() => {
     init()
+    // Ember's start page (boot/index.html) shows a splash until the app has drawn something
+    document.getElementById('ember-boot')?.remove()
   }, [])
   useAccuratePeek()
   // opening settings from the More sheet: don't leave the sheet open to reappear on the way back
@@ -155,69 +157,64 @@ function DesktopLayout() {
 
 // Phones: the header stays put and each tab scrolls under it. On short screens (landscape) that leaves
 // too little room, so the whole page scrolls as one instead and the header scrolls away; only the
-// tab bar stays pinned.
+// tab bar stays pinned. All four tabs stay mounted (the others hidden), so going to another tab and back keeps
+// what was open there, like a new preset's card, and the element tree is the same in both arrangements, so
+// turning the phone keeps it too.
 function PhoneLayout({ top }: { top: ReactNode }) {
   const hash = useHash()
   const tab: Tab = TABS.find((t) => `#${t}` === hash) ?? 'Colors'
   const short = useMedia('(max-height: 560px)')
+  // in the short arrangement the tabs share one scroll area, so each tab opens scrolled to the top
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (short) scroller.current?.scrollTo(0, 0)
+  }, [tab, short])
 
-  const content = (
-    <>
-      {tab === 'Colors' && (
-        <>
-          <ColorPanel className="shrink-0" />
-          <PalettePanel className="shrink-0" />
-        </>
-      )}
-      {tab === 'Effects' &&
-        (short ? (
-          <>
-            <Card className="shrink-0">
-              <EffectParams />
-            </Card>
-            <EffectList />
-          </>
-        ) : (
-          <EffectList className="flex-1" />
-        ))}
-      {tab === 'Segments' && <SegmentsPanel />}
-      {tab === 'Presets' && <PresetsPanel />}
-    </>
-  )
-
-  if (short) {
-    return (
+  const panels: Record<Tab, ReactNode> = {
+    Colors: (
       <>
-        {/* keyed by tab so each tab opens scrolled to the top */}
-        <div key={tab} className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-          {top}
-          <main className="px-4 pb-4">
-            <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">{content}</div>
-          </main>
-        </div>
-        <TabBar tab={tab} />
+        <ColorPanel className="shrink-0" />
+        <PalettePanel className="shrink-0" />
       </>
-    )
+    ),
+    Effects: (
+      <>
+        {short && (
+          <Card className="shrink-0">
+            <EffectParams />
+          </Card>
+        )}
+        <EffectList className={short ? undefined : 'flex-1'} />
+      </>
+    ),
+    Segments: <SegmentsPanel />,
+    Presets: <PresetsPanel />,
   }
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div ref={scroller} className={cx('flex min-h-0 flex-1 flex-col gap-3', short && 'scroll-thin overflow-y-auto')}>
         {top}
-        <main key={tab} className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-          {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll inside
-              a rounded area as wide as the content column, so cards keep their rounded corners as they scroll out */}
-          <div
-            className={cx(
-              'mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col',
-              tab !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px',
-            )}
-          >
-            <div className={cx('flex flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
-          </div>
+        <main className={cx('px-4 pb-4', !short && 'flex min-h-0 flex-1 flex-col')}>
+          {TABS.map((t) => (
+            // only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll
+            // inside a rounded area as wide as the content column, so cards keep their rounded corners as they
+            // scroll out
+            <div
+              key={t}
+              hidden={t !== tab}
+              className={cx(
+                'mx-auto w-full max-w-2xl',
+                !short && 'flex min-h-0 flex-1 flex-col',
+                !short && t !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px',
+              )}
+            >
+              <div className={cx('flex flex-col gap-4', !short && t === 'Effects' && 'h-full')}>{panels[t]}</div>
+            </div>
+          ))}
         </main>
       </div>
-      {tab === 'Effects' && (
+      {!short && tab === 'Effects' && (
         <section aria-label="Effect settings" className="shrink-0 px-4 pb-4">
           <Card className="mx-auto max-w-2xl">
             <EffectParams />

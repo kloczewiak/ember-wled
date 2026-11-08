@@ -76,9 +76,9 @@ export function ColorControls({
         </TabsContent>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
         {hasRGB && (
-          <TabsContent value="hsv" className="flex flex-col gap-3">
+          <TabsContent value="hsv" className="flex flex-col gap-1">
             <LabeledSlider
               label="Hue"
               value={Math.round(hsv.h)}
@@ -100,7 +100,7 @@ export function ColorControls({
           </TabsContent>
         )}
         {hasRGB && (
-          <TabsContent value="rgb" className="flex flex-col gap-3">
+          <TabsContent value="rgb" className="flex flex-col gap-1">
             {(['r', 'g', 'b'] as const).map((k) => (
               <LabeledSlider
                 key={k}

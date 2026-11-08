@@ -2,6 +2,8 @@
 // It implements the JSON endpoints the UI uses; effects run as a simple animation for the live preview.
 import type { Plugin, Connect } from 'vite'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import fixtures from './fixtures.json'
 import { applyCommand, isObj } from '../src/api/apply'
 import type { Command, Info, Presets, State } from '../src/api/types'
@@ -56,7 +58,8 @@ let state: State = {
 }
 
 const info: Info = {
-  ver: '0.16.0-mock',
+  // MOCK_WLED_VER pretends to be another WLED version, for Ember's version warning
+  ver: process.env.MOCK_WLED_VER ?? '16.0.1',
   vid: 2510010,
   cn: 'Mock',
   release: 'ESP32',
@@ -495,10 +498,93 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
   next()
 }
 
+// `npm run preview:mock`: Ember's built files (dist/) as the light serves them, its start page at / and ui.bin
+// as plain bytes, plus the file editor's delete (behind the settings PIN) so removing Ember can be tried.
+// GET /mock/ui-bin?other=1 makes it serve a ui.bin from another build, so the start page refuses it, and
+// ?slow=1 sends it slowly to watch the progress (without them, back to normal).
+const EMBER_FILES = [
+  '/index.htm.gz',
+  '/ui.bin',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+]
+const removedFiles = new Set<string>()
+let otherBuild = false
+let slowBin = false
+const distFile = (f: string) => readFileSync(resolve(__dirname, '../dist', f))
+const emberFiles: Connect.NextHandleFunction = (req, res, next) => {
+  const url = new URL(req.url ?? '/', 'http://mock')
+  const path = url.pathname
+  if (path === '/mock/ui-bin') {
+    otherBuild = url.searchParams.get('other') === '1'
+    slowBin = url.searchParams.get('slow') === '1'
+    res.end(`ui.bin from ${otherBuild ? 'another' : 'this'} build${slowBin ? ', slowly' : ''}`)
+    return
+  }
+  if (path === '/edit' && url.searchParams.get('func') === 'delete') {
+    const file = url.searchParams.get('path') ?? ''
+    if (!settingsUnlocked()) {
+      res.statusCode = 401
+      res.end('Access denied')
+    } else if (!EMBER_FILES.includes(file) || removedFiles.has(file)) {
+      res.statusCode = 404
+      res.end('File not found')
+    } else {
+      removedFiles.add(file)
+      res.end('File deleted')
+    }
+    return
+  }
+  if (removedFiles.has(path) || (path === '/' && removedFiles.has('/index.htm.gz'))) {
+    if (path !== '/') {
+      res.statusCode = 404
+      res.end('File not found')
+      return
+    }
+    res.setHeader('Content-Type', 'text/html')
+    res.end(
+      '<!doctype html><body style="background:#111;color:#eee;font:16px system-ui;padding:2em">The standard WLED interface (mock): Ember was removed.</body>',
+    )
+    return
+  }
+  if (path === '/' || path === '/index.htm') {
+    res.setHeader('Content-Type', 'text/html')
+    res.setHeader('Content-Encoding', 'gzip')
+    res.end(distFile('index.htm.gz'))
+    return
+  }
+  if (path === '/ui.bin') {
+    const bin = Buffer.from(distFile('ui.bin'))
+    if (otherBuild) bin[bin.length - 9] ^= 0xff
+    res.setHeader('Content-Type', 'application/octet-stream')
+    res.setHeader('Content-Length', String(bin.length))
+    if (!slowBin) {
+      res.end(bin)
+      return
+    }
+    // about 6 s, like a first load from a real light
+    let at = 0
+    const step = () => {
+      res.write(bin.subarray(at, (at += 8192)))
+      if (at < bin.length) setTimeout(step, 180)
+      else res.end()
+    }
+    step()
+    return
+  }
+  next()
+}
+
 export function mockWled(): Plugin {
   return {
     name: 'mock-wled',
     configureServer(server) {
+      server.middlewares.use(middleware)
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(emberFiles)
       server.middlewares.use(middleware)
     },
   }

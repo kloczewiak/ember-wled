@@ -13,7 +13,8 @@
     "audit:fx-colors": "node scripts/audit-fx-colors.mjs",
     "gen:icons": "python3 scripts/gen-icons.py",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "preview:mock": "WLED_MOCK=1 vite preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

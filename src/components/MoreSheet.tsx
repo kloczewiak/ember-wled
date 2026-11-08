@@ -184,6 +184,12 @@ function Row({ k, children }: { k: ReactNode; children: ReactNode }) {
   )
 }
 
+// Which Ember build this is: its start page hands over the hash that ties it to ui.bin (boot/index.html)
+const emberBuild = () => {
+  const boot = (window as unknown as { __EMBER__?: { build: string } }).__EMBER__
+  return boot ? `Ember · build ${boot.build}` : 'Ember · development'
+}
+
 function DeviceInfo() {
   const i = useStore((s) => s.info)
   const [confirmReboot, setConfirmReboot] = useState(false)
@@ -216,6 +222,7 @@ function DeviceInfo() {
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-border">
         {i.release && <Row k="Release">{i.release}</Row>}
         <Row k="Build">{i.vid}</Row>
+        <Row k="Interface">{emberBuild()}</Row>
         <Row k="Signal strength">
           {i.wifi.signal}% ({i.wifi.rssi} dBm)
         </Row>

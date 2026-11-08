@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Ember · WLED</title>
+    <meta name="theme-color" content="#09090b" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ember" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #09090b;
+        color: #fafafa;
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      #ember-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #09090b;
+      }
+      #ember-boot .box {
+        width: 100%;
+        max-width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      #ember-boot h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      #ember-boot h1 span {
+        color: #a1a1aa;
+        font-weight: 400;
+      }
+      #ember-boot p {
+        margin: 0;
+        color: #d4d4d8;
+      }
+      #ember-boot .muted {
+        color: #a1a1aa;
+        font-size: 13px;
+      }
+      #ember-boot .bar {
+        height: 4px;
+        border-radius: 99px;
+        background: #27272a;
+        overflow: hidden;
+      }
+      #ember-boot .bar i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 99px;
+        background: #ff9f43;
+        transition: width 0.15s;
+      }
+      #ember-boot .bar.wait i {
+        width: 30%;
+        animation: ember-wait 1.1s ease-in-out infinite;
+      }
+      @keyframes ember-wait {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(340%);
+        }
+      }
+      #ember-boot .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #ember-boot button,
+      #ember-boot a.btn {
+        font: inherit;
+        height: 36px;
+        padding: 0 14px;
+        border-radius: 99px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: transparent;
+        color: #fafafa;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+      }
+      #ember-boot button.primary {
+        background: #ff9f43;
+        border-color: #ff9f43;
+        color: #1c1206;
+        font-weight: 600;
+      }
+      #ember-boot button.danger {
+        border-color: transparent;
+        color: #ff8a8a;
+      }
+      #ember-boot button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #ember-boot label {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        color: #d4d4d8;
+        font-size: 13px;
+      }
+      #ember-boot input[type='checkbox'] {
+        margin: 2px 0 0;
+        accent-color: #ff9f43;
+      }
+      #ember-boot input[type='password'] {
+        font: inherit;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.04);
+        color: #fafafa;
+        flex: 1;
+        min-width: 0;
+      }
+      #ember-boot code {
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+        font-size: 12.5px;
+        color: #fafafa;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ember-boot" role="status" aria-live="polite">
+      <div class="box">
+        <h1>Ember <span>for WLED</span></h1>
+        <div class="bar wait"><i></i></div>
+        <p class="muted">Starting…</p>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script>
+      // Ember's start page (the light's index.htm.gz). It checks that the light runs the WLED version Ember was
+      // built for, then starts the app: from this device's copy when it's from the same build, otherwise from
+      // /ui.bin (gzip of the app's CSS, a NUL, and its JS), which must match the build's hash. Placeholders are
+      // filled in by the build (vite.config.ts).
+      ;(function () {
+        var HASH = '__EMBER_HASH__'
+        var WLED = '__EMBER_WLED__'
+        var SIZE = Number('__EMBER_SIZE__')
+        var box = document.querySelector('#ember-boot .box')
+        var info = null
+
+        // ---- screens
+        function el(tag, attrs, kids) {
+          var e = document.createElement(tag)
+          for (var k in attrs || {}) {
+            if (k === 'on') e.onclick = attrs.on
+            else if (k === 'text') e.textContent = attrs.text
+            else e.setAttribute(k, attrs[k])
+          }
+          ;(kids || []).forEach(function (c) {
+            if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c)
+          })
+          return e
+        }
+        function show(kids) {
+          box.textContent = ''
+          box.appendChild(el('h1', {}, ['Ember ', el('span', { text: 'for WLED' })]))
+          kids.forEach(function (c) {
+            if (c) box.appendChild(c)
+          })
+        }
+        function loading(text, fraction, note) {
+          var bar = el('div', { class: fraction == null ? 'bar wait' : 'bar' }, [el('i')])
+          if (fraction != null) bar.firstChild.style.width = Math.round(fraction * 100) + '%'
+          show([bar, el('p', { class: 'muted', text: text }), note && el('p', { class: 'muted', text: note })])
+        }
+        // shown while ui.bin downloads, which happens once per device and build
+        var FIRST =
+          'The first time on this device takes a little longer: Ember is downloaded once and kept here, so next time it opens almost instantly.'
+
+        // ---- the version check: Ember is built against one WLED version
+        function versionWarning(ver) {
+          return new Promise(function (resolve) {
+            var skip = el('input', { type: 'checkbox', id: 'ember-skip' })
+            show([
+              el('p', {}, [
+                'Ember was built for WLED ',
+                el('code', { text: WLED }),
+                '. This light runs WLED ',
+                el('code', { text: ver }),
+                '.',
+              ]),
+              el('p', {
+                class: 'muted',
+                text: 'It might not work correctly. You can open it anyway, or remove it to go back to the standard WLED interface.',
+              }),
+              el('label', {}, [skip, 'Don’t show this again for WLED ' + ver + ' with this Ember build']),
+              el('div', { class: 'row' }, [
+                el('button', {
+                  class: 'primary',
+                  text: 'Try opening Ember',
+                  on: function () {
+                    try {
+                      if (skip.checked) localStorage.setItem('ember-skip-version', ver + '|' + HASH)
+                    } catch (e) {}
+                    resolve()
+                  },
+                }),
+                el('button', { class: 'danger', text: 'Remove Ember', on: removeConfirm }),
+              ]),
+            ])
+          })
+        }
+
+        // ---- removing Ember: its files go, the light serves its own interface again
+        // the start page goes last, so a removal that stops halfway still leaves a working start page
+        var FILES = [
+          '/ui.bin',
+          '/manifest.json',
+          '/icon-192.png',
+          '/icon-512.png',
+          '/apple-touch-icon.png',
+          '/index.htm.gz',
+        ]
+        function removeConfirm(back) {
+          show([
+            el('p', { text: 'Remove Ember from this light?' }),
+            el('p', {
+              class: 'muted',
+              text: 'This deletes its files (index.htm.gz, ui.bin, manifest.json and the app icons), and the light goes back to the standard WLED interface. Your palettes, presets and settings stay.',
+            }),
+            el('div', { class: 'row' }, [
+              el('button', { class: 'primary', text: 'Remove Ember', on: removeNow }),
+              el('button', {
+                text: 'Cancel',
+                on: function () {
+                  location.reload()
+                },
+              }),
+            ]),
+          ])
+        }
+        function removeNow() {
+          loading('Removing Ember…')
+          var i = 0
+          ;(function next() {
+            if (i >= FILES.length) return removed()
+            fetch('/edit?func=delete&path=' + encodeURIComponent(FILES[i]), { cache: 'no-store' })
+              .then(function (r) {
+                if (r.status === 401) return askPin()
+                if (!r.ok && r.status !== 404) throw new Error('HTTP ' + r.status)
+                i++
+                next()
+              })
+              .catch(function (e) {
+                failed('Couldn’t remove Ember: ' + e.message + '.', removeNow)
+              })
+          })()
+        }
+        // the file editor is locked behind the settings PIN until it's entered
+        function askPin(wrong) {
+          var pin = el('input', {
+            type: 'password',
+            inputmode: 'numeric',
+            maxlength: '4',
+            'aria-label': 'Settings PIN',
+          })
+          var go = el('button', {
+            class: 'primary',
+            text: 'Unlock',
+            on: function () {
+              go.disabled = true
+              fetch('/json/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin.value }),
+              })
+                .then(function () {
+                  return fetch('/edit?func=delete&path=/nothing', { cache: 'no-store' })
+                })
+                .then(function (r) {
+                  if (r.status === 401) askPin(true)
+                  else removeNow()
+                })
+                .catch(function () {
+                  askPin(true)
+                })
+            },
+          })
+          show([
+            el('p', {
+              text: wrong ? 'That PIN didn’t work. Try again.' : 'Removing Ember needs the light’s settings PIN.',
+            }),
+            el('div', { class: 'row' }, [pin, go]),
+            el('button', {
+              text: 'Cancel',
+              on: function () {
+                location.reload()
+              },
+            }),
+          ])
+          pin.focus()
+        }
+        function removed() {
+          try {
+            localStorage.removeItem('ember-skip-version')
+            indexedDB.deleteDatabase('ember')
+          } catch (e) {}
+          loading('Removed. Opening the standard WLED interface…')
+          setTimeout(function () {
+            location.replace('/')
+          }, 800)
+        }
+
+        // ---- failures
+        function failed(text, retry, extra) {
+          show([
+            el('p', { text: text }),
+            extra,
+            el('div', { class: 'row' }, [
+              retry && el('button', { class: 'primary', text: 'Try again', on: retry }),
+              el('button', { class: 'danger', text: 'Remove Ember', on: removeConfirm }),
+            ]),
+          ])
+        }
+        function mismatch(missing) {
+          show([
+            el('p', {
+              text: missing
+                ? 'Ember can’t start: its app file (ui.bin) isn’t on this light.'
+                : 'Ember can’t start: its start page (index.htm.gz) and app file (ui.bin) come from different builds.',
+            }),
+            el('p', {
+              class: 'muted',
+              text: 'Upload index.htm.gz and ui.bin from the same Ember build in the file editor, or remove Ember to go back to the standard WLED interface.',
+            }),
+            el('div', { class: 'row' }, [
+              el('a', { class: 'btn', href: '/edit', text: 'Open the file editor' }),
+              el('button', { class: 'danger', text: 'Remove Ember', on: removeConfirm }),
+            ]),
+          ])
+        }
+
+        // ---- this device's copy of the app (IndexedDB works on plain http, unlike the Cache API)
+        function db() {
+          return new Promise(function (resolve) {
+            var timer = setTimeout(function () {
+              resolve(null)
+            }, 1500)
+            try {
+              var req = indexedDB.open('ember', 1)
+              req.onupgradeneeded = function () {
+                req.result.createObjectStore('app')
+              }
+              req.onsuccess = function () {
+                clearTimeout(timer)
+                resolve(req.result)
+              }
+              req.onerror = function () {
+                clearTimeout(timer)
+                resolve(null)
+              }
+            } catch (e) {
+              clearTimeout(timer)
+              resolve(null)
+            }
+          })
+        }
+        function cached() {
+          return db().then(function (d) {
+            if (!d) return null
+            return new Promise(function (resolve) {
+              var req = d.transaction('app').objectStore('app').get('current')
+              req.onsuccess = function () {
+                resolve(req.result && req.result.hash === HASH ? req.result.payload : null)
+              }
+              req.onerror = function () {
+                resolve(null)
+              }
+            })
+          })
+        }
+        function keep(payload) {
+          db().then(function (d) {
+            if (d) d.transaction('app', 'readwrite').objectStore('app').put({ hash: HASH, payload: payload }, 'current')
+          })
+        }
+
+        // ---- downloading /ui.bin with progress, and checking it's this build's
+        function fnv(bytes) {
+          var h = 0x811c9dc5
+          for (var i = 0; i < bytes.length; i++) h = Math.imul(h ^ bytes[i], 0x01000193)
+          return ('0000000' + (h >>> 0).toString(16)).slice(-8)
+        }
+        function download() {
+          if (typeof DecompressionStream === 'undefined')
+            return failed(
+              'This browser is too old to run Ember: it can’t unpack the app. Update it (Safari 16.4, Firefox 113, Chrome 80 or newer), or remove Ember to use the standard WLED interface.',
+            )
+          loading('Loading Ember…', 0, FIRST)
+          fetch('/ui.bin', { cache: 'no-store' })
+            .then(function (r) {
+              if (r.status === 404) return mismatch(true)
+              if (!r.ok) throw new Error('HTTP ' + r.status)
+              var total = Number(r.headers.get('Content-Length')) || SIZE
+              var reader = r.body.getReader()
+              var parts = []
+              var got = 0
+              return (function read() {
+                return reader.read().then(function (c) {
+                  if (c.done) return finish(parts, got)
+                  parts.push(c.value)
+                  got += c.value.length
+                  loading('Loading Ember… ' + Math.min(99, Math.round((got / total) * 100)) + '%', got / total, FIRST)
+                  return read()
+                })
+              })()
+            })
+            .catch(function (e) {
+              failed('Couldn’t load Ember: ' + e.message + '.', download)
+            })
+        }
+        function finish(parts, size) {
+          var bytes = new Uint8Array(size)
+          var at = 0
+          parts.forEach(function (p) {
+            bytes.set(p, at)
+            at += p.length
+          })
+          if (fnv(bytes) !== HASH) return mismatch(false)
+          loading('Starting Ember…')
+          return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')))
+            .text()
+            .then(function (payload) {
+              keep(payload)
+              start(payload)
+            })
+        }
+
+        // ---- starting the app: its styles and script go into this page; it removes the splash once drawn
+        function start(payload) {
+          var cut = payload.indexOf('\u0000')
+          var style = document.createElement('style')
+          style.textContent = payload.slice(0, cut)
+          document.head.appendChild(style)
+          window.__EMBER__ = { build: HASH, wled: WLED, info: info }
+          var script = document.createElement('script')
+          script.type = 'module'
+          script.textContent = payload.slice(cut + 1)
+          document.body.appendChild(script)
+        }
+
+        // ---- the order of things
+        function run() {
+          cached().then(function (payload) {
+            if (payload) start(payload)
+            else download()
+          })
+        }
+        fetch('/json/info', { cache: 'no-store' })
+          .then(function (r) {
+            return r.json()
+          })
+          .then(function (i) {
+            info = i
+          })
+          .catch(function () {
+            /* the light is busy: the app retries, and the check waits for next time */
+          })
+          .then(function () {
+            var skip = null
+            try {
+              skip = localStorage.getItem('ember-skip-version')
+            } catch (e) {}
+            if (info && info.ver && info.ver !== WLED && skip !== info.ver + '|' + HASH) return versionWarning(info.ver)
+          })
+          .then(run)
+      })()
+    </script>
+  </body>
+</html>

@@ -26,7 +26,9 @@ function Slider({
       thumbAlignment="edge"
       {...props}
     >
-      <SliderPrimitive.Control className="relative flex w-full touch-pan-y items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
+      {/* the control is taller than the thumb for touch, and its ::before reaches 2px further up and down, so
+          sliders stacked gap-1 apart leave no dead strip between them */}
+      <SliderPrimitive.Control className="relative flex w-full touch-pan-y items-center select-none before:absolute before:inset-x-0 before:-inset-y-0.5 data-disabled:opacity-50 data-horizontal:h-6 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
         {/* the track (h-1.5) is thicker than stock for touch use */}
         <SliderPrimitive.Track
           style={trackStyle}

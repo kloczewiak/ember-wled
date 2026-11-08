@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { toast, useStore } from '../store'
 import { useUi } from '../ui'
@@ -303,30 +303,77 @@ export function PresetSelect({
 export const FieldError = ({ children }: { children?: ReactNode }) =>
   children ? <p className="m-0 text-xs text-destructive">{children}</p> : null
 
-// Four 0–255 boxes, like the stock page's IP inputs (each "required", min 0, max 255).
+// Four 0–255 boxes for an IP address, empty while unset (NaN). Three digits move on to the next box of the same
+// address (not out of it: the last box keeps the focus), as do typing a dot or a fourth digit; Backspace in an
+// empty box goes back one, and a pasted address fills the boxes from this one. `placeholder` shows a default in
+// the empty boxes.
 export function IpInput({
   value,
   onChange,
   label,
+  placeholder,
 }: {
   value: number[]
   onChange: (v: number[]) => void
   label: string
+  placeholder?: number[]
 }) {
+  const boxes = useRef<(HTMLInputElement | null)[]>([])
+  // moving on selects the next box, so typing replaces it; going back puts the caret at the end, so Backspace
+  // keeps deleting one digit at a time
+  const focus = (i: number, back = false) => {
+    const el = boxes.current[i]
+    if (!el) return
+    el.focus()
+    if (back) el.setSelectionRange(el.value.length, el.value.length)
+    else el.select()
+  }
+  const num = (t: string) => {
+    const d = t.replace(/\D/g, '').slice(0, 3)
+    return d === '' ? NaN : Number(d)
+  }
   return (
     <div className="flex items-center gap-1 font-mono" role="group" aria-label={label}>
       {[0, 1, 2, 3].map((i) => (
         <span key={i} className="flex items-center gap-1">
           {i > 0 && <span className="text-muted-foreground">.</span>}
           <Input
+            ref={(el) => {
+              boxes.current[i] = el
+            }}
             aria-label={`${label}, part ${i + 1}`}
             inputMode="numeric"
             className="w-14 text-center"
+            placeholder={placeholder ? String(placeholder[i]) : undefined}
             value={Number.isNaN(value[i]) ? '' : String(value[i])}
+            onKeyDown={(e) => {
+              if (e.key === 'Backspace' && e.currentTarget.value === '' && i > 0) {
+                e.preventDefault()
+                focus(i - 1, true)
+              }
+            }}
             onChange={(e) => {
               const v = [...value]
-              v[i] = e.target.value === '' ? NaN : Number(e.target.value.replace(/\D/g, ''))
-              onChange(v)
+              const parts = e.target.value.split('.')
+              if (parts.length === 1) {
+                // a digit typed into a full box starts the next one (the last box just keeps three)
+                const d = parts[0].replace(/\D/g, '')
+                v[i] = num(d)
+                if (d.length > 3 && i < 3) v[i + 1] = num(d.slice(3))
+                onChange(v)
+                if (d.length >= 3 && i < 3) focus(i + 1)
+              } else if (parts.length === 2 && parts[1] === '') {
+                // a dot typed after the number
+                v[i] = num(parts[0])
+                onChange(v)
+                if (!Number.isNaN(v[i]) && i < 3) focus(i + 1)
+              } else {
+                // a pasted address
+                const fill = parts.slice(0, 4 - i)
+                fill.forEach((p, j) => (v[i + j] = num(p)))
+                onChange(v)
+                focus(i + fill.length - 1)
+              }
             }}
           />
         </span>
@@ -335,6 +382,8 @@ export function IpInput({
   )
 }
 export const ipValid = (v: number[]) => v.length === 4 && v.every((x) => Number.isInteger(x) && x >= 0 && x <= 255)
+// an address left empty: all four boxes empty, or all zeros, as the firmware stores "not set"
+export const ipEmpty = (v: number[]) => v.every((x) => Number.isNaN(x) || x === 0)
 export const ipText = (v: number[]) => v.map((x) => (Number.isNaN(x) ? '' : String(x))).join('.')
 
 function PinDialog({

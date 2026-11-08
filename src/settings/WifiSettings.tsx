@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Icon, Switch } from '../components/controls'
 import { useStore } from '../store'
@@ -9,6 +10,7 @@ import { scanNetworks, type Cfg, type ScannedNet } from './api'
 import { useCfgForm } from './config'
 import {
   IpInput,
+  ipEmpty,
   ipValid,
   keepSecret as keep,
   PasswordInput,
@@ -26,12 +28,16 @@ import {
 
 const MAX_NETWORKS = 3 // WLED_MAX_WIFI_COUNT
 const MAX_REMOTES = 10
+const NO_IP = [NaN, NaN, NaN, NaN]
+// what an empty subnet mask is saved as: a 0.0.0.0 mask would go to the Wi-Fi stack as is
+const DEFAULT_MASK = [255, 255, 255, 0]
+// apBehavior, in the firmware's order (const.h AP_BEHAVIOR_*, used by wled.cpp handleConnection/initAP)
 const AP_OPENS = [
-  'No connection after boot',
-  'Disconnected',
+  "If it can't connect after starting up",
+  'Whenever it loses the connection',
   'Always',
-  'Never (not recommended)',
-  'Temporary (no connection after boot)',
+  'Only when button 1 is held for 5 s (not recommended)',
+  "If it can't connect after starting up, for 5 minutes",
 ]
 // v16.0.1 caps TX power at 19.5 dBm (set.cpp clamps to WIFI_POWER_19_5dBm)
 const TX_POWER: [number, string][] = [
@@ -69,6 +75,8 @@ const ETHERNET: [number, string][] = [
 type Net = Secret & {
   ssid: string
   bssid: string
+  // a static address is used only when both the IP and the gateway are set (wled.cpp initConnection)
+  fixed: boolean
   ip: number[]
   gw: number[]
   sn: number[]
@@ -93,9 +101,10 @@ const newNet = (): Net => ({
   ssid: '',
   ...keep(0),
   bssid: '',
-  ip: [0, 0, 0, 0],
-  gw: [0, 0, 0, 0],
-  sn: [255, 255, 255, 0],
+  fixed: false,
+  ip: NO_IP,
+  gw: NO_IP,
+  sn: NO_IP,
   enc: 0,
   anon: '',
   ident: '',
@@ -107,14 +116,16 @@ function toForm(c: Cfg): Form {
       ssid: n.ssid,
       ...keep(n.pskl),
       bssid: n.bssid,
-      ip: n.ip,
-      gw: n.gw,
-      sn: n.sn,
+      fixed: !ipEmpty(n.ip) && !ipEmpty(n.gw),
+      // 0.0.0.0 is "not set": shown as empty boxes
+      ip: ipEmpty(n.ip) ? NO_IP : n.ip,
+      gw: ipEmpty(n.gw) ? NO_IP : n.gw,
+      sn: ipEmpty(n.sn) ? NO_IP : n.sn,
       enc: n.enc_type ?? 0,
       anon: n.e_anon_ident ?? '',
       ident: n.e_ident ?? '',
     })),
-    dns: c.nw.dns,
+    dns: ipEmpty(c.nw.dns) ? NO_IP : c.nw.dns,
     mdns: c.id.mdns,
     ap: { ssid: c.ap.ssid, hide: !!c.ap.hide, ...keep(c.ap.pskl), chan: c.ap.chan, behav: c.ap.behav },
     phy: c.wifi.phy,
@@ -127,19 +138,22 @@ function toForm(c: Cfg): Form {
 }
 
 // The fields the stock form posts, in the firmware's names.
-function toFields(f: Form, enterprise: boolean): [string, string][] {
+function toFields(f: Form, enterprise: boolean, storedDns: number[]): [string, string][] {
   const out: [string, string][] = []
   f.nets.forEach((n, i) => {
     out.push([`CS${i}`, n.ssid], [`PW${i}`, secretField(n)], [`BS${i}`, n.bssid])
+    // empty boxes are 0 (not set), except an empty mask, which gets the usual one
     for (const [p, v] of [
       ['IP', n.ip],
       ['GW', n.gw],
-      ['SN', n.sn],
+      ['SN', ipEmpty(n.sn) ? DEFAULT_MASK : n.sn],
     ] as const)
-      v.forEach((x, j) => out.push([`${p}${i}${j}`, String(x)]))
+      v.forEach((x, j) => out.push([`${p}${i}${j}`, String(Number.isNaN(x) ? 0 : x)]))
     if (enterprise) out.push([`ET${i}`, String(n.enc)], [`EA${i}`, n.anon], [`EI${i}`, n.ident])
   })
-  f.dns.forEach((x, j) => out.push([`D${j}`, String(x)]))
+  // hidden while no network is static: then an unfinished edit keeps the stored one
+  const dns = f.nets.some((n) => n.fixed) || ipValid(f.dns) ? f.dns : storedDns
+  dns.forEach((x, j) => out.push([`D${j}`, String(Number.isNaN(x) ? 0 : x)]))
   out.push(
     ['CM', f.mdns],
     ['AS', f.ap.ssid],
@@ -165,10 +179,23 @@ function validate(f: Form): string[] {
   f.nets.forEach((n, i) => {
     const name = `Network ${i + 1}`
     if (i > 0 && !n.ssid) errors.push(`${name} needs a name, or remove it.`)
-    if (![n.ip, n.gw, n.sn].every(ipValid))
-      errors.push(`${name}: each part of the IP, gateway and subnet must be 0–255.`)
+    // the hidden boxes of an automatic address aren't checked: they're kept but not used
+    if (!n.fixed) return
+    for (const [what, v, required] of [
+      ['static IP', n.ip, true],
+      ['gateway', n.gw, true],
+      ['subnet mask', n.sn, false],
+    ] as const) {
+      if (ipEmpty(v)) {
+        if (required) errors.push(`${name}: enter the ${what}, or choose Automatic.`)
+      } else if (!ipValid(v)) errors.push(`${name}: fill in all four parts of the ${what}, each 0–255.`)
+    }
   })
-  if (!ipValid(f.dns)) errors.push('Each part of the DNS server must be 0–255.')
+  // one DNS server for every static network (wled.cpp initConnection); automatic ones use the router's
+  if (f.nets.some((n) => n.fixed)) {
+    if (ipEmpty(f.dns)) errors.push('Enter the DNS server: networks set to Static use it.')
+    else if (!ipValid(f.dns)) errors.push('Fill in all four parts of the DNS server, each 0–255.')
+  }
   // the stock rule (empty or 8–63 characters) applied to a newly typed AP password; empty keeps or removes it
   const ap = f.ap.pw
   if (!f.ap.remove && ap !== '' && (ap.length < 8 || ap.length > 63))
@@ -243,6 +270,7 @@ export function WifiSettings() {
   const set = (p: Partial<Form>) => setDraft({ ...f, ...p })
   const setNet = (i: number, p: Partial<Net>) => set({ nets: f.nets.map((n, j) => (j === i ? { ...n, ...p } : n)) })
   const setAp = (p: Partial<Form['ap']>) => set({ ap: { ...f.ap, ...p } })
+  const statics = f.nets.filter((n) => n.fixed).length
   // the AP always runs at 4.3.2.1 (wled.cpp initAP); info.wifi.ap says whether it is up
   const apIp = info?.wifi.ap ? '4.3.2.1' : 'Not active'
 
@@ -314,15 +342,53 @@ export function WifiSettings() {
                 onChange={(e) => setNet(i, { bssid: e.target.value })}
               />
             </Row>
-            <Row label="Static IP" hint={`0.0.0.0 uses DHCP${i === 0 ? '. Also used by Ethernet.' : ''}`} stack>
-              <IpInput label="Static IP" value={n.ip} onChange={(ip) => setNet(i, { ip })} />
+            <Row
+              label="IP address"
+              hint={
+                i === 0 && f.eth !== undefined
+                  ? "Ethernet uses this network's address too."
+                  : n.fixed
+                    ? undefined
+                    : 'Given by the router.'
+              }
+            >
+              {/* Automatic empties the IP (saved as 0.0.0.0, which is DHCP); the gateway and mask stay for switching back */}
+              <Tabs
+                value={n.fixed}
+                onValueChange={(fixed: boolean) => setNet(i, fixed ? { fixed } : { fixed, ip: NO_IP })}
+              >
+                <TabsList aria-label={`Network ${i + 1} IP address`}>
+                  <TabsTrigger value={false}>Automatic</TabsTrigger>
+                  <TabsTrigger value={true}>Static</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </Row>
-            <Row label="Static gateway" stack>
-              <IpInput label="Static gateway" value={n.gw} onChange={(gw) => setNet(i, { gw })} />
-            </Row>
-            <Row label="Static subnet mask" stack>
-              <IpInput label="Static subnet mask" value={n.sn} onChange={(sn) => setNet(i, { sn })} />
-            </Row>
+            {n.fixed && (
+              <>
+                <Row label="Static IP" stack>
+                  <IpInput label="Static IP" value={n.ip} onChange={(ip) => setNet(i, { ip })} />
+                </Row>
+                <Row label="Gateway" hint="Usually the router's address." stack>
+                  <IpInput label="Gateway" value={n.gw} onChange={(gw) => setNet(i, { gw })} />
+                </Row>
+                <Row
+                  label={
+                    <>
+                      Subnet mask <span className="text-muted-foreground">(optional)</span>
+                    </>
+                  }
+                  hint="Leave empty for 255.255.255.0."
+                  stack
+                >
+                  <IpInput
+                    label="Subnet mask"
+                    value={n.sn}
+                    placeholder={DEFAULT_MASK}
+                    onChange={(sn) => setNet(i, { sn })}
+                  />
+                </Row>
+              </>
+            )}
           </div>
         ))}
         <div className="flex gap-2">
@@ -343,7 +409,8 @@ export function WifiSettings() {
 
       {f.eth !== undefined && (
         <Section title="Ethernet">
-          <Row label="Ethernet type" stack>
+          {/* network.cpp initEthernet: the same rule as Wi-Fi, with network 1's values */}
+          <Row label="Ethernet type" hint="Uses network 1's IP address: automatic, or its static one." stack>
             <NativeSelect className="w-full" value={f.eth} onChange={(e) => set({ eth: Number(e.target.value) })}>
               {ETHERNET.map(([v, l]) => (
                 <option key={v} value={v}>
@@ -355,10 +422,22 @@ export function WifiSettings() {
         </Section>
       )}
 
-      <Section title="DNS and mDNS">
-        <Row label="DNS server" stack>
-          <IpInput label="DNS server" value={f.dns} onChange={(dns) => set({ dns })} />
-        </Row>
+      <Section title={statics > 0 ? 'DNS and mDNS' : 'mDNS'}>
+        {/* only a static address uses it (WiFi.config/ETH.config in wled.cpp initConnection, network.cpp); with
+            DHCP the router's is used, so it's hidden and kept as it is */}
+        {statics > 0 && (
+          <Row
+            label="DNS server"
+            hint={
+              statics > 1
+                ? "Used by every network set to Static. If they're different networks, a public one like 8.8.8.8 works on each."
+                : "Used by the network set to Static. If you're not sure, use the router's address or a public one like 8.8.8.8."
+            }
+            stack
+          >
+            <IpInput label="DNS server" value={f.dns} onChange={(dns) => set({ dns })} />
+          </Row>
+        )}
         <Row label="mDNS address" hint="Leave empty for no mDNS" stack>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             http://
@@ -400,7 +479,7 @@ export function WifiSettings() {
             onChange={(e) => setAp({ chan: e.target.value === '' ? NaN : Number(e.target.value) })}
           />
         </Row>
-        <Row label="AP opens" stack>
+        <Row label="Open the access point" stack>
           <NativeSelect
             className="w-full"
             value={f.ap.behav}
@@ -419,9 +498,12 @@ export function WifiSettings() {
       </Section>
 
       <Section title="Wi-Fi power">
-        <Row label="Force 802.11g mode" hint="ESP8266 only">
-          <Switch on={f.phy} label="Force 802.11g mode" onChange={(phy) => set({ phy })} />
-        </Row>
+        {/* only an ESP8266 reads it (wled.cpp initConnection, #ifdef ESP8266); elsewhere it's kept as saved */}
+        {info?.arch === 'esp8266' && (
+          <Row label="Force 802.11g mode">
+            <Switch on={f.phy} label="Force 802.11g mode" onChange={(phy) => set({ phy })} />
+          </Row>
+        )}
         <Row label="Disable Wi-Fi sleep" hint="Uses more power, but can help with connection problems and sync.">
           <Switch on={f.noSleep} label="Disable Wi-Fi sleep" onChange={(noSleep) => set({ noSleep })} />
         </Row>
@@ -498,7 +580,7 @@ export function WifiSettings() {
         saving={saving}
         errors={errors}
         saveLabel="Save and connect"
-        onSave={() => save(toFields(f, enterprise))}
+        onSave={() => save(toFields(f, enterprise, cfg.nw.dns))}
         onDiscard={discard}
       />
       {dialog}

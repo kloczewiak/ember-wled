@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { refresh, toast } from '../store'
 import { readStockUiCfg, showAccent, useUi, type Json } from '../ui'
 import { Switch } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ChevronDown } from 'lucide-react'
 import { useCfgForm } from './config'
 import { AccentPicker } from './AccentPicker'
 import { PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
@@ -58,6 +59,8 @@ export function UiSettings() {
   const oldUrl = useRef('')
   const cssFile = useRef<HTMLInputElement>(null)
   const holidaysFile = useRef<HTMLInputElement>(null)
+  // the stock UI's own options are folded: most people only use this one
+  const [stockOpen, setStockOpen] = useState(false)
   // the page shows the accent being edited; leaving goes back to the saved one
   const accent = draft?.accent
   useEffect(() => {
@@ -160,8 +163,8 @@ export function UiSettings() {
 
       <Section
         title={
-          <span className="flex items-center gap-2">
-            In this browser <Badge variant="outline">Used here</Badge>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="whitespace-nowrap">In this browser</span> <Badge variant="outline">Used here</Badge>
           </span>
         }
       >
@@ -205,109 +208,119 @@ export function UiSettings() {
 
       <Section
         title={
-          <span className="flex items-center gap-2">
-            In this browser <Badge variant="outline">Stock UI only</Badge>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="whitespace-nowrap">In this browser</span> <Badge variant="outline">Stock UI only</Badge>
           </span>
+        }
+        action={
+          <Button variant="ghost" size="sm" aria-expanded={stockOpen} onClick={() => setStockOpen(!stockOpen)}>
+            {stockOpen ? 'Hide' : 'Show'}
+            <ChevronDown className={stockOpen ? 'rotate-180' : undefined} />
+          </Button>
         }
       >
         <p className="m-0 text-xs text-muted-foreground">These only change the stock WLED interface.</p>
-        {bool('comp.labels', 'Show button labels')}
-        {bool('comp.pcmbot', 'Show bottom tab bar in PC mode')}
-        <div className="text-xs font-medium text-muted-foreground">Color selection methods</div>
-        {bool('comp.colors.picker', 'Color wheel')}
-        {bool('comp.colors.rgb', 'RGB sliders')}
-        {bool('comp.colors.quick', 'Quick color selectors')}
-        {bool('comp.colors.hex', 'HEX color input')}
-        <Row label="Light mode">
-          <Switch
-            on={get(ui, 'theme.base') === 'light'}
-            label="Light mode"
-            onChange={(v) => setUi('theme.base', v ? 'light' : 'dark')}
-          />
-        </Row>
-        <Row label="Button opacity">{num('theme.alpha.tab', 0, 1, 0.01)}</Row>
-        {bool('comp.css', 'Enable custom CSS')}
-        <Row label="Custom CSS file" hint="Uploaded as skin.css">
-          <input
-            ref={cssFile}
-            type="file"
-            accept=".css"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], '/skin.css')}
-          />
-          <Button variant="outline" onClick={() => cssFile.current?.click()}>
-            Upload
-          </Button>
-        </Row>
-        <div className="text-xs font-medium text-muted-foreground">Background</div>
-        <Row label="Background opacity">{num('theme.alpha.bg', 0, 1, 0.01)}</Row>
-        <Row label="Background color" hint="HEX, e.g. #000000">
-          <Input
-            className="w-32 font-mono"
-            maxLength={9}
-            value={String(get(ui, 'theme.color.bg') ?? '')}
-            onChange={(e) => setUi('theme.color.bg', e.target.value)}
-          />
-        </Row>
-        <Row label="Background image">
-          <div className="flex gap-2">
-            <label className="contents">
+        {stockOpen && (
+          <>
+            {bool('comp.labels', 'Show button labels')}
+            {bool('comp.pcmbot', 'Show bottom tab bar in PC mode')}
+            <div className="text-xs font-medium text-muted-foreground">Color selection methods</div>
+            {bool('comp.colors.picker', 'Color wheel')}
+            {bool('comp.colors.rgb', 'RGB sliders')}
+            {bool('comp.colors.quick', 'Quick color selectors')}
+            {bool('comp.colors.hex', 'HEX color input')}
+            <Row label="Light mode">
+              <Switch
+                on={get(ui, 'theme.base') === 'light'}
+                label="Light mode"
+                onChange={(v) => setUi('theme.base', v ? 'light' : 'dark')}
+              />
+            </Row>
+            <Row label="Button opacity">{num('theme.alpha.tab', 0, 1, 0.01)}</Row>
+            {bool('comp.css', 'Enable custom CSS')}
+            <Row label="Custom CSS file" hint="Uploaded as skin.css">
               <input
+                ref={cssFile}
                 type="file"
-                accept="image/*"
+                accept=".css"
                 className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-                  const reader = new FileReader()
-                  reader.onload = () => setBg({ url: String(reader.result), rnd: false })
-                  reader.readAsDataURL(file)
+                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], '/skin.css')}
+              />
+              <Button variant="outline" onClick={() => cssFile.current?.click()}>
+                Upload
+              </Button>
+            </Row>
+            <div className="text-xs font-medium text-muted-foreground">Background</div>
+            <Row label="Background opacity">{num('theme.alpha.bg', 0, 1, 0.01)}</Row>
+            <Row label="Background color" hint="HEX, e.g. #000000">
+              <Input
+                className="w-32 font-mono"
+                maxLength={9}
+                value={String(get(ui, 'theme.color.bg') ?? '')}
+                onChange={(e) => setUi('theme.color.bg', e.target.value)}
+              />
+            </Row>
+            <Row label="Background image">
+              <div className="flex gap-2">
+                <label className="contents">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onload = () => setBg({ url: String(reader.result), rnd: false })
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                  <Button variant="outline" nativeButton={false} render={<span />}>
+                    Choose
+                  </Button>
+                </label>
+                <Button variant="outline" onClick={() => setBg({ url: '', rnd: false })}>
+                  Remove
+                </Button>
+              </div>
+            </Row>
+            <Row label="Random image" hint="From picsum.photos">
+              <Switch
+                on={random}
+                label="Random image"
+                onChange={(rnd) => {
+                  if (rnd) oldUrl.current = bgUrl
+                  setBg(rnd ? { rnd } : { rnd, url: oldUrl.current })
                 }}
               />
-              <Button variant="outline" nativeButton={false} render={<span />}>
-                Choose
-              </Button>
-            </label>
-            <Button variant="outline" onClick={() => setBg({ url: '', rnd: false })}>
-              Remove
-            </Button>
-          </div>
-        </Row>
-        <Row label="Random image" hint="From picsum.photos">
-          <Switch
-            on={random}
-            label="Random image"
-            onChange={(rnd) => {
-              if (rnd) oldUrl.current = bgUrl
-              setBg(rnd ? { rnd } : { rnd, url: oldUrl.current })
-            }}
-          />
-        </Row>
-        {random ? (
-          <>
-            {bool('theme.bg.rndGrayscale', 'Grayscale')}
-            {bool('theme.bg.rndBlur', 'Blur')}
-          </>
-        ) : (
-          !bgUrl.startsWith('data:') && (
-            <Row label="Image URL" stack>
-              <Input value={bgUrl} onChange={(e) => setUi('theme.bg.url', e.target.value)} aria-label="Image URL" />
             </Row>
-          )
+            {random ? (
+              <>
+                {bool('theme.bg.rndGrayscale', 'Grayscale')}
+                {bool('theme.bg.rndBlur', 'Blur')}
+              </>
+            ) : (
+              !bgUrl.startsWith('data:') && (
+                <Row label="Image URL" stack>
+                  <Input value={bgUrl} onChange={(e) => setUi('theme.bg.url', e.target.value)} aria-label="Image URL" />
+                </Row>
+              )
+            )}
+            {bool('comp.hdays', 'Enable custom holidays list')}
+            <Row label="Holidays file" hint="Uploaded as holidays.json">
+              <input
+                ref={holidaysFile}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], '/holidays.json')}
+              />
+              <Button variant="outline" onClick={() => holidaysFile.current?.click()}>
+                Upload
+              </Button>
+            </Row>
+          </>
         )}
-        {bool('comp.hdays', 'Enable custom holidays list')}
-        <Row label="Holidays file" hint="Uploaded as holidays.json">
-          <input
-            ref={holidaysFile}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], '/holidays.json')}
-          />
-          <Button variant="outline" onClick={() => holidaysFile.current?.click()}>
-            Upload
-          </Button>
-        </Row>
       </Section>
 
       <Section title="Cache">

@@ -88,7 +88,7 @@ export function Slider({
 // `display` overrides the shown value; without it the raw value is shown, following the thumb while dragging.
 // Classes for a block of sliders that share columns (`grouped` LabeledSliders): labels as wide as the longest
 // one, the slider takes the rest, values at their own width.
-export const sliderGridCls = 'grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-3'
+export const sliderGridCls = 'grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1'
 
 // A slider with its label on the left and value on the right. On its own it uses fixed columns; `grouped`
 // rows use the columns of a surrounding sliderGridCls grid, and their values are up to 3 digits.
@@ -104,7 +104,7 @@ export function LabeledSlider({
   return (
     <div
       className={cn(
-        'items-center gap-3 text-xs text-muted-foreground',
+        'items-center gap-x-3 text-xs text-muted-foreground',
         grouped ? 'col-span-3 grid grid-cols-subgrid' : 'grid grid-cols-[88px_1fr_52px]',
       )}
     >

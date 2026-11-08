@@ -983,7 +983,7 @@ function ColourWhite({ f, T, set }: { f: LedForm; T: Types; set: (p: Partial<Led
           >
             <Switch label="CCT driver chip" on={f.ic} onChange={(ic) => set({ ic })} />
           </Row>
-          <div className="flex flex-col gap-2 pt-2 pb-1">
+          <div className="flex flex-col gap-1 pt-2 pb-1">
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-sm">Warm and cold white blending</span>
               <span className="text-sm font-semibold tabular-nums">
