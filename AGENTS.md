@@ -8,27 +8,22 @@ After making any changes, run Prettier from this folder:
 npm run format
 ```
 
-It formats the whole project with the settings in `.prettierrc.json` (no semicolons, single quotes, 120
-columns). `npm run format:check` reports files that aren't formatted without changing them.
+It formats the whole project with the settings in `.prettierrc.json` (no semicolons, single quotes, 120 columns). `npm run format:check` reports files that aren't formatted without changing them.
+
+Markdown files aren't formatted by Prettier (`.prettierignore`). Don't hard-wrap them: write each paragraph and each list item on one line, and let GitHub wrap it. Only start a new line where a new paragraph, list item, heading, table row or code line starts.
 
 ## Versions
 
-Don't change Ember's version (`version` in `package.json`) as part of a commit or feature. A version bump is
-the owner's decision, made when they say a release is ready. Ember is pre-release at 0.1.0 and goes to 1.0.0
-when the owner says it's ready for the public.
+Don't change Ember's version (`version` in `package.json`) as part of a commit or feature. A version bump is the owner's decision, made when they say a release is ready. Ember is pre-release at 0.1.0 and goes to 1.0.0 when the owner says it's ready for the public.
 
-`WLED-VERSION` is the WLED release Ember is built and tested for. Don't change it either unless asked; it's set
-once the firmware-specific data in `README.md` has been checked against a new release. Nothing that ships
-should read the firmware checkout in `../wled-firmware`: it's for reference and the mock's generator scripts.
+`WLED-VERSION` is the WLED release Ember is built and tested for. Don't change it either unless asked; it's set once the firmware-specific data in `DEVELOPMENT.md` has been checked against a new release. Nothing that ships should read the firmware checkout in `../wled-firmware`: it's for reference and the mock's generator scripts.
 
 When the owner asks for a version bump, check that everything is up to date before committing it:
 
 - `version` in `package.json` and `package-lock.json` (`npm version <x.y.z> --no-git-tag-version` sets both).
-- Every Markdown file (`README.md`, `AGENTS.md`, `PARITY.md`, `src/lib/fxcolors.md` and any others): versions
-  they name, install and removal steps, feature lists and screenshots that no longer match the app.
-- `WLED-VERSION` and the README's firmware-specific data table, if this release targets a new WLED version.
+- Every Markdown file (`README.md`, `DEVELOPMENT.md`, `AGENTS.md`, `PARITY.md`, `src/lib/fxcolors.md` and any others): versions they name, install and removal steps, requirements, feature lists and screenshots that no longer match the app.
+- `WLED-VERSION`, the firmware-specific data table in `DEVELOPMENT.md` and the WLED version in `README.md`'s requirements, if this release targets a new WLED version.
 - `npm run build` prints the expected `Ember <version> (<hash>) for WLED <version>`.
 - Formatting (`npm run format:check`), typecheck and lint pass.
 
-Report anything out of date to the owner instead of guessing, and make the bump its own commit. Tag it
-(`ember-v<x.y.z>`) only when the owner says it's a release.
+Report anything out of date to the owner instead of guessing, and make the bump its own commit. Tag it (`ember-v<x.y.z>`) only when the owner says it's a release.

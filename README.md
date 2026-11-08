@@ -1,84 +1,85 @@
 # Ember for WLED
 
-Ember is a replacement for WLED's main control page, built with React, Vite and Tailwind. It talks to the
-device's JSON API and WebSocket, the same way the stock UI does, and is served by the ESP from its own
-filesystem. It isn't part of the WLED project.
+Ember is a new interface for [WLED](https://kno.wled.ge) lights. It replaces WLED's main page and most of its settings with a cleaner, easier app that runs right on the light: no extra hardware, account or cloud service.
 
-## Development
+Ember isn't part of the WLED project. It's a separate interface that talks to WLED the same way WLED's own interface does, and it leaves your firmware alone.
 
-```bash
-npm install
-npm run dev:mock      # fake device in the dev server (mock/plugin.ts), no hardware needed
-npm run dev           # proxies API calls to a real device
-WLED_HOST=192.168.1.42 npm run dev
-```
+<!-- Screenshots go here: the main page on a phone and on a desktop, and a settings page. -->
 
-`npm run dev` defaults to `wled-filip.local`. mDNS names can be slow or fail to resolve from Node, so set
-`WLED_HOST` to the device's IP if the proxy times out (`.claude/launch.json` does this for the preview). `npm run gen:fixtures` refreshes the mock's effect and palette
-lists from `../wled-firmware/wled00`.
+## Why use Ember
 
-## Putting it on the device
+- **A cleaner, modern interface.** A design that's comfortable on a phone and on a desktop, with a layout made for each.
+- **What you see is what the light does.** The strip preview shows each effect in its real colours, and controls only appear when the current effect actually uses them.
+- **Settings you can understand.** Options are explained in plain language and only show up when they apply to your hardware. Presets are picked by name and pins from a map, instead of typed in as numbers.
+- **Hardware setup without guesswork.** See how your LED outputs are laid out, how much current they draw compared with your power supply, and which pins are free. Problems are pointed out before you save.
+- **Instant navigation.** Controls and settings are one app, so switching between them is instant, with no page reloading in between. Add it to your phone's home screen to use it like a regular app.
 
-```bash
-npm run build         # writes dist/index.htm.gz and dist/ui.bin
-```
+It also has an editor for custom palettes with a live preview on the strip, and installs new WLED releases for you from the settings, with progress and a check that the light came back.
 
-Open `http://<device>/edit` and upload `dist/ui.bin`, then `dist/index.htm.gz`, to the filesystem root (in
-that order, so nobody gets a new start page with an old app), and reload `http://<device>/`. To make it
-installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, `dist/icon-192.png`,
-`dist/icon-512.png` and `dist/apple-touch-icon.png`. `npm run gen:icons` redraws the icons.
+**Easy to try, easy to remove.** Ember is two files on the light. Installing it doesn't change your firmware, settings, presets or palettes, and you can remove it from the settings at any time to go back to WLED's own interface.
 
-The two files only work as a pair:
+## Requirements
 
-- `index.htm.gz` is Ember's start page (`boot/index.html`, about 5 kB), which WLED serves at `/`. It shows a
-  splash, checks the light's WLED version against the one Ember was built for (`WLED-VERSION`), and starts the
-  app.
-- `ui.bin` is the app: gzip of its CSS and JS, sent as plain bytes so the start page can show real progress
-  and unpack it in the browser. The start page carries its hash and refuses a `ui.bin` from another build.
+- **WLED 16.0.1.** Ember is built and tested for this release. On another version it warns you first and lets you open it anyway.
+- **About 300 kB free** on the light's file system.
+- **A recent browser:** Safari 16.4, Firefox 113, Chrome 80 or newer (or anything based on them).
 
-Each device keeps a copy of the app (IndexedDB), so later visits start almost instantly and don't download
-`ui.bin` again until a new build is uploaded. On another WLED version the start page warns first, with
-"Try opening Ember" (optionally not asking again for that WLED version with this Ember version) and "Remove Ember". Removing
-deletes Ember's files through the file editor (asking for the settings PIN if there is one) and the light
-goes back to its standard interface. Settings → Security and updates → Remove Ember does the same from inside
-the app.
+Ember is developed on an ESP32. The ESP8266 hasn't been tested yet.
 
-WLED serves files on its filesystem in place of its built-in pages, so Ember replaces the stock UI at `/`
-while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the
-firmware's own. Firmware OTA updates keep the files; a filesystem reset removes them. To go back to the stock UI by hand, delete `/index.htm.gz` and `/ui.bin` in the file editor
-(`http://<device>/edit`; with a settings PIN, enter it at `http://<device>/settings/sec` first).
+The first time you open Ember on a phone or computer, it takes a few seconds longer than WLED's own interface, because the whole app is downloaded once and kept on that device. After that it opens as quickly as WLED's interface does.
 
-`npm run preview:mock` serves the built files with the fake device, the way the light does (start page at `/`,
-`ui.bin` as plain bytes, deleting files behind the settings PIN). `MOCK_WLED_VER=16.1.0` makes it another WLED
-version, and `GET /mock/ui-bin?other=1` makes it serve a `ui.bin` from another build.
+## Installing
 
-## Versions
+1. Get Ember's files, `index.htm.gz` and `ui.bin`, from a release.
+2. Open the light's file editor at `http://<your light>/edit`.
+3. Upload `ui.bin` first, then `index.htm.gz`.
+4. Open `http://<your light>/`. Ember starts.
 
-Ember's own version is `version` in `package.json` (0.1.0 while it's pre-release; 1.0.0 is the first public
-release). It's bumped by hand when a release is ready, not with every change. Each build also gets a hash of
-`ui.bin`, so two builds of the same version can be told apart. Both show in the More sheet ("Interface") and
-in Settings → Security and updates → About.
+To add Ember to your phone's home screen with its own icon, also upload `manifest.json`, `icon-192.png`, `icon-512.png` and `apple-touch-icon.png` from the release.
 
-The WLED release Ember is built and tested for is in `WLED-VERSION`, set by hand (see below). The app, the
-start page's version check and the mock all read it. The More sheet shows it as "Built for".
+If the light has a settings PIN, the file editor only says "Access Denied" until you unlock it: enter the PIN in WLED's settings first, at `http://<your light>/settings/sec`. It stays unlocked for 15 minutes.
 
-## Firmware-specific data
+## Updating
 
-This UI targets **WLED v16.0.1** (`WLED-VERSION`). Some of it is copied or derived from that release's source,
-checked out in `../wled-firmware` for reference, so check these after every firmware update:
+Upload the new `ui.bin`, then the new `index.htm.gz`, the same way. Each phone or computer picks up the new version the next time it opens Ember.
 
-| What | Last checked against | How to update |
-| --- | --- | --- |
-| Effect colours on the Default palette (`src/lib/fxcolors.ts`), used by the segment bar | v16.0.1 | Follow `src/lib/fxcolors.md` (`npm run audit:fx-colors` lists what to review) |
-| Mock effect and palette lists (`mock/fixtures.json`) | v16.0.1 | `npm run gen:fixtures` |
-| Settings pages and the rest of the stock UI's behaviour | v16.0.1 | Diff `wled00/data` and `wled00/set.cpp` against the previous release; gaps go in `PARITY.md` |
-| The version Ember says it's built for: the start page's warning, the Firmware update page, "Built for" (`WLED-VERSION`) | v16.0.1 | Set it once the rows above are checked |
+The two files always come as a pair from the same version. If they don't match, Ember says so instead of starting.
 
-## Layout
+## Removing
 
-- `src/store.ts`: connection (WebSocket with HTTP fallback), loading, live view, toasts
-- `src/api/`: API types, the effect metadata parser, and the command merge used for optimistic updates
-- `src/components/`: one panel per section (Color, Palette, Effect, Segments, Presets, More sheet)
-- `src/settings/`: the settings screen (`#settings`). Pages read `/json/cfg` and save by posting the firmware's own
-  settings form fields to `/settings/<page>`, so the firmware's handler (`set.cpp`) validates and applies them
-- `mock/`: the fake device used by `npm run dev:mock`
+Open **Settings → Security and updates → Remove Ember**. Ember deletes its files and the light shows WLED's own interface again.
+
+If Ember won't open at all, delete `index.htm.gz` and `ui.bin` in the file editor (`http://<your light>/edit`), plus `manifest.json` and the icons if you uploaded them. Ember's start screen also has a **Remove Ember** button whenever something's wrong.
+
+Removing Ember keeps your settings, presets and palettes.
+
+## What's still WLED's own
+
+A few pages aren't part of Ember yet and open WLED's own versions: 2D setup, usermods and DMX output, as well as the file editor and WLED's other built-in tools. The goal is to replace them all over time.
+
+## Troubleshooting
+
+- **The "Ember was built for WLED …" warning.** The light runs a different WLED version than the one Ember was tested with. Ember may still work fine: choose **Try opening Ember**, and tick "Don't show this again" to stop being asked. If something doesn't work, use **Remove Ember**, or install an Ember version built for your WLED version.
+- **"Ember can't start: its start page (index.htm.gz) and app file (ui.bin) come from different builds."** Upload both files from the same release.
+- **"Ember can't start: its app file (ui.bin) isn't on this light."** Upload `ui.bin` again.
+- **"This browser is too old to run Ember."** Update the browser, or use another device.
+- **Firmware updates** keep Ember installed. A factory reset erases it along with everything else.
+- **Starting fresh on one device:** clearing the site data for the light's address in your browser removes Ember's saved copy there, and it's downloaded again on the next visit.
+
+## Privacy
+
+Ember runs entirely in your browser and talks only to your light, except for a few features that need the internet:
+
+- **WLED updates:** opening Settings → Firmware update asks GitHub for the latest WLED release, and installing one downloads it through WLED's download server.
+- **"Get location"** for sunrise and sunset times opens WLED's location page.
+- **The palette collection**, when you start a new palette from it, is downloaded from WLED's website.
+
+WLED's own interface uses the same services for the same features. Ember doesn't collect or send anything else.
+
+## Building it yourself
+
+See [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## Licence
+
+Not chosen yet.
