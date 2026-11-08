@@ -279,7 +279,7 @@ export function FirmwareUpdate() {
             />
           </div>
           <p className="m-0 text-xs text-muted-foreground">
-            Keep this page open until the light is back. Settings, presets and this interface stay as they are.
+            Keep this page open until the light is back. Settings, presets and Ember stay as they are.
           </p>
         </Section>
       ) : (
@@ -356,7 +356,7 @@ export function FirmwareUpdate() {
 // and how to remove this UI if it stops working; for a bootloader, what a wrong one does.
 function Confirm({ job, onConfirm }: { job: Job; onConfirm: () => void }) {
   const version = job.kind === 'release' ? job.release.version : job.kind === 'file' ? fileVersion(job.file.name) : null
-  const warning = `This interface stays installed, but it's built for WLED ${BUILT_FOR} and may not work properly on ${version ? version : 'another version'}.`
+  const warning = `Ember stays installed, but it's built for WLED ${BUILT_FOR} and may not work properly on ${version ? version : 'another version'}.`
   const [title, text, label] = {
     release: [
       `Update to WLED ${version}?`,
@@ -398,18 +398,18 @@ function Confirm({ job, onConfirm }: { job: Job; onConfirm: () => void }) {
   )
 }
 
-// How to go back to WLED's own interface if this one stops working: the firmware's file editor deletes
-// /index.htm.gz with one address, and works without this UI (createEditHandler in wled_server.cpp). With a
-// settings PIN it needs unlocking first, which the firmware's own settings pages do.
+// How to go back to WLED's own interface if Ember stops working: the firmware's file editor deletes the start
+// page (/index.htm.gz) with one address, then the app (/ui.bin), and works without Ember (createEditHandler in
+// wled_server.cpp). With a settings PIN it needs unlocking first, which the firmware's own settings pages do.
 function RemoveUi() {
   const base = `${location.protocol}//${location.host}`
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-      <span>
-        If this interface stops working, open this address to remove it. The light then shows WLED's own interface.
-      </span>
+      <span>If Ember stops working, open this address to remove it. The light then shows WLED's own interface.</span>
       <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/index.htm.gz</span>
-      <span>Or open the file editor and delete index.htm.gz there:</span>
+      <span>Then this one, to free the space the rest of Ember takes:</span>
+      <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/ui.bin</span>
+      <span>Or open the file editor and delete index.htm.gz and ui.bin there:</span>
       <span className="font-mono break-all text-foreground select-all">{base}/edit</span>
       <span>With a settings PIN, enter it here first:</span>
       <span className="font-mono break-all text-foreground select-all">{base}/settings/sec</span>
@@ -467,7 +467,7 @@ function LatestRelease({
             missing || (
               <>
                 Downloads {release.file!.name} ({mb(release.file!.size)}) from GitHub and installs it. Settings, presets
-                and this interface stay as they are. {notes(release, "What's new")}
+                and Ember stay as they are. {notes(release, "What's new")}
               </>
             )
           }

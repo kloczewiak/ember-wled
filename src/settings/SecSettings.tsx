@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { toast, useStore } from '../store'
 import { Switch } from '../components/controls'
+import { emberBuildId } from '../lib/ember'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -224,6 +225,10 @@ export function SecSettings() {
         <p className="m-0 text-sm text-muted-foreground">
           WLED {info?.ver} by Christian Schwinne and contributors, © 2016–2024. Licensed under the EUPL v1.2.
         </p>
+        <p className="m-0 text-sm text-muted-foreground">
+          This interface is Ember{emberBuildId() ? ` (build ${emberBuildId()})` : ''}, made separately from the WLED
+          project.
+        </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <a
             className="underline underline-offset-2"
@@ -373,7 +378,7 @@ function FactoryReset() {
     <Section title="Factory reset" className="ring-destructive/40">
       <Row
         label="Erase everything"
-        hint="Every file on the light is erased: settings, presets and this interface. It restarts as the WLED-AP access point with the stock WLED interface, to be set up again."
+        hint="Every file on the light is erased: settings, presets and Ember. It restarts as the WLED-AP access point with the stock WLED interface, to be set up again."
       >
         <Button variant="destructive" disabled={saving} onClick={() => setConfirming(true)}>
           Reset…
@@ -384,9 +389,9 @@ function FactoryReset() {
           <AlertDialogHeader>
             <AlertDialogTitle>Factory reset?</AlertDialogTitle>
             <AlertDialogDescription>
-              Every file on this light is erased: settings (Wi-Fi too), presets, custom palettes and this interface,
-              which goes back to the stock WLED one until you upload it again. The light restarts as the WLED-AP access
-              point and this page loses its connection. Consider backing up first.
+              Every file on this light is erased: settings (Wi-Fi too), presets, custom palettes and Ember, so it shows
+              the stock WLED interface until you upload Ember again. The light restarts as the WLED-AP access point and
+              this page loses its connection. Consider backing up first.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

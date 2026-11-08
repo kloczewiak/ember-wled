@@ -572,7 +572,7 @@ export function WifiSettings() {
 
       <Alert>
         <AlertDescription>
-          Saving may reconnect the light, and it may get a new IP address. This page reconnects by itself if it can.
+          Saving may reconnect the light, and it may get a new IP address. Ember reconnects by itself if it can.
         </AlertDescription>
       </Alert>
       <SaveBar

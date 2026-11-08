@@ -156,7 +156,7 @@ export function UiSettings() {
             aria-label="Device name"
           />
         </Row>
-        <Row label="Simplified UI" hint="Used by the stock WLED interface.">
+        <Row label="Simplified UI" hint="Only used by the stock WLED interface, not Ember.">
           <Switch on={draft.sui} label="Simplified UI" onChange={(sui) => setDraft({ ...draft, sui })} />
         </Row>
       </Section>
@@ -164,7 +164,7 @@ export function UiSettings() {
       <Section
         title={
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="whitespace-nowrap">In this browser</span> <Badge variant="outline">Used here</Badge>
+            <span className="whitespace-nowrap">In this browser</span> <Badge variant="outline">Used by Ember</Badge>
           </span>
         }
       >
@@ -219,7 +219,7 @@ export function UiSettings() {
           </Button>
         }
       >
-        <p className="m-0 text-xs text-muted-foreground">These only change the stock WLED interface.</p>
+        <p className="m-0 text-xs text-muted-foreground">These only change the stock WLED interface, not Ember.</p>
         {stockOpen && (
           <>
             {bool('comp.labels', 'Show button labels')}

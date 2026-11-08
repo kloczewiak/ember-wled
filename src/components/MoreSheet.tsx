@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/drawer'
 import { XIcon } from 'lucide-react'
 import { NativeSelect } from '@/components/ui/native-select'
+import { emberBuild } from '../lib/ember'
 
 // Usermod HTML uses glyphs from the stock UI's icon font, which this UI doesn't ship; the power glyph
 // (the one usermods use for their on/off buttons) is swapped for an inline icon.
@@ -182,12 +183,6 @@ function Row({ k, children }: { k: ReactNode; children: ReactNode }) {
       <span className="font-mono text-[13px] break-words">{children}</span>
     </div>
   )
-}
-
-// Which Ember build this is: its start page hands over the hash that ties it to ui.bin (boot/index.html)
-const emberBuild = () => {
-  const boot = (window as unknown as { __EMBER__?: { build: string } }).__EMBER__
-  return boot ? `Ember · build ${boot.build}` : 'Ember · development'
 }
 
 function DeviceInfo() {
