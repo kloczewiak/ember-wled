@@ -40,7 +40,8 @@ Each device keeps a copy of the app (IndexedDB), so later visits start almost in
 `ui.bin` again until a new build is uploaded. On another WLED version the start page warns first, with
 "Try opening Ember" (optionally not asking again for that WLED version with this Ember version) and "Remove Ember". Removing
 deletes Ember's files through the file editor (asking for the settings PIN if there is one) and the light
-goes back to its standard interface.
+goes back to its standard interface. Settings → Security and updates → Remove Ember does the same from inside
+the app.
 
 WLED serves files on its filesystem in place of its built-in pages, so Ember replaces the stock UI at `/`
 while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the

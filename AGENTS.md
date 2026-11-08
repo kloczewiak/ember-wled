@@ -20,3 +20,15 @@ when the owner says it's ready for the public.
 `WLED-VERSION` is the WLED release Ember is built and tested for. Don't change it either unless asked; it's set
 once the firmware-specific data in `README.md` has been checked against a new release. Nothing that ships
 should read the firmware checkout in `../wled-firmware`: it's for reference and the mock's generator scripts.
+
+When the owner asks for a version bump, check that everything is up to date before committing it:
+
+- `version` in `package.json` and `package-lock.json` (`npm version <x.y.z> --no-git-tag-version` sets both).
+- Every Markdown file (`README.md`, `AGENTS.md`, `PARITY.md`, `src/lib/fxcolors.md` and any others): versions
+  they name, install and removal steps, feature lists and screenshots that no longer match the app.
+- `WLED-VERSION` and the README's firmware-specific data table, if this release targets a new WLED version.
+- `npm run build` prints the expected `Ember <version> (<hash>) for WLED <version>`.
+- Formatting (`npm run format:check`), typecheck and lint pass.
+
+Report anything out of date to the owner instead of guessing, and make the bump its own commit. Tag it
+(`ember-v<x.y.z>`) only when the owner says it's a release.

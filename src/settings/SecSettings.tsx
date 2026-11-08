@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { toast, useStore } from '../store'
 import { Switch } from '../components/controls'
-import { EMBER_VERSION, emberBuildId } from '../lib/ember'
+import { EMBER_FILES, EMBER_VERSION, emberBuildId, forgetEmber } from '../lib/ember'
 import { BUILT_FOR } from '../lib/firmware'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Download, Lock, Upload } from 'lucide-react'
-import { uploadFile, type Cfg } from './api'
+import { deleteFile, uploadFile, type Cfg, type SaveResult } from './api'
 import { refreshCfg, useCfg, useCfgForm } from './config'
 import { ChoiceChip, Row, SaveBar, Section, useLeaveGuard, usePinAction, useSaver } from './shared'
 
@@ -220,6 +220,8 @@ export function SecSettings() {
         <BackupRow label="Configuration" path="/cfg.json" file={file('cfg')} hint="Restoring restarts the light." />
       </Section>
 
+      <RemoveEmber />
+
       <FactoryReset />
 
       <Section title="About">
@@ -369,6 +371,72 @@ function BackupRow({ label, path, file, hint }: { label: string; path: string; f
 // set.cpp formats the filesystem when RS is posted to the Security page and restarts the light.
 // RS formats the whole filesystem, so this UI (/index.htm.gz) goes too and the firmware's built-in stock UI is
 // served again
+// Removing Ember the way its start page does (boot/index.html): its files go through the firmware's file editor
+// (behind the settings PIN), this device forgets its copy, and the light shows its own interface again.
+// Palettes, presets and settings stay.
+function RemoveEmber() {
+  const [confirming, setConfirming] = useState(false)
+  const [done, setDone] = useState(false)
+  const removeAll = async (): Promise<SaveResult> => {
+    // a file that's already gone counts as deleted, so a retry after the PIN starts over safely
+    for (const f of EMBER_FILES) {
+      const result = await deleteFile(f)
+      if (result !== 'ok') return result
+    }
+    return 'ok'
+  }
+  const { run, busy, dialog } = usePinAction(
+    removeAll,
+    () => {
+      forgetEmber()
+      setDone(true)
+      setTimeout(() => location.replace('/'), 1500)
+    },
+    { verb: 'remove Ember', onFail: () => toast("Couldn't remove Ember. Try again.", true) },
+  )
+  return (
+    <Section title="Ember">
+      <Row
+        label="Remove Ember"
+        hint={
+          done
+            ? 'Removed. Opening the standard WLED interface…'
+            : 'Deletes Ember from the light, which then shows the standard WLED interface. Palettes, presets and settings stay.'
+        }
+      >
+        <Button variant="outline" disabled={busy || done} onClick={() => setConfirming(true)}>
+          {busy ? 'Removing…' : 'Remove…'}
+        </Button>
+      </Row>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Ember?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Its files are deleted from the light ({EMBER_FILES.map((f) => f.slice(1)).join(', ')}), and the light
+              shows the standard WLED interface. Palettes, presets and settings stay. To use Ember again, upload its
+              files again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                setConfirming(false)
+                run(undefined)
+              }}
+            >
+              Remove Ember
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {dialog}
+    </Section>
+  )
+}
+
 function FactoryReset() {
   const [confirming, setConfirming] = useState(false)
   const { save, saving, dialog } = useSaver(

@@ -386,20 +386,35 @@ export const ipValid = (v: number[]) => v.length === 4 && v.every((x) => Number.
 export const ipEmpty = (v: number[]) => v.every((x) => Number.isNaN(x) || x === 0)
 export const ipText = (v: number[]) => v.map((x) => (Number.isNaN(x) ? '' : String(x))).join('.')
 
+// After a wrong PIN the light ignores every PIN for 3 s, even the right one (PIN_RETRY_COOLDOWN in
+// checkSettingsPIN), so Unlock waits that out from `wrongAt`.
 function PinDialog({
   open,
   onSubmit,
   onCancel,
-  wrong,
+  wrongAt,
   verb,
 }: {
   open: boolean
   onSubmit: (pin: string) => void
   onCancel: () => void
-  wrong: boolean
+  wrongAt: number
   verb: string
 }) {
   const [pin, setPin] = useState('')
+  const [waiting, setWaiting] = useState(false)
+  useEffect(() => {
+    const left = wrongAt + 3100 - Date.now()
+    if (!wrongAt || left <= 0) return
+    const start = setTimeout(() => setWaiting(true), 0)
+    const end = setTimeout(() => setWaiting(false), left)
+    return () => {
+      clearTimeout(start)
+      clearTimeout(end)
+      setWaiting(false)
+    }
+  }, [wrongAt])
+  const ready = pin.length === 4 && !waiting
   return (
     <AlertDialog
       open={open}
@@ -419,14 +434,14 @@ function PinDialog({
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && pin.length === 4) onSubmit(pin)
+            if (e.key === 'Enter' && ready) onSubmit(pin)
           }}
           aria-label="PIN"
         />
-        <FieldError>{wrong ? 'That PIN was rejected. Try again.' : undefined}</FieldError>
+        <FieldError>{wrongAt ? 'That PIN was rejected. Try again.' : undefined}</FieldError>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction disabled={pin.length !== 4} onClick={() => onSubmit(pin)}>
+          <AlertDialogAction disabled={!ready} onClick={() => onSubmit(pin)}>
             Unlock
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -445,7 +460,7 @@ export function usePinAction<A>(
 ) {
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ a: A } | null>(null)
-  const [wrongPin, setWrongPin] = useState(false)
+  const [wrongAt, setWrongAt] = useState(0)
 
   const run = async (a: A, retry = false) => {
     setBusy(true)
@@ -453,12 +468,12 @@ export function usePinAction<A>(
     setBusy(false)
     if (result === 'ok') {
       setPending(null)
-      setWrongPin(false)
+      setWrongAt(0)
       onDone(a)
       return
     }
     if (result === 'pin') {
-      setWrongPin(retry)
+      setWrongAt(retry ? Date.now() : 0)
       setPending({ a })
       return
     }
@@ -477,11 +492,11 @@ export function usePinAction<A>(
   const dialog = (
     <PinDialog
       open={pending !== null}
-      wrong={wrongPin}
+      wrongAt={wrongAt}
       verb={verb}
       onCancel={() => {
         setPending(null)
-        setWrongPin(false)
+        setWrongAt(0)
       }}
       // closes while the action runs again (an upload can take a while), and opens again if the PIN was wrong
       onSubmit={async (pin) => {

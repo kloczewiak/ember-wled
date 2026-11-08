@@ -211,6 +211,20 @@ export async function uploadFile(file: Blob, path: string): Promise<{ result: Sa
 }
 
 // The JSON API accepts the settings PIN in any POST and unlocks settings for a while (checkSettingsPIN).
+// Deletes a file through the firmware's file editor (wled_server.cpp createEditHandler), which is behind the
+// settings PIN. A file that's already gone counts as deleted.
+export async function deleteFile(path: string): Promise<SaveResult> {
+  try {
+    const res = await fetch(`/edit?func=delete&path=${encodeURIComponent(path)}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000),
+    })
+    return res.ok || res.status === 404 ? 'ok' : res.status === 401 ? 'pin' : 'error'
+  } catch {
+    return 'error'
+  }
+}
+
 export async function unlockSettings(pin: string) {
   await fetch('/json/state', {
     method: 'POST',
