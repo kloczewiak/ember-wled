@@ -286,6 +286,27 @@
         }
 
         // ---- removing Ember: its files go, the light serves its own interface again
+        // its requests give up after 10 s, so a light that stops answering ends on the retry screen instead of
+        // "Removing Ember…" for ever (an AbortController and a timer: AbortSignal.timeout is too new for some
+        // browsers Ember supports)
+        function fetchLimited(url, opts) {
+          var ctrl = new AbortController()
+          var timer = setTimeout(function () {
+            ctrl.abort()
+          }, 10000)
+          opts = opts || {}
+          opts.signal = ctrl.signal
+          return fetch(url, opts).then(
+            function (r) {
+              clearTimeout(timer)
+              return r
+            },
+            function (e) {
+              clearTimeout(timer)
+              throw e.name === 'AbortError' ? new Error('the light didn’t answer') : e
+            },
+          )
+        }
         // the start page goes last, so a removal that stops halfway still leaves a working start page
         var FILES = [
           '/ui.bin',
@@ -318,7 +339,7 @@
           var i = 0
           ;(function next() {
             if (i >= FILES.length) return removed()
-            fetch('/edit?func=delete&path=' + encodeURIComponent(FILES[i]), { cache: 'no-store' })
+            fetchLimited('/edit?func=delete&path=' + encodeURIComponent(FILES[i]), { cache: 'no-store' })
               .then(function (r) {
                 if (r.status === 401) return askPin()
                 if (!r.ok && r.status !== 404) throw new Error('HTTP ' + r.status)
@@ -345,21 +366,24 @@
             text: 'Unlock',
             on: function () {
               go.disabled = true
-              fetch('/json/state', {
+              fetchLimited('/json/state', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin: pin.value }),
               })
                 .then(function () {
-                  return fetch('/edit?func=delete&path=/nothing', { cache: 'no-store' })
+                  return fetchLimited('/edit?func=delete&path=/nothing', { cache: 'no-store' })
                 })
                 .then(function (r) {
                   if (r.status !== 401) return removeNow()
                   wrongAt = Date.now()
                   askPin(true)
                 })
-                .catch(function () {
-                  askPin(true)
+                .catch(function (e) {
+                  // not a wrong PIN: the light didn't answer
+                  failed('Couldn’t reach the light: ' + e.message + '.', function () {
+                    askPin()
+                  })
                 })
             },
           })
