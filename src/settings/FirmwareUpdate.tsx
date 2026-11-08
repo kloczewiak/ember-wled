@@ -398,19 +398,16 @@ function Confirm({ job, onConfirm }: { job: Job; onConfirm: () => void }) {
   )
 }
 
-// How to go back to WLED's own interface if Ember stops working: the firmware's file editor deletes the start
-// page (/index.htm.gz) with one address, then the app (/ui.bin), and works without Ember (createEditHandler in
-// wled_server.cpp). With a settings PIN it needs unlocking first, which the firmware's own settings pages do.
+// How to go back to WLED's own interface if Ember stops working: delete the start page (/index.htm.gz) and the
+// app (/ui.bin) in the firmware's file editor, which works without Ember (createEditHandler in wled_server.cpp).
+// With a settings PIN it needs unlocking first, which the firmware's own settings pages do.
 function RemoveUi() {
   const base = `${location.protocol}//${location.host}`
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-      <span>If Ember stops working, open this address to remove it. The light then shows WLED's own interface.</span>
-      <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/index.htm.gz</span>
-      <span>Then this one, to free the space the rest of Ember takes:</span>
-      <span className="font-mono break-all text-foreground select-all">{base}/edit?func=delete&path=/ui.bin</span>
-      <span>Or open the file editor and delete index.htm.gz and ui.bin there:</span>
+      <span>If Ember stops working, you can remove it in the light's file editor:</span>
       <span className="font-mono break-all text-foreground select-all">{base}/edit</span>
+      <span>Delete index.htm.gz and ui.bin there, and the light shows WLED's own interface again.</span>
       <span>With a settings PIN, enter it here first:</span>
       <span className="font-mono break-all text-foreground select-all">{base}/settings/sec</span>
     </div>

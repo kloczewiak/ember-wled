@@ -178,9 +178,14 @@ export function scan() {
   }
 }
 
-// {"pin": "..."} in any JSON POST unlocks the settings, like checkSettingsPIN()
+// {"pin": "..."} in any JSON POST unlocks the settings, like checkSettingsPIN(), including its brute-force guard:
+// while locked, any PIN within 3 s of the last attempt is ignored (PIN_RETRY_COOLDOWN)
+let lastPinAt = 0
 export function checkPin(body: Record<string, unknown>) {
-  if (typeof body.pin === 'string') pinOk = PIN === '' || body.pin === PIN
+  if (typeof body.pin !== 'string') return
+  if (!pinOk && Date.now() - lastPinAt < 3000) return
+  pinOk = PIN === '' || body.pin === PIN
+  lastPinAt = Date.now()
 }
 
 export const settingsUnlocked = () => pinOk

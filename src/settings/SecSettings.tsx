@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import { toast, useStore } from '../store'
 import { Switch } from '../components/controls'
-import { emberBuildId } from '../lib/ember'
+import { EMBER_VERSION, emberBuildId } from '../lib/ember'
+import { BUILT_FOR } from '../lib/firmware'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -226,8 +227,9 @@ export function SecSettings() {
           WLED {info?.ver} by Christian Schwinne and contributors, © 2016–2024. Licensed under the EUPL v1.2.
         </p>
         <p className="m-0 text-sm text-muted-foreground">
-          This interface is Ember{emberBuildId() ? ` (build ${emberBuildId()})` : ''}, made separately from the WLED
-          project.
+          This interface is Ember {EMBER_VERSION}
+          {emberBuildId() ? ` (build ${emberBuildId()})` : ''}, built for WLED {BUILT_FOR} and made separately from the
+          WLED project.
         </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <a

@@ -58,8 +58,8 @@ let state: State = {
 }
 
 const info: Info = {
-  // MOCK_WLED_VER pretends to be another WLED version, for Ember's version warning
-  ver: process.env.MOCK_WLED_VER ?? '16.0.1',
+  // the release Ember is built for; MOCK_WLED_VER pretends to be another, for Ember's version warning
+  ver: process.env.MOCK_WLED_VER ?? readFileSync(resolve(__dirname, '../WLED-VERSION'), 'utf8').trim(),
   vid: 2510010,
   cn: 'Mock',
   release: 'ESP32',

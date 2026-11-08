@@ -149,6 +149,28 @@
         font-size: 12.5px;
         color: #fafafa;
       }
+      #ember-boot .note {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: #a1a1aa;
+        font-size: 13px;
+      }
+      #ember-boot .note code {
+        word-break: break-all;
+        user-select: all;
+      }
+      #ember-boot .note[hidden] {
+        display: none;
+      }
+      /* a name and its version, kept on one line */
+      #ember-boot .nw {
+        white-space: nowrap;
+      }
     </style>
   </head>
   <body>
@@ -167,6 +189,7 @@
       // filled in by the build (vite.config.ts).
       ;(function () {
         var HASH = '__EMBER_HASH__'
+        var VERSION = '__EMBER_VERSION__'
         var WLED = '__EMBER_WLED__'
         var SIZE = Number('__EMBER_SIZE__')
         var box = document.querySelector('#ember-boot .box')
@@ -202,29 +225,56 @@
           'The first time on this device takes a little longer: Ember is downloaded once and kept here, so next time it opens almost instantly.'
 
         // ---- the version check: Ember is built against one WLED version
+        // "WLED 16.0.1" or "Ember 0.1.0" as one unit that doesn't wrap, the version in code when `code` is set
+        function named(name, version, code) {
+          return el('span', { class: 'nw' }, [name + ' ', code ? el('code', { text: version }) : version])
+        }
         function versionWarning(ver) {
           return new Promise(function (resolve) {
             var skip = el('input', { type: 'checkbox', id: 'ember-skip' })
+            // without this screen there's no Remove button, so say how to remove Ember by hand (the firmware's
+            // file editor, which works without Ember), as the app's Firmware update page does
+            var base = location.protocol + '//' + location.host
+            var help = el('div', { class: 'note', hidden: '' }, [
+              el('span', { text: 'If Ember stops working later, you can remove it in the light’s file editor:' }),
+              el('code', { text: base + '/edit' }),
+              el('span', {
+                text: 'Delete index.htm.gz and ui.bin there, and the light shows the standard WLED interface again.',
+              }),
+              el('span', { text: 'With a settings PIN, enter it here first:' }),
+              el('code', { text: base + '/settings/sec' }),
+              el('span', { text: 'Clearing this site’s data in the browser also brings this screen back.' }),
+            ])
+            skip.onchange = function () {
+              help.hidden = !skip.checked
+            }
             show([
               el('p', {}, [
-                'Ember was built for WLED ',
-                el('code', { text: WLED }),
-                '. This light runs WLED ',
-                el('code', { text: ver }),
+                named('Ember', VERSION),
+                ' was built for ',
+                named('WLED', WLED, true),
+                '.',
+                el('br'),
+                'This light runs ',
+                named('WLED', ver, true),
                 '.',
               ]),
               el('p', {
                 class: 'muted',
                 text: 'It might not work correctly. You can open it anyway, or remove it to go back to the standard WLED interface.',
               }),
-              el('label', {}, [skip, 'Don’t show this again for WLED ' + ver + ' with this Ember build']),
+              el('label', {}, [
+                skip,
+                el('span', {}, ['Don’t show this again for ', named('WLED', ver), ' with ', named('Ember', VERSION)]),
+              ]),
+              help,
               el('div', { class: 'row' }, [
                 el('button', {
                   class: 'primary',
                   text: 'Try opening Ember',
                   on: function () {
                     try {
-                      if (skip.checked) localStorage.setItem('ember-skip-version', ver + '|' + HASH)
+                      if (skip.checked) localStorage.setItem('ember-skip-version', ver + '|' + VERSION)
                     } catch (e) {}
                     resolve()
                   },
@@ -280,7 +330,9 @@
               })
           })()
         }
-        // the file editor is locked behind the settings PIN until it's entered
+        // the file editor is locked behind the settings PIN until it's entered. After a wrong one the light ignores
+        // every PIN for 3 s, even the right one (PIN_RETRY_COOLDOWN in checkSettingsPIN), so Unlock waits that out
+        var wrongAt = 0
         function askPin(wrong) {
           var pin = el('input', {
             type: 'password',
@@ -302,14 +354,25 @@
                   return fetch('/edit?func=delete&path=/nothing', { cache: 'no-store' })
                 })
                 .then(function (r) {
-                  if (r.status === 401) askPin(true)
-                  else removeNow()
+                  if (r.status !== 401) return removeNow()
+                  wrongAt = Date.now()
+                  askPin(true)
                 })
                 .catch(function () {
                   askPin(true)
                 })
             },
           })
+          pin.onkeydown = function (e) {
+            if (e.key === 'Enter') go.click()
+          }
+          var wait = wrongAt + 3100 - Date.now()
+          if (wait > 0) {
+            go.disabled = true
+            setTimeout(function () {
+              go.disabled = false
+            }, wait)
+          }
           show([
             el('p', {
               text: wrong ? 'That PIN didn’t work. Try again.' : 'Removing Ember needs the light’s settings PIN.',
@@ -466,7 +529,7 @@
           var style = document.createElement('style')
           style.textContent = payload.slice(0, cut)
           document.head.appendChild(style)
-          window.__EMBER__ = { build: HASH, wled: WLED, info: info }
+          window.__EMBER__ = { version: VERSION, build: HASH, wled: WLED, info: info }
           var script = document.createElement('script')
           script.type = 'module'
           script.textContent = payload.slice(cut + 1)
@@ -495,7 +558,8 @@
             try {
               skip = localStorage.getItem('ember-skip-version')
             } catch (e) {}
-            if (info && info.ver && info.ver !== WLED && skip !== info.ver + '|' + HASH) return versionWarning(info.ver)
+            if (info && info.ver && info.ver !== WLED && skip !== info.ver + '|' + VERSION)
+              return versionWarning(info.ver)
           })
           .then(run)
       })()

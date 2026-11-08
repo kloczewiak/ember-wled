@@ -12,10 +12,15 @@ import { mockWled } from './mock/plugin'
 const host = process.env.WLED_HOST ?? 'wled-filip.local'
 const mock = process.env.WLED_MOCK === '1'
 
+// Ember's version (package.json, bumped by hand for a release) and the WLED release it's built and tested for
+// (WLED-VERSION, set by hand once a new release is checked). Both go into the app and the start page.
+const emberVersion = (JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as { version: string })
+  .version
+const wledVersion = readFileSync(resolve(__dirname, 'WLED-VERSION'), 'utf8').trim()
+
 // The light gets two files (see boot/index.html): index.htm.gz, the small start page WLED serves at /, and
 // ui.bin, the app (gzip of its CSS, a NUL and its JS, taken from the single-file build). The start page carries
-// the hash of ui.bin, so the two only work as a pair, and the WLED version this build targets: the firmware
-// checkout's (../wled-firmware), or WLED_VERSION.
+// the hash of ui.bin, so the two only work as a pair, and the versions above.
 const fnv = (bytes: Uint8Array) => {
   let h = 0x811c9dc5
   for (const b of bytes) h = Math.imul(h ^ b, 0x01000193)
@@ -35,17 +40,15 @@ function emberOutput(): Plugin {
       const hash = fnv(bin)
       writeFileSync(dist('ui.bin'), bin)
 
-      const wled =
-        process.env.WLED_VERSION ??
-        (JSON.parse(readFileSync(resolve(__dirname, '../wled-firmware/package.json'), 'utf8')).version as string)
       const boot = readFileSync(resolve(__dirname, 'boot/index.html'), 'utf8')
         .replaceAll('__EMBER_HASH__', hash)
-        .replaceAll('__EMBER_WLED__', wled)
+        .replaceAll('__EMBER_VERSION__', emberVersion)
+        .replaceAll('__EMBER_WLED__', wledVersion)
         .replaceAll('__EMBER_SIZE__', String(bin.length))
       const bootGz = gzipSync(Buffer.from(boot, 'utf8'), { level: 9 })
       writeFileSync(dist('index.htm.gz'), bootGz)
       console.log(
-        `Ember ${hash} for WLED ${wled}: index.htm.gz ${(bootGz.length / 1024).toFixed(1)} kB, ui.bin ${(bin.length / 1024).toFixed(1)} kB`,
+        `Ember ${emberVersion} (${hash}) for WLED ${wledVersion}: index.htm.gz ${(bootGz.length / 1024).toFixed(1)} kB, ui.bin ${(bin.length / 1024).toFixed(1)} kB`,
       )
     },
   }
@@ -53,6 +56,7 @@ function emberOutput(): Plugin {
 
 export default defineConfig({
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
+  define: { __EMBER_VERSION__: JSON.stringify(emberVersion), __WLED_VERSION__: JSON.stringify(wledVersion) },
   plugins: [react(), tailwindcss(), viteSingleFile(), emberOutput(), ...(mock ? [mockWled()] : [])],
   server: mock
     ? undefined

@@ -31,39 +31,47 @@ installable as an app ("Add to Home Screen"), also upload `dist/manifest.json`, 
 The two files only work as a pair:
 
 - `index.htm.gz` is Ember's start page (`boot/index.html`, about 5 kB), which WLED serves at `/`. It shows a
-  splash, checks the light's WLED version against the one Ember was built for (`../wled-firmware`'s, or
-  `WLED_VERSION`), and starts the app.
+  splash, checks the light's WLED version against the one Ember was built for (`WLED-VERSION`), and starts the
+  app.
 - `ui.bin` is the app: gzip of its CSS and JS, sent as plain bytes so the start page can show real progress
   and unpack it in the browser. The start page carries its hash and refuses a `ui.bin` from another build.
 
 Each device keeps a copy of the app (IndexedDB), so later visits start almost instantly and don't download
 `ui.bin` again until a new build is uploaded. On another WLED version the start page warns first, with
-"Try opening Ember" (optionally not asking again for that version and build) and "Remove Ember". Removing
+"Try opening Ember" (optionally not asking again for that WLED version with this Ember version) and "Remove Ember". Removing
 deletes Ember's files through the file editor (asking for the settings PIN if there is one) and the light
 goes back to its standard interface.
 
 WLED serves files on its filesystem in place of its built-in pages, so Ember replaces the stock UI at `/`
 while `/cpal.htm`, the file editor and the settings pages that aren't rebuilt yet (`PARITY.md`) stay the
-firmware's own. Firmware OTA updates keep the files; a filesystem reset removes them. To go back to the stock
-UI by hand, delete `/index.htm.gz` in the file editor, or open
-`http://<device>/edit?func=delete&path=/index.htm.gz` (with a settings PIN, enter it at
-`http://<device>/settings/sec` first).
+firmware's own. Firmware OTA updates keep the files; a filesystem reset removes them. To go back to the stock UI by hand, delete `/index.htm.gz` and `/ui.bin` in the file editor
+(`http://<device>/edit`; with a settings PIN, enter it at `http://<device>/settings/sec` first).
 
 `npm run preview:mock` serves the built files with the fake device, the way the light does (start page at `/`,
 `ui.bin` as plain bytes, deleting files behind the settings PIN). `MOCK_WLED_VER=16.1.0` makes it another WLED
 version, and `GET /mock/ui-bin?other=1` makes it serve a `ui.bin` from another build.
 
+## Versions
+
+Ember's own version is `version` in `package.json` (0.1.0 while it's pre-release; 1.0.0 is the first public
+release). It's bumped by hand when a release is ready, not with every change. Each build also gets a hash of
+`ui.bin`, so two builds of the same version can be told apart. Both show in the More sheet ("Interface") and
+in Settings → Security and updates → About.
+
+The WLED release Ember is built and tested for is in `WLED-VERSION`, set by hand (see below). The app, the
+start page's version check and the mock all read it. The More sheet shows it as "Built for".
+
 ## Firmware-specific data
 
-This UI targets **WLED v16.0.1**, the firmware release checked out in `../wled-firmware`. Some of it is
-copied or derived from that firmware's source, so check these after every firmware update:
+This UI targets **WLED v16.0.1** (`WLED-VERSION`). Some of it is copied or derived from that release's source,
+checked out in `../wled-firmware` for reference, so check these after every firmware update:
 
 | What | Last checked against | How to update |
 | --- | --- | --- |
 | Effect colours on the Default palette (`src/lib/fxcolors.ts`), used by the segment bar | v16.0.1 | Follow `src/lib/fxcolors.md` (`npm run audit:fx-colors` lists what to review) |
 | Mock effect and palette lists (`mock/fixtures.json`) | v16.0.1 | `npm run gen:fixtures` |
 | Settings pages and the rest of the stock UI's behaviour | v16.0.1 | Diff `wled00/data` and `wled00/set.cpp` against the previous release; gaps go in `PARITY.md` |
-| The version the UI says it's built for, e.g. when going back to older firmware (`BUILT_FOR` in `src/lib/firmware.ts`) | v16.0.1 | Set it once the rows above are checked |
+| The version Ember says it's built for: the start page's warning, the Firmware update page, "Built for" (`WLED-VERSION`) | v16.0.1 | Set it once the rows above are checked |
 
 ## Layout
 

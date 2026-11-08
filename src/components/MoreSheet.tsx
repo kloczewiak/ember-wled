@@ -18,6 +18,7 @@ import {
 import { XIcon } from 'lucide-react'
 import { NativeSelect } from '@/components/ui/native-select'
 import { emberBuild } from '../lib/ember'
+import { BUILT_FOR } from '../lib/firmware'
 
 // Usermod HTML uses glyphs from the stock UI's icon font, which this UI doesn't ship; the power glyph
 // (the one usermods use for their on/off buttons) is swapped for an inline icon.
@@ -218,6 +219,7 @@ function DeviceInfo() {
         {i.release && <Row k="Release">{i.release}</Row>}
         <Row k="Build">{i.vid}</Row>
         <Row k="Interface">{emberBuild()}</Row>
+        <Row k="Built for">WLED {BUILT_FOR}</Row>
         <Row k="Signal strength">
           {i.wifi.signal}% ({i.wifi.rssi} dBm)
         </Row>
