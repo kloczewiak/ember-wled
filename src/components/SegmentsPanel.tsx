@@ -11,14 +11,48 @@ import { Toggle } from '@/components/ui/toggle'
 import { Checkbox } from '@/components/ui/checkbox'
 import { NativeSelect } from '@/components/ui/native-select'
 
-const BLEND_MODES = ['Top/Default', 'Bottom/None', 'Add', 'Subtract', 'Difference', 'Average', 'Multiply', 'Divide', 'Lighten', 'Darken', 'Screen', 'Overlay', 'Hard Light', 'Soft Light', 'Dodge', 'Burn', 'Stencil']
+const BLEND_MODES = [
+  'Top/Default',
+  'Bottom/None',
+  'Add',
+  'Subtract',
+  'Difference',
+  'Average',
+  'Multiply',
+  'Divide',
+  'Lighten',
+  'Darken',
+  'Screen',
+  'Overlay',
+  'Hard Light',
+  'Soft Light',
+  'Dodge',
+  'Burn',
+  'Stencil',
+]
 const SOUND_SIMS = ['BeatSin', 'WeWillRockYou', '10/13', '14/3']
 const EXPAND_1D = ['Pixels', 'Bar', 'Arc', 'Corner', 'Pinwheel']
 const BLEND_STYLES: [number, string, boolean?][] = [
-  [0, 'Fade'], [1, 'Fairy Dust'], [2, 'Swipe right'], [3, 'Swipe left'], [16, 'Push right'], [17, 'Push left'],
-  [4, 'Outside-in'], [5, 'Inside-out'], [6, 'Swipe up', true], [7, 'Swipe down', true], [8, 'Open H', true],
-  [9, 'Open V', true], [18, 'Push up', true], [19, 'Push down', true], [10, 'Swipe TL', true], [11, 'Swipe TR', true],
-  [12, 'Swipe BR', true], [13, 'Swipe BL', true], [14, 'Circular Out', true], [15, 'Circular In', true],
+  [0, 'Fade'],
+  [1, 'Fairy Dust'],
+  [2, 'Swipe right'],
+  [3, 'Swipe left'],
+  [16, 'Push right'],
+  [17, 'Push left'],
+  [4, 'Outside-in'],
+  [5, 'Inside-out'],
+  [6, 'Swipe up', true],
+  [7, 'Swipe down', true],
+  [8, 'Open H', true],
+  [9, 'Open V', true],
+  [18, 'Push up', true],
+  [19, 'Push down', true],
+  [10, 'Swipe TL', true],
+  [11, 'Swipe TR', true],
+  [12, 'Swipe BR', true],
+  [13, 'Swipe BL', true],
+  [14, 'Circular Out', true],
+  [15, 'Circular In', true],
 ]
 // segment groups ("sets") 1-3 are colour coded like the stock UI
 const SET_COLORS = ['var(--color-muted-foreground)', '#ee4422', '#44ee22', '#4488aa']
@@ -40,7 +74,9 @@ export function SegmentsPanel({ className }: { className?: string }) {
   const [adding, setAdding] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   // "Always expand first segment" in Settings → User Interface
-  const [expanded, setExpanded] = useState<number | null>(() => (useUi.getState().stock.segexp ? useStore.getState().state?.seg[0]?.id ?? null : null))
+  const [expanded, setExpanded] = useState<number | null>(() =>
+    useUi.getState().stock.segexp ? (useStore.getState().state?.seg[0]?.id ?? null) : null,
+  )
   if (!state || !info) return null
 
   const segs = state.seg
@@ -60,8 +96,15 @@ export function SegmentsPanel({ className }: { className?: string }) {
             <Button size="sm" onClick={() => send({ seg: segs.map((s) => ({ id: s.id, sel: !allSel })) })}>
               {allSel ? 'Select none' : 'Select all'}
             </Button>
-            <Button size="sm" variant="primary" disabled={!canAdd} onClick={() => setAdding(true)} title={canAdd ? 'Add segment' : 'Maximum number of segments reached'}>
-              <Icon.plus data-icon="inline-start" className="size-3.5" />Add
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!canAdd}
+              onClick={() => setAdding(true)}
+              title={canAdd ? 'Add segment' : 'Maximum number of segments reached'}
+            >
+              <Icon.plus data-icon="inline-start" className="size-3.5" />
+              Add
             </Button>
           </div>
         }
@@ -107,9 +150,11 @@ export function SegmentsPanel({ className }: { className?: string }) {
       {adding && (
         <NewSegment
           id={lowestUnused}
-          defaults={isMatrix
-            ? { start: 0, stop: mw, startY: 0, stopY: mh }
-            : { start: (segs.at(-1)?.stop ?? 0) < ledCount ? segs.at(-1)?.stop ?? 0 : 0, stop: ledCount }}
+          defaults={
+            isMatrix
+              ? { start: 0, stop: mw, startY: 0, stopY: mh }
+              : { start: (segs.at(-1)?.stop ?? 0) < ledCount ? (segs.at(-1)?.stop ?? 0) : 0, stop: ledCount }
+          }
           onDone={() => setAdding(false)}
         />
       )}
@@ -118,15 +163,31 @@ export function SegmentsPanel({ className }: { className?: string }) {
         <TransitionField value={state.transition} />
         {state.transition > 0 && (
           <Field label="Blending" className="min-w-32 flex-1">
-            <NativeSelect className="w-full" value={state.bs ?? 0} onChange={(e) => send({ bs: Number(e.target.value) })}>
-              {BLEND_STYLES.filter(([, , is2D]) => isMatrix || !is2D).map(([v, n]) => <option key={v} value={v}>{n}</option>)}
+            <NativeSelect
+              className="w-full"
+              value={state.bs ?? 0}
+              onChange={(e) => send({ bs: Number(e.target.value) })}
+            >
+              {BLEND_STYLES.filter(([, , is2D]) => isMatrix || !is2D).map(([v, n]) => (
+                <option key={v} value={v}>
+                  {n}
+                </option>
+              ))}
             </NativeSelect>
           </Field>
         )}
         {(info.maps?.length ?? 0) > 1 && (
           <Field label="LED map" className="min-w-32 flex-1">
-            <NativeSelect className="w-full" value={state.ledmap ?? 0} onChange={(e) => send({ ledmap: Number(e.target.value) })}>
-              {info.maps!.map((m) => <option key={m.id} value={m.id}>{m.id === 0 ? 'Default' : m.n || `ledmap${m.id}.json`}</option>)}
+            <NativeSelect
+              className="w-full"
+              value={state.ledmap ?? 0}
+              onChange={(e) => send({ ledmap: Number(e.target.value) })}
+            >
+              {info.maps!.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id === 0 ? 'Default' : m.n || `ledmap${m.id}.json`}
+                </option>
+              ))}
             </NativeSelect>
           </Field>
         )}
@@ -134,7 +195,10 @@ export function SegmentsPanel({ className }: { className?: string }) {
           <Button
             variant={confirmReset ? 'danger' : 'default'}
             onClick={() => {
-              if (!confirmReset) { setConfirmReset(true); return }
+              if (!confirmReset) {
+                setConfirmReset(true)
+                return
+              }
               setConfirmReset(false)
               send({ rSeg: true })
             }}
@@ -149,8 +213,8 @@ export function SegmentsPanel({ className }: { className?: string }) {
 }
 
 const TICK_CHAR_PX = 6.2 // width of one digit at 10px monospace
-const TICK_GAP_PX = 4    // minimum space between two labels
-const TICK_INSET_PX = 3  // labels sit this far inside the segment edge they mark
+const TICK_GAP_PX = 4 // minimum space between two labels
+const TICK_INSET_PX = 3 // labels sit this far inside the segment edge they mark
 
 // One label per segment edge: its first LED at its left edge and its last LED at its right edge,
 // so two touching segments show e.g. "96 | 97" on either side of the boundary.
@@ -167,7 +231,8 @@ function fittingTicks(ticks: Tick[], total: number, width: number) {
     return [left, left + w] as const
   }
   const placed: { tick: Tick; at: readonly [number, number] }[] = []
-  const fits = ([a, b]: readonly [number, number]) => placed.every(({ at: [c, d] }) => b + TICK_GAP_PX <= c || a >= d + TICK_GAP_PX)
+  const fits = ([a, b]: readonly [number, number]) =>
+    placed.every(({ at: [c, d] }) => b + TICK_GAP_PX <= c || a >= d + TICK_GAP_PX)
   const outer = ticks.length ? [ticks[0], ticks[ticks.length - 1]] : []
   for (const t of [...new Set(outer)]) placed.push({ tick: t, at: span(t) })
   for (const t of ticks) {
@@ -190,7 +255,10 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
       const el = canvas.current
       if (!el || f[1] !== 1) return // 1D frames only: 'L', version, then RGB triplets
       const n = (f.length - 2) / 3
-      if (el.width !== n || el.height !== 1) { el.width = n; el.height = 1 }
+      if (el.width !== n || el.height !== 1) {
+        el.width = n
+        el.height = 1
+      }
       const img = new ImageData(n, 1)
       for (let i = 0; i < n; i++) img.data.set([f[2 + i * 3], f[3 + i * 3], f[4 + i * 3], 255], i * 4)
       el.getContext('2d')!.putImageData(img, 0, 0)
@@ -204,8 +272,12 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  const edges: Tick[] = [...segs].sort((a, b) => a.start - b.start)
-    .flatMap((s) => [{ x: s.start, led: s.start, edge: 'start' as const }, { x: s.stop, led: s.stop - 1, edge: 'end' as const }])
+  const edges: Tick[] = [...segs]
+    .sort((a, b) => a.start - b.start)
+    .flatMap((s) => [
+      { x: s.start, led: s.start, edge: 'start' as const },
+      { x: s.stop, led: s.stop - 1, edge: 'end' as const },
+    ])
   const ticks = width ? fittingTicks(edges, total, width) : []
   return (
     <div className="flex flex-col gap-1">
@@ -225,17 +297,20 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
                 // the border is the card colour, so neighbouring segments look separated by a gap
                 'absolute inset-y-0 flex items-center overflow-hidden border-x border-card px-1 text-[11px] font-semibold',
                 // no gap at the ends of the bar, where it would flatten the rounded corners
-                s.start === 0 && 'border-l-0', s.stop >= total && 'border-r-0',
+                s.start === 0 && 'border-l-0',
+                s.stop >= total && 'border-r-0',
                 // a solid outline drawn behind the letters keeps names readable over live colours and gradients
                 (live || fill?.outline) && 'text-white [-webkit-text-stroke:3px_#000] [paint-order:stroke_fill]',
               )}
               style={{
                 left: `${(s.start / total) * 100}%`,
                 width: `${((s.stop - s.start) / total) * 100}%`,
-                ...(live ? {} : {
-                  background: fill?.background ?? 'var(--color-line)',
-                  ...(!fill?.outline && { color: fill?.light ? '#000' : '#fff' }),
-                }),
+                ...(live
+                  ? {}
+                  : {
+                      background: fill?.background ?? 'var(--color-line)',
+                      ...(!fill?.outline && { color: fill?.light ? '#000' : '#fff' }),
+                    }),
               }}
             >
               {/* padded so the clipping that truncates long names doesn't cut off the outline */}
@@ -246,23 +321,46 @@ function StripMap({ segs, total }: { segs: Segment[]; total: number }) {
       </div>
       {/* selected segments are marked with a line under them, so the bar itself keeps the LEDs' colours */}
       <div className="relative h-0.5">
-        {segs.filter((s) => s.sel).map((s) => (
-          <span
-            key={s.id}
-            className="absolute inset-y-0 rounded-full bg-primary"
-            style={{ left: `calc(${(s.start / total) * 100}% + 1px)`, width: `calc(${((s.stop - s.start) / total) * 100}% - 2px)` }}
-          />
-        ))}
+        {segs
+          .filter((s) => s.sel)
+          .map((s) => (
+            <span
+              key={s.id}
+              className="absolute inset-y-0 rounded-full bg-primary"
+              style={{
+                left: `calc(${(s.start / total) * 100}% + 1px)`,
+                width: `calc(${((s.stop - s.start) / total) * 100}% - 2px)`,
+              }}
+            />
+          ))}
       </div>
       <div ref={tickRow} className="relative h-3 font-mono text-[10px] text-muted-foreground">
-        {ticks.map((t) => <span key={`${t.edge}${t.x}`} className="absolute" style={{ left: t.left }}>{t.led}</span>)}
+        {ticks.map((t) => (
+          <span key={`${t.edge}${t.x}`} className="absolute" style={{ left: t.left }}>
+            {t.led}
+          </span>
+        ))}
       </div>
     </div>
   )
 }
 
-function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat, showGroup }: {
-  seg: Segment; main: boolean; open: boolean; onToggle: () => void; canDelete: boolean; canRepeat: boolean; showGroup: boolean
+function SegmentItem({
+  seg,
+  main,
+  open,
+  onToggle,
+  canDelete,
+  canRepeat,
+  showGroup,
+}: {
+  seg: Segment
+  main: boolean
+  open: boolean
+  onToggle: () => void
+  canDelete: boolean
+  canRepeat: boolean
+  showGroup: boolean
 }) {
   const info = useStore((s) => s.info)!
   const state = useStore((s) => s.state)!
@@ -272,9 +370,17 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat, showGrou
   const live = info.live && info.liveseg === seg.id
 
   const freeze = () => {
-    if (live) { send({ lor: 1 }); toast(`${segName(seg)} now ignores live data and shows its own effect again.`); return }
+    if (live) {
+      send({ lor: 1 })
+      toast(`${segName(seg)} now ignores live data and shows its own effect again.`)
+      return
+    }
     send({ seg: { id: seg.id, frz: !seg.frz } })
-    toast(seg.frz ? `${segName(seg)} unfrozen, its effect is running again.` : `${segName(seg)} frozen: its effect is paused on the current frame until you unfreeze it.`)
+    toast(
+      seg.frz
+        ? `${segName(seg)} unfrozen, its effect is running again.`
+        : `${segName(seg)} frozen: its effect is paused on the current frame until you unfreeze it.`,
+    )
   }
 
   return (
@@ -285,58 +391,131 @@ function SegmentItem({ seg, main, open, onToggle, canDelete, canRepeat, showGrou
           onCheckedChange={(sel) => send({ seg: { id: seg.id, sel } })}
           aria-label={`Select ${segName(seg)}`}
         />
-        <button className="min-w-0 flex-1 text-left" onClick={() => send({ seg: state.seg.map((g) => ({ id: g.id, sel: g.id === seg.id })), mainseg: seg.id })} title="Select only this segment">
+        <button
+          className="min-w-0 flex-1 text-left"
+          onClick={() => send({ seg: state.seg.map((g) => ({ id: g.id, sel: g.id === seg.id })), mainseg: seg.id })}
+          title="Select only this segment"
+        >
           <div className="flex items-center gap-1.5 truncate font-semibold">
             {segName(seg)}
-            {showGroup && <span className="font-mono text-[11px]" style={{ color: SET_COLORS[seg.set] }}>G{seg.set + 1}</span>}
+            {showGroup && (
+              <span className="font-mono text-[11px]" style={{ color: SET_COLORS[seg.set] }}>
+                G{seg.set + 1}
+              </span>
+            )}
           </div>
           <div className="truncate text-xs text-muted-foreground">
-            {isMatrix && seg.startY !== undefined ? `${seg.start},${seg.startY} – ${seg.stop},${seg.stopY}` : `LED ${seg.start}–${seg.stop - 1}`}
-            {' · '}{lengthLabel((seg.stop - seg.start) * (isMatrix ? (seg.stopY ?? 1) - (seg.startY ?? 0) : 1), seg.grp, seg.spc)}
+            {isMatrix && seg.startY !== undefined
+              ? `${seg.start},${seg.startY} – ${seg.stop},${seg.stopY}`
+              : `LED ${seg.start}–${seg.stop - 1}`}
+            {' · '}
+            {lengthLabel(
+              (seg.stop - seg.start) * (isMatrix ? (seg.stopY ?? 1) - (seg.startY ?? 0) : 1),
+              seg.grp,
+              seg.spc,
+            )}
           </div>
         </button>
-        <UiButton variant="ghost" size="icon" aria-label={open ? 'Collapse segment settings' : 'Expand segment settings'} aria-expanded={open} onClick={onToggle}>
+        <UiButton
+          variant="ghost"
+          size="icon"
+          aria-label={open ? 'Collapse segment settings' : 'Expand segment settings'}
+          aria-expanded={open}
+          onClick={onToggle}
+        >
           <Icon.chevron className={cx('transition-transform', open && 'rotate-180')} />
         </UiButton>
-        {!segpwr && <Switch on={seg.on} label={`${segName(seg)} power`} onChange={(on) => send({ seg: { id: seg.id, on } })} />}
+        {!segpwr && (
+          <Switch on={seg.on} label={`${segName(seg)} power`} onChange={(on) => send({ seg: { id: seg.id, on } })} />
+        )}
       </div>
       <div className="flex items-center gap-3">
-          <Toggle
-            variant="outline"
-            size="sm"
-            pressed={seg.frz}
-            onPressedChange={freeze}
-            aria-label={live ? `Override live data on ${segName(seg)}` : seg.frz ? `Unfreeze ${segName(seg)}` : `Freeze ${segName(seg)}`}
-            title={live ? 'Receiving live data: tap to show the effect instead' : seg.frz ? 'Effect paused: tap to resume' : 'Pause the effect on its current frame'}
-          >
-            <Icon.snow data-icon="inline-start" />
-            {live ? 'Live' : seg.frz ? 'Frozen' : 'Freeze'}
-          </Toggle>
-        {!segpwr && <Slider label={`${segName(seg)} brightness`} value={seg.bri} min={1} onCommit={(bri) => send({ seg: { id: seg.id, bri } })} className="min-w-0 flex-1" />}
+        <Toggle
+          variant="outline"
+          size="sm"
+          pressed={seg.frz}
+          onPressedChange={freeze}
+          aria-label={
+            live
+              ? `Override live data on ${segName(seg)}`
+              : seg.frz
+                ? `Unfreeze ${segName(seg)}`
+                : `Freeze ${segName(seg)}`
+          }
+          title={
+            live
+              ? 'Receiving live data: tap to show the effect instead'
+              : seg.frz
+                ? 'Effect paused: tap to resume'
+                : 'Pause the effect on its current frame'
+          }
+        >
+          <Icon.snow data-icon="inline-start" />
+          {live ? 'Live' : seg.frz ? 'Frozen' : 'Freeze'}
+        </Toggle>
+        {!segpwr && (
+          <Slider
+            label={`${segName(seg)} brightness`}
+            value={seg.bri}
+            min={1}
+            onCommit={(bri) => send({ seg: { id: seg.id, bri } })}
+            className="min-w-0 flex-1"
+          />
+        )}
       </div>
       {open && (
         <SegmentEditor
-          seg={seg} isMatrix={isMatrix} mw={mw} mh={mh} ledCount={info.leds.count}
-          fxFlags={parseFxMeta(seg.fx, fxdata[seg.fx]).flags} audioOn={!!state.AudioReactive?.on}
-          canDelete={canDelete} canRepeat={canRepeat}
+          seg={seg}
+          isMatrix={isMatrix}
+          mw={mw}
+          mh={mh}
+          ledCount={info.leds.count}
+          fxFlags={parseFxMeta(seg.fx, fxdata[seg.fx]).flags}
+          audioOn={!!state.AudioReactive?.on}
+          canDelete={canDelete}
+          canRepeat={canRepeat}
         />
       )}
     </div>
   )
 }
 
-function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canDelete, canRepeat }: {
-  seg: Segment; isMatrix: boolean; mw: number; mh: number; ledCount: number; fxFlags: string; audioOn: boolean; canDelete: boolean; canRepeat: boolean
+function SegmentEditor({
+  seg,
+  isMatrix,
+  mw,
+  mh,
+  ledCount,
+  fxFlags,
+  audioOn,
+  canDelete,
+  canRepeat,
+}: {
+  seg: Segment
+  isMatrix: boolean
+  mw: number
+  mh: number
+  ledCount: number
+  fxFlags: string
+  audioOn: boolean
+  canDelete: boolean
+  canRepeat: boolean
 }) {
   const is2DSeg = isMatrix && seg.start < mw * mh
   const [name, setName] = useDraft(seg.n ?? '')
   // with "Set segment length instead of stop LED" the stop fields hold lengths; `stop`/`stopY` are always absolute
   const rel = useUi((s) => s.stock.seglen)
-  const [b, setB] = useDraft(`${seg.start},${seg.stop - (rel ? seg.start : 0)},${seg.startY ?? 0},${(seg.stopY ?? 1) - (rel ? seg.startY ?? 0 : 0)},${seg.of},${seg.grp},${seg.spc}`)
+  const [b, setB] = useDraft(
+    `${seg.start},${seg.stop - (rel ? seg.start : 0)},${seg.startY ?? 0},${(seg.stopY ?? 1) - (rel ? (seg.startY ?? 0) : 0)},${seg.of},${seg.grp},${seg.spc}`,
+  )
   const [start, stopField, startY, stopYField, of, grp, spc] = b.split(',').map((v) => (v === '' ? NaN : Number(v)))
   const stop = stopField + (rel ? start : 0)
   const stopY = stopYField + (rel ? startY : 0)
-  const setField = (i: number, v: string) => { const p = b.split(','); p[i] = v.replace(/[^0-9]/g, ''); setB(p.join(',')) }
+  const setField = (i: number, v: string) => {
+    const p = b.split(',')
+    p[i] = v.replace(/[^0-9]/g, '')
+    setB(p.join(','))
+  }
   const [confirmDelete, setConfirmDelete] = useState(false)
   const maxNameLen = useStore((s) => (s.info?.arch === 'esp8266' ? 32 : 64))
 
@@ -344,17 +523,29 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
   const maxX = is2DSeg ? mw : ledCount
 
   const apply = () => {
-    if ([start, stop, of, grp, spc].some(isNaN) || start < 0 || start > maxX - 1 || stop > maxX) { toast('Segment bounds out of range', true); return }
-    if (stop <= start) { remove(); return }
+    if ([start, stop, of, grp, spc].some(isNaN) || start < 0 || start > maxX - 1 || stop > maxX) {
+      toast('Segment bounds out of range', true)
+      return
+    }
+    if (stop <= start) {
+      remove()
+      return
+    }
     const cmd: Record<string, unknown> = { id: seg.id, n: name, start, stop, grp, spc, of }
     if (is2DSeg) {
-      if (isNaN(startY) || isNaN(stopY) || startY < 0 || startY > mh - 1 || stopY > mh) { toast('Segment bounds out of range', true); return }
+      if (isNaN(startY) || isNaN(stopY) || startY < 0 || startY > mh - 1 || stopY > mh) {
+        toast('Segment bounds out of range', true)
+        return
+      }
       Object.assign(cmd, { startY, stopY })
     }
     send({ seg: cmd })
   }
   const remove = () => {
-    if (!canDelete) { toast('You need to have multiple segments to delete one!'); return }
+    if (!canDelete) {
+      toast('You need to have multiple segments to delete one!')
+      return
+    }
     send({ seg: { id: seg.id, stop: 0 } })
   }
   const set = (patch: Record<string, unknown>) => send({ seg: { id: seg.id, ...patch } })
@@ -363,37 +554,75 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
 
   const num = (i: number, label: string, value: number) => (
     <Field label={label}>
-      <input className={numCls} inputMode="numeric" value={isNaN(value) ? '' : value} onChange={(e) => setField(i, e.target.value)} />
+      <input
+        className={numCls}
+        inputMode="numeric"
+        value={isNaN(value) ? '' : value}
+        onChange={(e) => setField(i, e.target.value)}
+      />
     </Field>
   )
 
   return (
-    <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); apply() }}>
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        apply()
+      }}
+    >
       <Field label="Name">
-        <input className={inputCls} value={name} maxLength={maxNameLen} placeholder="Enter name..." onChange={(e) => setName(e.target.value)} />
+        <input
+          className={inputCls}
+          value={name}
+          maxLength={maxNameLen}
+          placeholder="Enter name..."
+          onChange={(e) => setName(e.target.value)}
+        />
       </Field>
       <div className="grid grid-cols-3 gap-2">
         {num(0, is2DSeg ? 'Start X' : 'Start LED', start)}
-        {num(1, is2DSeg ? (rel ? 'Width' : 'Stop X') : (rel ? 'LED count' : 'Stop LED'), stopField)}
+        {num(1, is2DSeg ? (rel ? 'Width' : 'Stop X') : rel ? 'LED count' : 'Stop LED', stopField)}
         {is2DSeg ? <span /> : num(4, 'Offset', of)}
-        {is2DSeg && <>{num(2, 'Start Y', startY)}{num(3, rel ? 'Height' : 'Stop Y', stopYField)}<span /></>}
+        {is2DSeg && (
+          <>
+            {num(2, 'Start Y', startY)}
+            {num(3, rel ? 'Height' : 'Stop Y', stopYField)}
+            <span />
+          </>
+        )}
         {num(5, 'Grouping', grp)}
         {num(6, 'Spacing', spc)}
         <div className="flex items-end">
-          <Button type="submit" variant="primary" className="w-full">Apply</Button>
+          <Button type="submit" variant="primary" className="w-full">
+            Apply
+          </Button>
         </div>
       </div>
-      <div className="text-xs text-muted-foreground">{lengthLabel(len, grp || 1, spc || 0)}{isMatrix && !is2DSeg ? ' [strip]' : ''}</div>
+      <div className="text-xs text-muted-foreground">
+        {lengthLabel(len, grp || 1, spc || 0)}
+        {isMatrix && !is2DSeg ? ' [strip]' : ''}
+      </div>
 
       <div className="grid grid-cols-2 gap-x-3">
-        <Check checked={seg.rev} onChange={(rev) => set({ rev })}>{is2DSeg ? 'Reverse X' : 'Reverse direction'}</Check>
-        <Check checked={seg.mi} onChange={(mi) => set({ mi })}>{is2DSeg ? 'Mirror X' : 'Mirror effect'}</Check>
+        <Check checked={seg.rev} onChange={(rev) => set({ rev })}>
+          {is2DSeg ? 'Reverse X' : 'Reverse direction'}
+        </Check>
+        <Check checked={seg.mi} onChange={(mi) => set({ mi })}>
+          {is2DSeg ? 'Mirror X' : 'Mirror effect'}
+        </Check>
         {is2DSeg && (
           <>
-            <Check checked={!!seg.rY} onChange={(rY) => set({ rY })}>Reverse Y</Check>
-            <Check checked={!!seg.mY} onChange={(mY) => set({ mY })}>Mirror Y</Check>
+            <Check checked={!!seg.rY} onChange={(rY) => set({ rY })}>
+              Reverse Y
+            </Check>
+            <Check checked={!!seg.mY} onChange={(mY) => set({ mY })}>
+              Mirror Y
+            </Check>
             {seg.stop - seg.start > 1 && (seg.stopY ?? 1) - (seg.startY ?? 0) > 1 && (
-              <Check checked={!!seg.tp} onChange={(tp) => set({ tp })}>Transpose</Check>
+              <Check checked={!!seg.tp} onChange={(tp) => set({ tp })}>
+                Transpose
+              </Check>
             )}
           </>
         )}
@@ -402,41 +631,71 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
       <div className="grid grid-cols-2 gap-2">
         <Field label="Blend mode">
           <NativeSelect className="w-full" value={seg.bm} onChange={(e) => set({ bm: Number(e.target.value) })}>
-            {BLEND_MODES.map((n, i) => <option key={i} value={i}>{n}</option>)}
+            {BLEND_MODES.map((n, i) => (
+              <option key={i} value={i}>
+                {n}
+              </option>
+            ))}
           </NativeSelect>
         </Field>
         {is2DSeg && is1DFx && seg.stop - seg.start > 1 && (seg.stopY ?? 1) - (seg.startY ?? 0) > 1 && (
           <Field label="Expand 1D FX">
             <NativeSelect className="w-full" value={seg.m12} onChange={(e) => set({ m12: Number(e.target.value) })}>
-              {EXPAND_1D.map((n, i) => <option key={i} value={i}>{n}</option>)}
+              {EXPAND_1D.map((n, i) => (
+                <option key={i} value={i}>
+                  {n}
+                </option>
+              ))}
             </NativeSelect>
           </Field>
         )}
         {isAudioFx && !audioOn && (
           <Field label="Sound sim">
             <NativeSelect className="w-full" value={seg.si} onChange={(e) => set({ si: Number(e.target.value) })}>
-              {SOUND_SIMS.map((n, i) => <option key={i} value={i}>{n}</option>)}
+              {SOUND_SIMS.map((n, i) => (
+                <option key={i} value={i}>
+                  {n}
+                </option>
+              ))}
             </NativeSelect>
           </Field>
         )}
         <Field label="Group">
           <NativeSelect className="w-full" value={seg.set} onChange={(e) => set({ set: Number(e.target.value) })}>
-            {[0, 1, 2, 3].map((i) => <option key={i} value={i}>Group {i + 1}</option>)}
+            {[0, 1, 2, 3].map((i) => (
+              <option key={i} value={i}>
+                Group {i + 1}
+              </option>
+            ))}
           </NativeSelect>
         </Field>
       </div>
 
       <div className="flex gap-2">
         {canRepeat && (
-          <Button type="button" className="flex-1" onClick={() => set({ n: name, start, stop, grp, spc, of, rpt: true })} title="Repeat this segment until the end of the strip">
-            <Icon.repeat className="size-4" />Repeat until end
+          <Button
+            type="button"
+            className="flex-1"
+            onClick={() => set({ n: name, start, stop, grp, spc, of, rpt: true })}
+            title="Repeat this segment until the end of the strip"
+          >
+            <Icon.repeat className="size-4" />
+            Repeat until end
           </Button>
         )}
         {canDelete && (
-          <Button type="button" variant="danger" className="flex-1"
-            onClick={() => { if (confirmDelete) remove(); else setConfirmDelete(true) }}
-            onBlur={() => setConfirmDelete(false)}>
-            <Icon.trash className="size-4" />{confirmDelete ? 'Confirm delete' : 'Delete'}
+          <Button
+            type="button"
+            variant="danger"
+            className="flex-1"
+            onClick={() => {
+              if (confirmDelete) remove()
+              else setConfirmDelete(true)
+            }}
+            onBlur={() => setConfirmDelete(false)}
+          >
+            <Icon.trash className="size-4" />
+            {confirmDelete ? 'Confirm delete' : 'Delete'}
           </Button>
         )}
       </div>
@@ -444,20 +703,34 @@ function SegmentEditor({ seg, isMatrix, mw, mh, ledCount, fxFlags, audioOn, canD
   )
 }
 
-
-function NewSegment({ id, defaults, onDone }: { id: number; defaults: { start: number; stop: number; startY?: number; stopY?: number }; onDone: () => void }) {
+function NewSegment({
+  id,
+  defaults,
+  onDone,
+}: {
+  id: number
+  defaults: { start: number; stop: number; startY?: number; stopY?: number }
+  onDone: () => void
+}) {
   const { isMatrix } = useSelection()
   const [name, setName] = useState('')
   const rel = useUi((s) => s.stock.seglen) // stop fields hold lengths, as in the segment editor
   const [v, setV] = useState({
-    start: String(defaults.start), stop: String(defaults.stop - (rel ? defaults.start : 0)),
-    startY: String(defaults.startY ?? 0), stopY: String((defaults.stopY ?? 1) - (rel ? defaults.startY ?? 0 : 0)),
+    start: String(defaults.start),
+    stop: String(defaults.stop - (rel ? defaults.start : 0)),
+    startY: String(defaults.startY ?? 0),
+    stopY: String((defaults.stopY ?? 1) - (rel ? (defaults.startY ?? 0) : 0)),
   })
   const stop = Number(v.stop) + (rel ? Number(v.start) : 0)
   const stopY = Number(v.stopY) + (rel ? Number(v.startY) : 0)
   const field = (k: keyof typeof v, label: string) => (
     <Field label={label}>
-      <input className={numCls} inputMode="numeric" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value.replace(/[^0-9]/g, '') })} />
+      <input
+        className={numCls}
+        inputMode="numeric"
+        value={v[k]}
+        onChange={(e) => setV({ ...v, [k]: e.target.value.replace(/[^0-9]/g, '') })}
+      />
     </Field>
   )
   const submit = () => {
@@ -467,17 +740,42 @@ function NewSegment({ id, defaults, onDone }: { id: number; defaults: { start: n
     onDone()
   }
   return (
-    <form className="flex flex-col gap-3 rounded-xl border border-primary bg-raised p-3" onSubmit={(e) => { e.preventDefault(); submit() }}>
-      <Field label="Name"><input className={inputCls} value={name} placeholder={`New segment ${id}`} onChange={(e) => setName(e.target.value)} autoFocus /></Field>
+    <form
+      className="flex flex-col gap-3 rounded-xl border border-primary bg-raised p-3"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+    >
+      <Field label="Name">
+        <input
+          className={inputCls}
+          value={name}
+          placeholder={`New segment ${id}`}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
+      </Field>
       <div className="grid grid-cols-2 gap-2">
         {field('start', isMatrix ? 'Start X' : 'Start LED')}
-        {field('stop', isMatrix ? (rel ? 'Width' : 'Stop X') : (rel ? 'LED count' : 'Stop LED'))}
-        {isMatrix && <>{field('startY', 'Start Y')}{field('stopY', rel ? 'Height' : 'Stop Y')}</>}
+        {field('stop', isMatrix ? (rel ? 'Width' : 'Stop X') : rel ? 'LED count' : 'Stop LED')}
+        {isMatrix && (
+          <>
+            {field('startY', 'Start Y')}
+            {field('stopY', rel ? 'Height' : 'Stop Y')}
+          </>
+        )}
       </div>
-      <div className="text-xs text-muted-foreground">{lengthLabel((stop - Number(v.start)) * (isMatrix ? stopY - Number(v.startY) : 1), 1, 0)}</div>
+      <div className="text-xs text-muted-foreground">
+        {lengthLabel((stop - Number(v.start)) * (isMatrix ? stopY - Number(v.startY) : 1), 1, 0)}
+      </div>
       <div className="flex gap-2">
-        <Button type="submit" variant="primary" className="flex-1">Add segment</Button>
-        <Button type="button" className="flex-1" onClick={onDone}>Cancel</Button>
+        <Button type="submit" variant="primary" className="flex-1">
+          Add segment
+        </Button>
+        <Button type="button" className="flex-1" onClick={onDone}>
+          Cancel
+        </Button>
       </div>
     </form>
   )
@@ -487,13 +785,24 @@ function TransitionField({ value }: { value: number }) {
   const [text, setText] = useDraft(String(value / 10))
   const commit = () => {
     const n = Math.round(parseFloat(text) * 10)
-    if (isNaN(n) || n < 0 || n > 655) { setText(String(value / 10)); return }
+    if (isNaN(n) || n < 0 || n > 655) {
+      setText(String(value / 10))
+      return
+    }
     if (n !== value) send({ transition: n })
   }
   return (
     <Field label="Transition" className="w-28">
-      <UnitInput unit="s" inputClassName="font-mono" inputMode="decimal" aria-label="Transition in seconds" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()} />
+      <UnitInput
+        unit="s"
+        inputClassName="font-mono"
+        inputMode="decimal"
+        aria-label="Transition in seconds"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === 'Enter' && commit()}
+      />
     </Field>
   )
 }
-

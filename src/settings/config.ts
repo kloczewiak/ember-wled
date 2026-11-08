@@ -15,8 +15,12 @@ let inflight: Promise<void> | null = null
 export function refreshCfg(): Promise<void> {
   inflight ??= loadCfg()
     .then((cfg) => useCfg.setState({ cfg, error: false }))
-    .catch(() => { if (!useCfg.getState().cfg) useCfg.setState({ error: true }) })
-    .finally(() => { inflight = null })
+    .catch(() => {
+      if (!useCfg.getState().cfg) useCfg.setState({ error: true })
+    })
+    .finally(() => {
+      inflight = null
+    })
   return inflight
 }
 
@@ -32,12 +36,22 @@ export function useCfgForm<T>(toForm: (cfg: Cfg) => T) {
   const form = useDraft(loaded)
   if (cfg !== seen) {
     setSeen(cfg)
-    if (cfg && (!form.dirty || adoptNext)) { setLoaded(toForm(cfg)); setAdoptNext(false) }
+    if (cfg && (!form.dirty || adoptNext)) {
+      setLoaded(toForm(cfg))
+      setAdoptNext(false)
+    }
   }
-  useEffect(() => { refreshCfg() }, [])
+  useEffect(() => {
+    refreshCfg()
+  }, [])
   return {
-    ...form, cfg, error,
+    ...form,
+    cfg,
+    error,
     retry: refreshCfg,
-    reloadAfterSave: () => { setAdoptNext(true); return refreshCfg() },
+    reloadAfterSave: () => {
+      setAdoptNext(true)
+      return refreshCfg()
+    },
   }
 }

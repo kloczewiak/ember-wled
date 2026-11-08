@@ -2,33 +2,31 @@ import { useEffect, useState } from 'react'
 import { send } from '../store'
 import { useUi } from '../ui'
 import { useDraft, useFxMeta, useMedia, WIDE, useSelection } from '../hooks'
-import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, rgbToKelvin, toHex, type HSV, type RGB } from '../lib/color'
-import { ColorWheel } from './ColorWheel'
-import { Card, cx, Icon, LabeledSlider, SectionTitle } from './controls'
-import { Button } from '@/components/ui/button'
-import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-const QUICK = ['#ff0000', '#ffa000', '#ffc800', '#ffe0a0', '#ffffff', '#000000', '#ff00ff', '#0000ff', '#00ffc8', '#08ff00']
-const KELVIN_TRACK = `linear-gradient(to right, ${[1900, 3000, 4500, 6500, 8000, 10091].map((k) => rgbCss(kelvinToRgb(k))).join(',')})`
-const HUE_TRACK = 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'
+import { fromHex, hsvToRgb, kelvinToRgb, rgbCss, rgbToHsv, toHex, type HSV, type RGB } from '../lib/color'
+import { ColorControls, HexRow } from './ColorPicker'
+import { Card, cx, LabeledSlider } from './controls'
 
 // Which colour slots to show: the effect's metadata decides, but the "* Color" palettes (ids 2-5) need their
 // slots, and so does the Default palette: for most effects it means colour 1 (color_from_palette() returns the
 // segment's colour on palette 0), even when the metadata declares no colours, e.g. Meteor.
 export function visibleSlots(colors: (string | null)[], pal: number, usesPalette: boolean) {
-  return colors.map((label, i) => label !== null || (pal > 1 && pal < 6 && pal - 2 >= i) || (pal === 0 && usesPalette && i === 0))
+  return colors.map(
+    (label, i) => label !== null || (pal > 1 && pal < 6 && pal - 2 >= i) || (pal === 0 && usesPalette && i === 0),
+  )
 }
 
 export function ColorPanel({ className }: { className?: string }) {
   const { main, hasRGB, hasWhite, hasCCT } = useSelection()
   const meta = useFxMeta(main?.fx)
-  const { csel, setCsel, colorMode, setColorMode } = useUi()
+  const { csel, setCsel } = useUi()
   const wide = useMedia(WIDE)
 
   const visible = visibleSlots(meta.colors, main?.pal ?? 0, meta.usesPalette)
   useEffect(() => {
-    if (!visible[csel]) { const first = visible.indexOf(true); if (first >= 0) setCsel(first) }
+    if (!visible[csel]) {
+      const first = visible.indexOf(true)
+      if (first >= 0) setCsel(first)
+    }
   }, [visible, csel, setCsel])
 
   const slot = main?.col[csel] ?? [0, 0, 0, 0]
@@ -52,7 +50,6 @@ export function ColorPanel({ className }: { className?: string }) {
     send({ seg: { col } })
   }
   const commitHsv = (next: HSV) => {
-    if (next.v === 0 && hsv.v === 0) next = { ...next, v: 100 } // picking on a black slot: make it visible
     setHsv(next)
     commit(hsvToRgb(next))
   }
@@ -60,80 +57,49 @@ export function ColorPanel({ className }: { className?: string }) {
   const [hex, setHex] = useDraft(toHex(rgb) + (w > 0 ? w.toString(16).padStart(2, '0').toUpperCase() : ''))
   const applyHex = () => {
     const c = fromHex(hex)
-    if (!c) { setHex(toHex(rgb)); return }
+    if (!c) {
+      setHex(toHex(rgb))
+      return
+    }
     const hw = parseInt(hex.slice(6, 8), 16)
     setHsv(rgbToHsv(c))
     commit(c, isNaN(hw) ? 0 : hw)
   }
 
-  const pickQuick = (q: string) => {
-    let c = fromHex(q)!
-    if (q === 'random') c = hsvToRgb({ h: Math.random() * 360, s: 50 + Math.random() * 50, v: 100 })
+  const pickQuick = (c: RGB) => {
     setHsv(rgbToHsv(c))
     commit(c)
   }
 
-  const pure = hsvToRgb({ h: hsv.h, s: hsv.s, v: 100 })
-  const kelvin = rgbToKelvin(rgb)
-
   return (
     <Card className={className}>
-      <Tabs value={colorMode} onValueChange={(m) => setColorMode(m as typeof colorMode)} className="gap-3">
-        <SectionTitle
-          right={hasRGB && (
-            <TabsList aria-label="Color controls">
-              <TabsTrigger value="wheel">Wheel</TabsTrigger>
-              <TabsTrigger value="hsv">HSV</TabsTrigger>
-              <TabsTrigger value="rgb">RGB</TabsTrigger>
-            </TabsList>
-          )}
-        >
-          Color
-        </SectionTitle>
-
-        {hasRGB && (
-          <TabsContent value="wheel" className="flex justify-center py-1">
-            <ColorWheel hsv={hsv} size={wide ? 200 : 220} onChange={setHsv} onCommit={commitHsv} />
-          </TabsContent>
+      <ColorControls
+        title="Color"
+        hsv={hsv}
+        rgb={hasRGB}
+        temperature={!hasCCT}
+        wheelSize={wide ? 200 : 220}
+        onInput={setHsv}
+        onCommitHsv={commitHsv}
+        onCommitRgb={commit}
+      >
+        {(hasWhite || !hasRGB) && (
+          <LabeledSlider
+            label={hasRGB ? 'White' : 'Brightness'}
+            value={w}
+            track="linear-gradient(to right, #23262d, #fff)"
+            onCommit={(v) => commit(rgb, v)}
+          />
         )}
-
-        <div className="flex flex-col gap-3">
-          {hasRGB && (
-            <TabsContent value="hsv" className="flex flex-col gap-3">
-              <LabeledSlider label="Hue" value={Math.round(hsv.h)} max={359} track={HUE_TRACK} display={`${Math.round(hsv.h)}°`}
-                onInput={(h) => setHsv({ ...hsv, h })} onCommit={(h) => commitHsv({ ...hsv, h })} />
-              <LabeledSlider label="Saturation" value={Math.round(hsv.s)} max={100} track={`linear-gradient(to right, #aaa, ${rgbCss(hsvToRgb({ h: hsv.h, s: 100, v: 100 }))})`}
-                display={`${Math.round(hsv.s)}%`} onInput={(s) => setHsv({ ...hsv, s })} onCommit={(s) => commitHsv({ ...hsv, s })} />
-            </TabsContent>
-          )}
-          {hasRGB && (
-            <TabsContent value="rgb" className="flex flex-col gap-3">
-              {(['r', 'g', 'b'] as const).map((k) => (
-                <LabeledSlider key={k} label={{ r: 'Red', g: 'Green', b: 'Blue' }[k]} value={rgb[k]}
-                  track={`linear-gradient(to right, ${rgbCss({ ...rgb, [k]: 0 })}, ${rgbCss({ ...rgb, [k]: 255 })})`}
-                  onInput={(v) => setHsv(rgbToHsv({ ...rgb, [k]: v }))} onCommit={(v) => commit({ ...rgb, [k]: v })} />
-              ))}
-            </TabsContent>
-          )}
-          {hasRGB && (
-            <LabeledSlider label="Value" value={Math.round(hsv.v)} max={100} track={`linear-gradient(to right, #000, ${rgbCss(pure)})`}
-              display={`${Math.round(hsv.v)}%`} onInput={(v) => setHsv({ ...hsv, v })} onCommit={(v) => commitHsv({ ...hsv, v })} />
-          )}
-          {hasRGB && !hasCCT && (
-            <LabeledSlider label="Temperature" value={Math.min(10091, Math.max(1900, kelvin))} min={1900} max={10091} track={KELVIN_TRACK}
-              display={`${Math.round(kelvin / 100) * 100}K`}
-              onInput={(k) => setHsv(rgbToHsv(kelvinToRgb(k)))} onCommit={(k) => { const c = kelvinToRgb(k); setHsv(rgbToHsv(c)); commit(c) }} />
-          )}
-          {(hasWhite || !hasRGB) && (
-            <LabeledSlider label={hasRGB ? 'White' : 'Brightness'} value={w} track="linear-gradient(to right, #23262d, #fff)"
-              onCommit={(v) => commit(rgb, v)} />
-          )}
-          {hasCCT && main && (
-            <LabeledSlider label="White balance" value={main.cct} track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
-              onCommit={(cct) => send({ seg: { cct } })} />
-          )}
-        </div>
-      </Tabs>
+        {hasCCT && main && (
+          <LabeledSlider
+            label="White balance"
+            value={main.cct}
+            track={`linear-gradient(to right, ${rgbCss(kelvinToRgb(2700))}, #fff, ${rgbCss(kelvinToRgb(8000))})`}
+            onCommit={(cct) => send({ seg: { cct } })}
+          />
+        )}
+      </ColorControls>
 
       <div className="flex gap-2">
         {[0, 1, 2].map((i) => {
@@ -141,15 +107,21 @@ export function ColorPanel({ className }: { className?: string }) {
           const c = main?.col[i] ?? [0, 0, 0, 0]
           const cw = c[3] ?? 0
           const black = !c[0] && !c[1] && !c[2]
-          const bg = hasRGB && !black
-            ? (hasWhite && cw > 0 ? `linear-gradient(180deg, rgb(${c[0]},${c[1]},${c[2]}) 40%, rgb(${cw},${cw},${cw}))` : `rgb(${c[0]},${c[1]},${c[2]})`)
-            : `rgb(${cw},${cw},${cw})`
+          const bg =
+            hasRGB && !black
+              ? hasWhite && cw > 0
+                ? `linear-gradient(180deg, rgb(${c[0]},${c[1]},${c[2]}) 40%, rgb(${cw},${cw},${cw}))`
+                : `rgb(${c[0]},${c[1]},${c[2]})`
+              : `rgb(${cw},${cw},${cw})`
           return (
             <button
               key={i}
               aria-pressed={csel === i}
               onClick={() => setCsel(i)}
-              className={cx('flex h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg border p-1 text-xs', csel === i ? 'border-primary ring-3 ring-ring/50' : 'border-border text-muted-foreground')}
+              className={cx(
+                'flex h-14 min-w-0 flex-1 flex-col gap-1 rounded-lg border p-1 text-xs',
+                csel === i ? 'border-primary ring-3 ring-ring/50' : 'border-border text-muted-foreground',
+              )}
             >
               <span className="w-full flex-1 rounded-md" style={{ background: bg }} />
               <span className="truncate">{meta.colors[i] ?? `Color ${i + 1}`}</span>
@@ -158,34 +130,7 @@ export function ColorPanel({ className }: { className?: string }) {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <form className="flex min-w-36 flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); applyHex() }}>
-          <InputGroup>
-            <InputGroupAddon><InputGroupText className="font-mono">#</InputGroupText></InputGroupAddon>
-            <InputGroupInput
-              value={hex}
-              placeholder="RRGGBB"
-              // strip "#" and anything else before limiting the length, so a pasted "#RRGGBBWW" keeps all 8 digits
-              onChange={(e) => setHex(e.target.value.replace(/[^0-9a-f]/gi, '').slice(0, 8).toUpperCase())}
-              aria-label="Hex color (RRGGBB or RRGGBBWW)"
-              className="font-mono"
-            />
-          </InputGroup>
-          <Button type="submit" variant="outline" size="icon" aria-label="Apply hex color"><Icon.check /></Button>
-        </form>
-        {hasRGB && (
-          <div className="flex flex-wrap gap-1.5">
-            {QUICK.map((q) => (
-              <button key={q} aria-label={`Set color ${q}`} onClick={() => pickQuick(q)} className="size-7 rounded-full border" style={{ background: q }} />
-            ))}
-            <button aria-label="Random color" onClick={() => pickQuick('random')}
-              className="flex size-7 items-center justify-center rounded-full border"
-              style={{ background: HUE_TRACK }}>
-              <Icon.dice className="size-4 text-black/70" />
-            </button>
-          </div>
-        )}
-      </div>
+      <HexRow hex={hex} onHex={setHex} onApply={applyHex} onPick={hasRGB ? pickQuick : undefined} digits={8} />
     </Card>
   )
 }

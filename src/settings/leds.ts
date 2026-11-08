@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Cfg, LedOutputCfg } from './api'
 import { useCfgForm } from './config'
 import { intIn, useLeaveGuard, useSaver } from './shared'
+import { OWNER, type PinNeed, type PinUse } from './pins'
 
 // The LED and hardware form (the firmware's data/settings_leds.htm, WLED v16.0.1), shared by the LED and
 // hardware page and the Defaults page: both save through /settings/leds, which needs every field of the
@@ -13,7 +14,12 @@ import { intIn, useLeaveGuard, useSaver } from './shared'
 // An LED type (LEDTypesToJson() in bus_manager.cpp). t: "D" digital, "2P" digital with a clock, "" on/off,
 // "A".."AAAAA" PWM with that many pins, "N" network, "V" virtual, "H" HUB75. c: 0x01 RGB, 0x02 white,
 // 0x04 CCT, 0x10 16 bit, 0x20 needs off refresh.
-export interface LedType { i: number; c: number; t: string; n: string }
+export interface LedType {
+  i: number
+  c: number
+  t: string
+  n: string
+}
 
 export interface LedInfo {
   types: LedType[]
@@ -42,7 +48,20 @@ export function parseLedScript(js: string): LedInfo | null {
   if (!types || !limits) return null
   const json = types[1].replace(/([{,])(\w+):/g, '$1"$2":').replace(/,\]$/, ']')
   const [chip, maxPB, maxM, maxL, maxCO, maxD, maxRMT, maxI2S, maxA, maxBT] = limits[1].split(',').map(Number)
-  return { types: JSON.parse(json), chip, maxPB, maxM, maxL, maxCO, maxD, maxRMT, maxI2S, maxA, maxBT, touch: list(js, 'touch') }
+  return {
+    types: JSON.parse(json),
+    chip,
+    maxPB,
+    maxM,
+    maxL,
+    maxCO,
+    maxD,
+    maxRMT,
+    maxI2S,
+    maxA,
+    maxBT,
+    touch: list(js, 'touch'),
+  }
 }
 
 let infoCache: Promise<LedInfo | null> | null = null
@@ -50,8 +69,14 @@ let infoCache: Promise<LedInfo | null> | null = null
 export function useLedInfo() {
   const [info, setInfo] = useState<LedInfo | null | undefined>(undefined)
   useEffect(() => {
-    infoCache ??= fetch('/settings/s.js?p=2').then((r) => (r.ok ? r.text() : '')).then(parseLedScript).catch(() => null)
-    infoCache.then((i) => { if (!i) infoCache = null; setInfo(i) })
+    infoCache ??= fetch('/settings/s.js?p=2')
+      .then((r) => (r.ok ? r.text() : ''))
+      .then(parseLedScript)
+      .catch(() => null)
+    infoCache.then((i) => {
+      if (!i) infoCache = null
+      setInfo(i)
+    })
   }, [])
   return info
 }
@@ -83,14 +108,18 @@ const usesChannel = (x: LedType) => x.t === 'D'
 
 // What each pin is called, for an output's type.
 export function pinLabels(x: LedType): string[] {
-  if (isD2P(x)) return ['Data GPIO', 'Clock GPIO']
-  if (x.t === 'D') return ['Data GPIO']
+  if (isD2P(x)) return ['Data pin', 'Clock pin']
+  if (x.t === 'D') return ['Data pin']
   if (isNet(x)) return ['IP address']
   if (isHub75(x)) return ['Panel width', 'Panel height', 'Panels', 'Rows', 'Columns']
   if (x.t === 'V') return ['Config']
-  const pwm: Record<number, string[]> = { 2: ['Warm white GPIO', 'Cold white GPIO'], 3: ['Red GPIO', 'Green GPIO', 'Blue GPIO'],
-    4: ['Red GPIO', 'Green GPIO', 'Blue GPIO', 'White GPIO'], 5: ['Red GPIO', 'Green GPIO', 'Blue GPIO', 'Warm white GPIO', 'Cold white GPIO'] }
-  return pwm[numPins(x)] ?? ['GPIO']
+  const pwm: Record<number, string[]> = {
+    2: ['Warm white pin', 'Cold white pin'],
+    3: ['Red pin', 'Green pin', 'Blue pin'],
+    4: ['Red pin', 'Green pin', 'Blue pin', 'White pin'],
+    5: ['Red pin', 'Green pin', 'Blue pin', 'Warm white pin', 'Cold white pin'],
+  }
+  return pwm[numPins(x)] ?? ['Pin']
 }
 
 // ---- The form -----------------------------------------------------------------------------------------
@@ -112,8 +141,18 @@ export interface Output {
   ledma: number // mA per LED (255: WS2815's 12 mA)
   maxpwr: number // this output's power supply, mA (per-output limiter)
 }
-export interface ColorOverride { start: number; len: number; order: number; swap: number }
-export interface ButtonCfg { pin: number; type: number }
+export interface ColorOverride {
+  start: number
+  len: number
+  order: number
+  swap: number
+}
+// macros: the presets for a press, a long press and a double press (saved through Time and macros' form)
+export interface ButtonCfg {
+  pin: number
+  type: number
+  macros: number[]
+}
 
 export interface LedForm {
   outs: Output[]
@@ -154,12 +193,25 @@ export interface LedForm {
 const pinOf = (p: number | undefined) => (p === undefined || p === 255 ? -1 : p)
 
 export const toOutput = (b: LedOutputCfg): Output => ({
-  type: b.type, pins: [0, 1, 2, 3, 4].map((i) => pinOf(b.pin?.[i])), text: b.text ?? '',
-  start: b.start ?? 0, len: b.len ?? 1, order: (b.order ?? 0) & 0x0f, swap: (b.order ?? 0) >> 4, rev: !!b.rev, skip: b.skip ?? 0,
-  ref: !!b.ref, aw: b.rgbwm ?? 0, freq: b.freq ?? 0, drv: b.drv ?? 0, ledma: b.ledma ?? 55, maxpwr: b.maxpwr ?? 0,
+  type: b.type,
+  pins: [0, 1, 2, 3, 4].map((i) => pinOf(b.pin?.[i])),
+  text: b.text ?? '',
+  start: b.start ?? 0,
+  len: b.len ?? 1,
+  order: (b.order ?? 0) & 0x0f,
+  swap: (b.order ?? 0) >> 4,
+  rev: !!b.rev,
+  skip: b.skip ?? 0,
+  ref: !!b.ref,
+  aw: b.rgbwm ?? 0,
+  freq: b.freq ?? 0,
+  drv: b.drv ?? 0,
+  ledma: b.ledma ?? 55,
+  maxpwr: b.maxpwr ?? 0,
 })
 // a start that isn't where the previous output ends means the starts were set by hand (checkSi())
-export const startsCustom = (outs: Output[]) => outs.some((o, i) => o.start !== (i ? outs[i - 1].start + outs[i - 1].len : 0))
+export const startsCustom = (outs: Output[]) =>
+  outs.some((o, i) => o.start !== (i ? outs[i - 1].start + outs[i - 1].len : 0))
 
 export function toLedForm(cfg: Cfg): LedForm {
   const hw = cfg.hw!
@@ -168,18 +220,37 @@ export function toLedForm(cfg: Cfg): LedForm {
   const outs = led.ins.map(toOutput)
   const sum = outs.reduce((s, o) => s + o.maxpwr, 0)
   return {
-    outs, customStarts: startsCustom(outs), autoSeg: light.aseg,
-    abl: led.maxpwr > 0 || sum > 0, ppl: !led.maxpwr && sum > 0, maxpwr: led.maxpwr || sum, bf: light['scale-bri'],
+    outs,
+    customStarts: startsCustom(outs),
+    autoSeg: light.aseg,
+    abl: led.maxpwr > 0 || sum > 0,
+    ppl: !led.maxpwr && sum > 0,
+    maxpwr: led.maxpwr || sum,
+    bf: light['scale-bri'],
     com: (hw.com ?? []).map((c) => ({ start: c.start, len: c.len, order: c.order & 0x0f, swap: c.order >> 4 })),
-    gc: light.gc.col !== 1, gb: light.gc.bri !== 1, gv: light.gc.val,
-    cct: led.cct, aw: led.rgbwm, cr: led.cr, ic: led.ic, cb: led.cb,
-    btns: (hw.btn?.ins ?? []).map((b) => ({ pin: pinOf(b.pin?.[0]), type: b.type })),
-    pull: hw.btn?.pull ?? true, tt: hw.btn?.tt ?? 32,
-    ir: hw.ir?.pin === undefined ? undefined : { pin: hw.ir.pin, type: hw.ir.type ?? 0 }, irMain: !(hw.ir?.sel ?? true),
+    gc: light.gc.col !== 1,
+    gb: light.gc.bri !== 1,
+    gv: light.gc.val,
+    cct: led.cct,
+    aw: led.rgbwm,
+    cr: led.cr,
+    ic: led.ic,
+    cb: led.cb,
+    btns: (hw.btn?.ins ?? []).map((b) => ({ pin: pinOf(b.pin?.[0]), type: b.type, macros: b.macros ?? [0, 0, 0] })),
+    pull: hw.btn?.pull ?? true,
+    tt: hw.btn?.tt ?? 32,
+    ir: hw.ir?.pin === undefined ? undefined : { pin: hw.ir.pin, type: hw.ir.type ?? 0 },
+    irMain: !(hw.ir?.sel ?? true),
     relay: { pin: hw.relay?.pin ?? -1, inverted: hw.relay?.rev ?? false, odrain: hw.relay?.odrain ?? false },
-    on: cfg.def.on, bri: cfg.def.bri, ps: cfg.def.ps,
-    td: light.tr.dur * 100, rpc: light.tr.rpc, hrp: light.tr.hrp,
-    nl: { dur: light.nl.dur, tbri: light.nl.tbri, mode: light.nl.mode }, pb: light['pal-mode'], fps: led.fps,
+    on: cfg.def.on,
+    bri: cfg.def.bri,
+    ps: cfg.def.ps,
+    td: light.tr.dur * 100,
+    rpc: light.tr.rpc,
+    hrp: light.tr.hrp,
+    nl: { dur: light.nl.dur, tbri: light.nl.tbri, mode: light.nl.mode },
+    pb: light['pal-mode'],
+    fps: led.fps,
   }
 }
 
@@ -191,6 +262,50 @@ export function useLedForm() {
   const { save, saving, dialog } = useSaver('leds', form.reloadAfterSave)
   return { ...form, info, save, saving, dialog }
 }
+
+// ---- Buttons and pins ---------------------------------------------------------------------------------
+
+// the button types as the stock page lists them
+export const BUTTON_OPTIONS: [number, string][] = [
+  [0, 'Not used'],
+  [2, 'Pushbutton'],
+  [3, 'Pushbutton, inverted'],
+  [4, 'Switch'],
+  [5, 'Motion sensor (PIR)'],
+  [6, 'Touch'],
+  [9, 'Touch, as a switch'],
+  [7, 'Potentiometer (analog)'],
+  [8, 'Potentiometer, inverted'],
+]
+
+export const isTouch = (t: number) => t === 6 || t === 9
+export const isAnalogBtn = (t: number) => t === 7 || t === 8
+// switches and motion sensors: a contact or sensor that stays on or off, rather than a press
+export const isSwitchBtn = (t: number) => t === 4 || t === 5 || t === 9
+export const btnNeed = (type: number): PinNeed => (isTouch(type) ? 'touch' : isAnalogBtn(type) ? 'analog' : 'any')
+
+// Pins the form uses, each with the field that uses it ("o0p1": output 1's second pin), so a picker can show
+// the others as taken.
+export function pinUses(f: LedForm, T: Types) {
+  const uses: { key: string; pin: number; use: PinUse }[] = []
+  f.outs.forEach((o, i) => {
+    const x = T(o.type)
+    if (isVir(x) || isHub75(x)) return
+    o.pins
+      .slice(0, pinFields(x))
+      .forEach((p, j) =>
+        uses.push({ key: `o${i}p${j}`, pin: p, use: { o: OWNER.led, label: `Out ${i + 1}`, name: `Output ${i + 1}` } }),
+      )
+  })
+  f.btns.forEach((b, i) =>
+    uses.push({ key: `b${i}`, pin: b.pin, use: { o: OWNER.button, label: `Btn ${i + 1}`, name: `Button ${i + 1}` } }),
+  )
+  if (f.ir) uses.push({ key: 'ir', pin: f.ir.pin, use: { o: OWNER.ir, label: 'IR', name: 'the IR receiver' } })
+  uses.push({ key: 'relay', pin: f.relay.pin, use: { o: OWNER.relay, label: 'Relay', name: 'the relay' } })
+  return uses.filter((u) => u.pin >= 0)
+}
+// the pins the saved settings hold: free for this page's fields once nothing on the page uses them
+export const ownPins = (saved: LedForm, T: Types) => pinUses(saved, T).map((u) => u.pin)
 
 // ---- Clock speeds -------------------------------------------------------------------------------------
 
@@ -212,16 +327,19 @@ export const speedIndex = (x: LedType, chip: number, freq: number) => {
 
 // RMT and I2S channels the digital outputs take (getDuse()); I2Smem is the I2S buffer per I2S output.
 export function channelUse(outs: Output[], T: Types, info: LedInfo) {
-  let rmt = 0, i2s = 0, maxLeds = 0
+  let rmt = 0,
+    i2s = 0,
+    maxLeds = 0
   let i2sType: number | null = null
-  if (info.chip !== 0) for (const o of outs) {
-    if (!usesChannel(T(o.type))) continue
-    if (o.drv === 1) {
-      i2s++
-      maxLeds = Math.max(maxLeds, (o.len || 0) + (o.skip || 0))
-      i2sType ??= o.type
-    } else rmt++
-  }
+  if (info.chip !== 0)
+    for (const o of outs) {
+      if (!usesChannel(T(o.type))) continue
+      if (o.drv === 1) {
+        i2s++
+        maxLeds = Math.max(maxLeds, (o.len || 0) + (o.skip || 0))
+        i2sType ??= o.type
+      } else rmt++
+    }
   let i2sMem = 0
   if (i2sType !== null) {
     const x = T(i2sType)
@@ -239,13 +357,17 @@ function memOf(o: Output, T: Types, info: LedInfo, i2sMem: number) {
   let len = (o.len || 0) + (o.skip || 0)
   const buffers = len * 8
   const ch = 3 * +hasRGB(x) + +hasW(x) + +hasCCT(x)
-  let mul = 1, dma = 0
+  let mul = 1,
+    dma = 0
   if (isDig(x)) {
     if (is16b(x)) len *= 2
     if (info.chip === 0 && o.pins[0] === 3) mul = 5 // ESP8266 DMA on GPIO3
     if (info.chip !== 0 && !isD2P(x)) {
       mul = 2
-      if (o.drv === 1) { mul = 1; dma = i2sMem }
+      if (o.drv === 1) {
+        mul = 1
+        dma = i2sMem
+      }
     }
   }
   return len * ch * mul + dma + buffers
@@ -260,9 +382,32 @@ export function busOk(o: Output, T: Types, info: LedInfo, use: ReturnType<typeof
   return true
 }
 
+// The brightness limiter as the firmware runs it (BusManager::applyABL and BusDigital::applyBriLimit in
+// bus_manager.cpp). It estimates each digital output's current from its LED current plus 1 mA standby per LED,
+// keeps the controller's own current (MA_FOR_ESP) out of the LEDs' budget, and dims brightness to fit.
+export const espMA = (chip: number) => (chip === 0 ? 80 : 120)
+// What an output draws at full white, mA (WS2815's 255 is 12 mA per LED)
+export const fullWhiteMA = (o: Output) => ((o.ledma === 255 ? 12 : o.ledma) + 1) * o.len
+// The brightness full white is dimmed to, 0–1, with `budget` mA for `leds` LEDs drawing `draw` mA. A budget
+// that doesn't cover the standby current dims to the minimum.
+export const fullWhiteBri = (budget: number, draw: number, leds: number) =>
+  budget <= leds ? 1 / 255 : draw > budget ? Math.min(255, Math.floor((budget * 255) / draw) + 1) / 255 : 1
+// One supply for all outputs: one budget, less the controller's current
+export const globalBudget = (maxpwr: number, chip: number) => (maxpwr > espMA(chip) ? maxpwr - espMA(chip) : 1)
+// One supply per output: each output limits on its own, less its share of the controller's current, and gets
+// at least 1 mA per LED
+export function outputBudget(o: Output, ablOutputs: number, chip: number) {
+  const share = Math.floor(espMA(chip) / Math.max(1, ablOutputs))
+  return Math.max(o.len, o.maxpwr > share ? o.maxpwr - share : o.maxpwr)
+}
+
 export function summary(f: LedForm, T: Types, info: LedInfo) {
   const use = channelUse(f.outs, T, info)
-  let total = 0, physical = 0, digital = 0, maxPerOutput = 0, busMA = 0, mem = 0
+  let total = 0,
+    physical = 0,
+    digital = 0,
+    maxPerOutput = 0,
+    mem = 0
   f.outs.forEach((o, i) => {
     const x = T(o.type)
     mem += memOf(o, T, info, use.i2sMem)
@@ -273,11 +418,9 @@ export function summary(f: LedForm, T: Types, info: LedInfo) {
     if (isDig(x)) {
       maxPerOutput = Math.max(maxPerOutput, o.len)
       digital += o.len
-      busMA += (o.ledma === 255 ? 12 : o.ledma) * o.len
     }
   })
-  const amps = (div: number) => { const v = Math.ceil((100 + busMA) / div) / 2; return v > 5 ? Math.ceil(v) : v }
-  return { use, total, physical, digital, maxPerOutput, mem, memPct: (mem / info.maxM) * 100, psu: amps(500), psuMost: amps(1500) }
+  return { use, total, physical, digital, maxPerOutput, mem, memPct: (mem / info.maxM) * 100 }
 }
 
 // Where an output starts: set by hand with custom starts, otherwise right after the outputs before it
@@ -287,11 +430,13 @@ export function startOf(f: LedForm, i: number) {
   return f.outs.slice(0, i).reduce((s, o) => s + (o.len || 0), 0)
 }
 
-// Which LED types an output can switch to, given the others (updateTypeDropdowns()): digital outputs up to
+// Why an output can't switch to a type, for each type it can't (updateTypeDropdowns()): digital outputs up to
 // maxD and the RMT/I2S channels (I2S outputs must share one type), two clocked outputs, and PWM up to maxA pins.
-export function allowedTypes(f: LedForm, index: number, T: Types, info: LedInfo): Set<number> {
+export function blockedTypes(f: LedForm, index: number, T: Types, info: LedInfo): Map<number, string> {
   const use = channelUse(f.outs, T, info)
-  let digital = 0, twoPin = 0, analogPins = 0
+  let digital = 0,
+    twoPin = 0,
+    analogPins = 0
   for (const o of f.outs) {
     const x = T(o.type)
     if (usesChannel(x)) digital++
@@ -304,27 +449,52 @@ export function allowedTypes(f: LedForm, index: number, T: Types, info: LedInfo)
   const firstI2S = firstIdx >= 0 && firstIdx <= index ? f.outs[firstIdx].type : null
   const cur = f.outs[index]
   const x = T(cur.type)
-  const ok = new Set<number>()
+  const freePwm = info.maxA - analogPins + (isPWM(x) ? numPins(x) : 0)
+  const blocked = new Map<number, string>()
   for (const t of info.types) {
-    let allowed = true
-    if (t.t === 'D') {
+    if (t.i === cur.type) continue
+    let why = ''
+    if (t.t === 'D' && firstI2S !== null) {
+      const like = `output ${firstIdx + 1} (${T(firstI2S).n})`
       if (usesChannel(x)) {
-        if (cur.drv === 1 && firstIdx !== index && t.i !== firstI2S) allowed = false
-      } else if (digital >= info.maxD) allowed = false
-      else if (info.chip !== 0 && use.rmt >= info.maxRMT && firstI2S !== null && t.i !== firstI2S) allowed = false
+        if (cur.drv === 1 && firstIdx !== index && t.i !== firstI2S) why = `${I2S_NOTE} ${like}.`
+      } else if (digital < info.maxD && info.chip !== 0 && use.rmt >= info.maxRMT && t.i !== firstI2S) {
+        why = `All ${info.maxRMT} RMT channels are in use, so a new digital output goes on I2S and has to be the same type as ${like}.`
+      }
     }
-    if (isD2P(t) && twoPin >= 2 && !isD2P(x)) allowed = false
-    if (isPWM(t) && numPins(t) > info.maxA - analogPins + (isPWM(x) ? numPins(x) : 0)) allowed = false
-    if (allowed || t.i === cur.type) ok.add(t.i)
+    if (t.t === 'D' && !usesChannel(x) && digital >= info.maxD) why = `All ${info.maxD} digital outputs are in use.`
+    if (isD2P(t) && twoPin >= 2 && !isD2P(x)) why = 'Only 2 outputs can use a clock, and 2 already do.'
+    if (isPWM(t) && numPins(t) > freePwm) why = `Needs ${numPins(t)} PWM pins; ${Math.max(0, freePwm)} are free.`
+    if (why) blocked.set(t.i, why)
   }
-  return ok
+  return blocked
+}
+// how an I2S output's reason starts: the type picker says it once, above the list
+export const I2S_NOTE = 'This output uses the I2S driver, so its type has to be the same as'
+
+export function allowedTypes(f: LedForm, index: number, T: Types, info: LedInfo): Set<number> {
+  const blocked = blockedTypes(f, index, T, info)
+  return new Set(info.types.filter((t) => !blocked.has(t.i)).map((t) => t.i))
 }
 
 // A new output, like the stock page's + button: the first type that's free, one LED, after the last output.
 export function newOutput(f: LedForm, T: Types, info: LedInfo): Output {
   const o: Output = {
-    type: 0, pins: [-1, -1, -1, -1, -1], text: '', start: f.outs.reduce((s, x) => s + (x.len || 0), 0), len: 1,
-    order: 0, swap: 0, rev: false, skip: 0, ref: false, aw: 0, freq: 0, drv: 0, ledma: 55, maxpwr: 250,
+    type: 0,
+    pins: [-1, -1, -1, -1, -1],
+    text: '',
+    start: f.outs.reduce((s, x) => s + (x.len || 0), 0),
+    len: 1,
+    order: 0,
+    swap: 0,
+    rev: false,
+    skip: 0,
+    ref: false,
+    aw: 0,
+    freq: 0,
+    drv: 0,
+    ledma: 55,
+    maxpwr: 250,
   }
   const net = info.types.find(isNet)
   const draft = { ...f, outs: [...f.outs, { ...o, type: net?.i ?? 0 }] }
@@ -342,7 +512,9 @@ export function withType(o: Output, type: number, T: Types, info: LedInfo): Outp
   const pins = [0, 1, 2, 3, 4].map((i) => (i < n && keep ? o.pins[i] : -1))
   if (isHub75(x)) for (let i = 2; i < 5; i++) if (pins[i] < 0) pins[i] = 1
   return {
-    ...o, type, pins,
+    ...o,
+    type,
+    pins,
     len: isAna(x) ? 1 : o.len,
     ref: o.ref || type === 31 || mustRefresh(x),
     swap: isDig(x) && hasW(x) ? (o.swap === 4 && !hasCCT(x) ? 0 : o.swap) : 0,
@@ -357,41 +529,69 @@ export function withType(o: Output, type: number, T: Types, info: LedInfo): Outp
 // the other.
 export function validate(f: LedForm, T: Types, info: LedInfo, s: ReturnType<typeof summary>) {
   let e: string[] = []
-  const check = (ok: boolean, msg: string) => { if (!ok && !e.includes(msg)) e.push(msg) }
+  const check = (ok: boolean, msg: string) => {
+    if (!ok && !e.includes(msg)) e.push(msg)
+  }
   const seen = new Map<number, number>()
   f.outs.forEach((o, i) => {
     const x = T(o.type)
     const n = `Output ${i + 1}`
     const fields = pinFields(x)
-    if (isNet(x)) check(o.pins.slice(0, 4).every((p) => intIn(p, 0, 255)), `${n}: each part of the IP address must be 0–255.`)
+    if (isNet(x))
+      check(
+        o.pins.slice(0, 4).every((p) => intIn(p, 0, 255)),
+        `${n}: each part of the IP address must be 0–255.`,
+      )
     else if (isHub75(x)) {
       check(intIn(o.pins[0], 16, 128) && intIn(o.pins[1], 16, 128), `${n}: the panel width and height must be 16–128.`)
-      check(o.pins.slice(2, 5).every((p) => intIn(p, 1, 4)), `${n}: panels, rows and columns must be 1–4.`)
+      check(
+        o.pins.slice(2, 5).every((p) => intIn(p, 1, 4)),
+        `${n}: panels, rows and columns must be 1–4.`,
+      )
       check(o.pins[2] === o.pins[3] * o.pins[4], `${n}: the number of panels must be rows × columns.`)
-    } else if (x.t === 'V') check(o.pins.slice(0, fields).every((p) => intIn(p, 0, 255)), `${n}: the config values must be 0–255.`)
+    } else if (x.t === 'V')
+      check(
+        o.pins.slice(0, fields).every((p) => intIn(p, 0, 255)),
+        `${n}: the config values must be 0–255.`,
+      )
     else {
-      check(o.pins.slice(0, fields).every((p) => p >= 0), `${n}: choose ${fields > 1 ? 'all its pins' : 'a pin'}.`)
+      check(
+        o.pins.slice(0, fields).every((p) => p >= 0),
+        `${n}: choose ${fields > 1 ? 'all its pins' : 'a pin'}.`,
+      )
       for (const p of o.pins.slice(0, fields)) {
         if (p < 0) continue
         check(!seen.has(p), `GPIO ${p} is used by two outputs.`)
         seen.set(p, i)
       }
     }
-    if (!isAna(x) && !isHub75(x)) check(intIn(o.len, 1, isDig(x) ? info.maxPB : 16384), `${n}: the length must be 1–${isDig(x) ? info.maxPB : 16384}.`)
+    if (!isAna(x) && !isHub75(x))
+      check(
+        intIn(o.len, 1, isDig(x) ? info.maxPB : 16384),
+        `${n}: the length must be 1–${isDig(x) ? info.maxPB : 16384}.`,
+      )
     if (f.customStarts) check(intIn(o.start, 0, 8191), `${n}: the start must be 0–8191.`)
     if (!isVir(x) && !isAna(x) && !isHub75(x)) check(intIn(o.skip, 0, 255), `${n}: skipped LEDs must be 0–255.`)
     if (f.abl && isDig(x)) {
       check(intIn(o.ledma, 1, 255), `${n}: the current per LED must be 1–255 mA.`)
-      if (f.ppl) check(intIn(o.maxpwr, 250, 65000), `${n}: the power supply rating must be 250–65000 mA.`)
+      if (f.ppl) check(intIn(o.maxpwr, 250, 65000), `${n}: the power supply rating must be 0.25–65 A.`)
     }
-    check(busOk(o, T, info, s.use), `${n}: too many outputs on the ${o.drv ? 'I2S' : 'RMT'} driver${o.drv && s.use.i2sType !== null && o.type !== s.use.i2sType ? ', or a different LED type than the other I2S outputs' : ''}.`)
+    check(
+      busOk(o, T, info, s.use),
+      `${n}: too many outputs on the ${o.drv ? 'I2S' : 'RMT'} driver${o.drv && s.use.i2sType !== null && o.type !== s.use.i2sType ? ', or a different LED type than the other I2S outputs' : ''}.`,
+    )
   })
-  if (f.abl && !f.ppl) check(intIn(f.maxpwr, 250, 65000), 'The power supply rating must be 250–65000 mA.')
-  check(s.memPct <= 100, 'Too many LEDs for the light\'s memory.')
+  if (f.abl && !f.ppl) check(intIn(f.maxpwr, 250, 65000), 'The power supply rating must be 0.25–65 A.')
+  check(s.memPct <= 100, "Too many LEDs for the light's memory.")
   check(intIn(f.bf, 1, 255), 'The brightness factor must be 1–255 %.')
   check(f.gv >= 0.1 && f.gv <= 3, 'The gamma value must be 0.1–3.')
   check(intIn(f.cb, -100, 100), 'CCT blending must be −100 to 100 %.')
-  f.com.forEach((c, i) => check(intIn(c.start, 0, 65535) && intIn(c.len, 1, 65535), `Colour order override ${i + 1}: start 0–65535 and length 1–65535.`))
+  f.com.forEach((c, i) =>
+    check(
+      intIn(c.start, 0, 65535) && intIn(c.len, 1, 65535),
+      `Colour order override ${i + 1}: start 0–65535 and length 1–65535.`,
+    ),
+  )
   check(intIn(f.tt, 0, 100), 'The touch threshold must be 0–100.')
   const leds = e
   e = []
@@ -400,7 +600,7 @@ export function validate(f: LedForm, T: Types, info: LedInfo, s: ReturnType<type
   check(intIn(f.td, 0, 65500), 'The transition time must be 0–65500 ms.')
   check(intIn(f.rpc, 1, 255), 'The random palette cycle time must be 1–255 s.')
   check(intIn(f.nl.dur, 1, 255), 'The timer duration must be 1–255 min.')
-  check(intIn(f.nl.tbri, 0, 255), 'The timer\'s target brightness must be 0–255.')
+  check(intIn(f.nl.tbri, 0, 255), "The timer's target brightness must be 0–255.")
   check(intIn(f.fps, 0, 250), 'The refresh rate must be 0–250 FPS.')
   return { leds, defaults: e }
 }
@@ -416,11 +616,14 @@ export const pageErrors = (own: string[], other: string[], otherTitle: string) =
 export function ledFields(f: LedForm, T: Types, info: LedInfo): [string, string][] {
   const out: [string, string][] = []
   const val = (k: string, v: number | string) => out.push([k, String(v)])
-  const on = (k: string, v: boolean) => { if (v) out.push([k, 'on']) }
+  const on = (k: string, v: boolean) => {
+    if (v) out.push([k, 'on'])
+  }
   const id = (i: number) => String.fromCharCode((i < 10 ? 48 : 55) + i)
 
   val('BF', f.bf)
-  on('ABL', f.abl); on('PPL', f.abl && f.ppl)
+  on('ABL', f.abl)
+  on('PPL', f.abl && f.ppl)
   val('MA', f.abl && !f.ppl ? f.maxpwr : 0)
   f.outs.forEach((o, i) => {
     const s = id(i)
@@ -430,29 +633,61 @@ export function ledFields(f: LedForm, T: Types, info: LedInfo): [string, string]
     val(`LT${s}`, o.type)
     val(`LC${s}`, isAna(x) ? 1 : o.len)
     if (f.customStarts) val(`LS${s}`, o.start)
-    val(`CO${s}`, o.order); val(`WO${s}`, o.swap)
-    on(`CV${s}`, o.rev); val(`SL${s}`, o.skip); on(`RF${s}`, o.ref); val(`AW${s}`, o.aw)
+    val(`CO${s}`, o.order)
+    val(`WO${s}`, o.swap)
+    on(`CV${s}`, o.rev)
+    val(`SL${s}`, o.skip)
+    on(`RF${s}`, o.ref)
+    val(`AW${s}`, o.aw)
     val(`SP${s}`, isD2P(x) || isPWM(x) ? speedIndex(x, info.chip, o.freq) : 0)
-    val(`LA${s}`, o.ledma); val(`MA${s}`, o.maxpwr)
+    val(`LA${s}`, o.ledma)
+    val(`MA${s}`, o.maxpwr)
     val(`LD${s}`, usesChannel(x) ? o.drv : 0)
     val(`HS${s}`, o.text)
   })
   on('MS', f.autoSeg)
-  f.com.forEach((c, i) => { const s = id(i); val(`XS${s}`, c.start); val(`XC${s}`, c.len); val(`XO${s}`, c.order); val(`XW${s}`, c.swap) })
-  on('GC', f.gc); on('GB', f.gb); val('GV', f.gv)
+  f.com.forEach((c, i) => {
+    const s = id(i)
+    val(`XS${s}`, c.start)
+    val(`XC${s}`, c.len)
+    val(`XO${s}`, c.order)
+    val(`XW${s}`, c.swap)
+  })
+  on('GC', f.gc)
+  on('GB', f.gb)
+  val('GV', f.gv)
   on('CCT', f.cct)
   // without a white channel the stock page resets these (they're hidden)
   const white = f.outs.some((o) => hasW(T(o.type)))
-  val('AW', white ? f.aw : 255); on('CR', white && f.cr)
-  on('IC', f.ic); val('CB', f.cb)
-  f.btns.forEach((b, i) => { const s = id(i); val(`BT${s}`, b.pin); val(`BE${s}`, b.type) })
-  on('IP', !f.pull); val('TT', f.tt)
-  if (f.ir) { val('IR', f.ir.pin); val('IT', f.ir.type) }
+  val('AW', white ? f.aw : 255)
+  on('CR', white && f.cr)
+  on('IC', f.ic)
+  val('CB', f.cb)
+  f.btns.forEach((b, i) => {
+    const s = id(i)
+    val(`BT${s}`, b.pin)
+    val(`BE${s}`, b.type)
+  })
+  on('IP', !f.pull)
+  val('TT', f.tt)
+  if (f.ir) {
+    val('IR', f.ir.pin)
+    val('IT', f.ir.type)
+  }
   on('MSO', f.irMain)
-  val('RL', f.relay.pin); on('RM', !f.relay.inverted); on('RO', f.relay.odrain)
-  on('BO', f.on); val('CA', f.bri); val('BP', f.ps)
-  val('TD', f.td); on('TH', f.hrp); val('TP', f.rpc)
-  val('TL', f.nl.dur); val('TB', f.nl.tbri); val('TW', f.nl.mode)
-  val('PB', f.pb); val('FR', f.fps)
+  val('RL', f.relay.pin)
+  on('RM', !f.relay.inverted)
+  on('RO', f.relay.odrain)
+  on('BO', f.on)
+  val('CA', f.bri)
+  val('BP', f.ps)
+  val('TD', f.td)
+  on('TH', f.hrp)
+  val('TP', f.rpc)
+  val('TL', f.nl.dur)
+  val('TB', f.nl.tbri)
+  val('TW', f.nl.mode)
+  val('PB', f.pb)
+  val('FR', f.fps)
   return out
 }

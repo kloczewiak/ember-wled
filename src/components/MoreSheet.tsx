@@ -7,17 +7,27 @@ import { formatCurrent } from '../lib/format'
 import { toggleSync, toggleTimer } from './Header'
 import { Button, Check, cx, Field, inputCls, SectionTitle, Switch, UnitInput } from './controls'
 import { Button as UiButton } from '@/components/ui/button'
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { XIcon } from 'lucide-react'
 import { NativeSelect } from '@/components/ui/native-select'
 
 // Usermod HTML uses glyphs from the stock UI's icon font, which this UI doesn't ship; the power glyph
 // (the one usermods use for their on/off buttons) is swapped for an inline icon.
-const POWER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>'
+const POWER_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>'
 const usermodHtml = (html: string) => html.replace(/&#xe08f;|\ue08f/gi, POWER_SVG)
 
 function runtime(t: number) {
-  const days = Math.floor(t / 86400), hrs = Math.floor((t % 86400) / 3600), mins = Math.floor((t % 3600) / 60)
+  const days = Math.floor(t / 86400),
+    hrs = Math.floor((t % 86400) / 3600),
+    mins = Math.floor((t % 3600) / 60)
   if (days) return `${days} day${days === 1 ? '' : 's'}, ${hrs} hour${hrs === 1 ? '' : 's'}`
   if (hrs) return `${hrs} hour${hrs === 1 ? '' : 's'}, ${mins} min`
   if (t > 59) return `${mins} min, ${t % 60} sec`
@@ -28,26 +38,54 @@ function current(i: Info) {
   return i.leds.pwr > 0 ? formatCurrent(i.leds.pwr) : 'Not calculated'
 }
 
-const chip = (t: number) => ({ 2: 'ESP32', 32: 'ESP32', 3: 'ESP32-S2', 33: 'ESP32-S2', 4: 'ESP32-S3', 34: 'ESP32-S3', 5: 'ESP32-C3', 35: 'ESP32-C3', 39: 'ESP32-C6', 40: 'ESP32-C61', 41: 'ESP32-C5', 42: 'ESP32-P4', 43: 'ESP32-P4', 1: 'ESP8266', 82: 'ESP8266' } as Record<number, string>)[t] ?? '?'
+const chip = (t: number) =>
+  (
+    ({
+      2: 'ESP32',
+      32: 'ESP32',
+      3: 'ESP32-S2',
+      33: 'ESP32-S2',
+      4: 'ESP32-S3',
+      34: 'ESP32-S3',
+      5: 'ESP32-C3',
+      35: 'ESP32-C3',
+      39: 'ESP32-C6',
+      40: 'ESP32-C61',
+      41: 'ESP32-C5',
+      42: 'ESP32-P4',
+      43: 'ESP32-P4',
+      1: 'ESP8266',
+      82: 'ESP8266',
+    }) as Record<number, string>
+  )[t] ?? '?'
 
 export function MoreSheet() {
   const sheet = useUi((s) => s.sheet)
   const setSheet = useUi((s) => s.setSheet)
   const wide = useMedia(WIDE)
 
-  useEffect(() => { if (sheet) refresh() }, [sheet])
+  useEffect(() => {
+    if (sheet) refresh()
+  }, [sheet])
 
   // a drawer from the right on wide screens and from the bottom on phones, closed by swiping it back (or with
   // the X, Escape or a tap outside). Touch swipes work anywhere on it. The handle shows on phones only, like
   // shadcn's example.
   return (
-    <Drawer open={sheet === 'more'} onOpenChange={(open) => setSheet(open ? 'more' : null)}
-      swipeDirection={wide ? 'right' : 'down'} showSwipeHandle={!wide}>
+    <Drawer
+      open={sheet === 'more'}
+      onOpenChange={(open) => setSheet(open ? 'more' : null)}
+      swipeDirection={wide ? 'right' : 'down'}
+      showSwipeHandle={!wide}
+    >
       <DrawerContent>
         <DrawerHeader className="flex-row items-center justify-between pb-3 text-left">
           <DrawerTitle>More</DrawerTitle>
           <DrawerDescription className="sr-only">Timer, sync, device info and other devices</DrawerDescription>
-          <DrawerClose render={<UiButton variant="ghost" size="icon-sm" />}><XIcon /><span className="sr-only">Close</span></DrawerClose>
+          <DrawerClose render={<UiButton variant="ghost" size="icon-sm" />}>
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DrawerClose>
         </DrawerHeader>
         <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <TimerSync />
@@ -76,21 +114,47 @@ function TimerSync() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="font-medium">Timer</div>
-          <div className="text-xs text-muted-foreground">{nl.on && nl.rem > 0 ? `${Math.ceil(nl.rem / 60)} min remaining` : 'Nightlight: fade or switch after a delay'}</div>
+          <div className="text-xs text-muted-foreground">
+            {nl.on && nl.rem > 0
+              ? `${Math.ceil(nl.rem / 60)} min remaining`
+              : 'Nightlight: fade or switch after a delay'}
+          </div>
         </div>
         <Switch on={nl.on} label="Timer" onChange={toggleTimer} />
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Field label="Mode">
-          <NativeSelect className="w-full" value={nl.mode} onChange={(e) => send({ nl: { mode: Number(e.target.value) } })}>
-            {['Instant', 'Fade', 'Color fade', 'Sunrise'].map((n, i) => <option key={i} value={i}>{n}</option>)}
+          <NativeSelect
+            className="w-full"
+            value={nl.mode}
+            onChange={(e) => send({ nl: { mode: Number(e.target.value) } })}
+          >
+            {['Instant', 'Fade', 'Color fade', 'Sunrise'].map((n, i) => (
+              <option key={i} value={i}>
+                {n}
+              </option>
+            ))}
           </NativeSelect>
         </Field>
         <Field label="Duration">
-          <UnitInput unit="min" inputClassName="font-mono" inputMode="numeric" aria-label="Timer duration in minutes" value={dur} onChange={(e) => setDur(e.target.value)} onBlur={() => commitNum('dur', dur, 1, 255)} />
+          <UnitInput
+            unit="min"
+            inputClassName="font-mono"
+            inputMode="numeric"
+            aria-label="Timer duration in minutes"
+            value={dur}
+            onChange={(e) => setDur(e.target.value)}
+            onBlur={() => commitNum('dur', dur, 1, 255)}
+          />
         </Field>
         <Field label="Target brightness">
-          <input className={cx(inputCls, 'font-mono')} inputMode="numeric" value={tbri} onChange={(e) => setTbri(e.target.value)} onBlur={() => commitNum('tbri', tbri, 0, 255)} />
+          <input
+            className={cx(inputCls, 'font-mono')}
+            inputMode="numeric"
+            value={tbri}
+            onChange={(e) => setTbri(e.target.value)}
+            onBlur={() => commitNum('tbri', tbri, 0, 255)}
+          />
         </Field>
       </div>
       <div className="flex items-center justify-between gap-3">
@@ -127,20 +191,34 @@ function DeviceInfo() {
   const usermods = Object.entries(i.u ?? {})
   return (
     <section className="flex flex-col gap-3">
-      <SectionTitle right={<span className="font-mono text-[11px] text-muted-foreground">v{i.ver} “{i.cn ?? 'Kuuhaku'}”</span>}>Device</SectionTitle>
+      <SectionTitle
+        right={
+          <span className="font-mono text-[11px] text-muted-foreground">
+            v{i.ver} “{i.cn ?? 'Kuuhaku'}”
+          </span>
+        }
+      >
+        Device
+      </SectionTitle>
       {usermods.length > 0 && (
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-border">
           {usermods.map(([k, v]) => {
             const [val, unit] = Array.isArray(v) ? v : [v, '']
             // usermods may report HTML (e.g. buttons calling requestJson), as the stock UI renders it
-            return <Row key={k} k={k}><span className="info-html" dangerouslySetInnerHTML={{ __html: usermodHtml(`${val}${unit ?? ''}`) }} /></Row>
+            return (
+              <Row key={k} k={k}>
+                <span className="info-html" dangerouslySetInnerHTML={{ __html: usermodHtml(`${val}${unit ?? ''}`) }} />
+              </Row>
+            )
           })}
         </div>
       )}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-border">
         {i.release && <Row k="Release">{i.release}</Row>}
         <Row k="Build">{i.vid}</Row>
-        <Row k="Signal strength">{i.wifi.signal}% ({i.wifi.rssi} dBm)</Row>
+        <Row k="Signal strength">
+          {i.wifi.signal}% ({i.wifi.rssi} dBm)
+        </Row>
         <Row k="Uptime">{runtime(i.uptime)}</Row>
         <Row k="Time">{i.time}</Row>
         <Row k="Free heap">{(i.freeheap / 1024).toFixed(1)} kB</Row>
@@ -152,21 +230,49 @@ function DeviceInfo() {
         <Row k="IP address">{i.ip || '—'}</Row>
         <Row k="CPU clock">{i.clock} MHz</Row>
         <Row k="Flash size">{i.flash} MB</Row>
-        <Row k="Filesystem">{i.fs.u}/{i.fs.t} kB ({Math.round((i.fs.u * 100) / i.fs.t)}%)</Row>
-        <Row k="Environment">{i.arch} {i.core}{i.lwip ? ` (${i.lwip})` : ''}</Row>
-        {i.repo && <Row k="GitHub"><a href={`https://github.com/${i.repo}`} target="_blank" rel="noopener noreferrer">{i.repo}</a></Row>}
+        <Row k="Filesystem">
+          {i.fs.u}/{i.fs.t} kB ({Math.round((i.fs.u * 100) / i.fs.t)}%)
+        </Row>
+        <Row k="Environment">
+          {i.arch} {i.core}
+          {i.lwip ? ` (${i.lwip})` : ''}
+        </Row>
+        {i.repo && (
+          <Row k="GitHub">
+            <a href={`https://github.com/${i.repo}`} target="_blank" rel="noopener noreferrer">
+              {i.repo}
+            </a>
+          </Row>
+        )}
       </div>
       {(i.opt & 0x100) !== 0 && (
-        <Check checked={(i.opt & 0x80) !== 0} onChange={(debug) => send({ debug })}>Network debug output</Check>
+        <Check checked={(i.opt & 0x80) !== 0} onChange={(debug) => send({ debug })}>
+          Network debug output
+        </Check>
       )}
       <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => refresh()}>Refresh</Button>
-        {(i.opt & 1) !== 0 && <UiButton variant="outline" size="lg" className="flex-1" nativeButton={false} render={<a href="#settings/update" onClick={() => useUi.getState().setSheet(null)} />}>Update WLED</UiButton>}
+        <Button className="flex-1" onClick={() => refresh()}>
+          Refresh
+        </Button>
+        {(i.opt & 1) !== 0 && (
+          <UiButton
+            variant="outline"
+            size="lg"
+            className="flex-1"
+            nativeButton={false}
+            render={<a href="#settings/update" onClick={() => useUi.getState().setSheet(null)} />}
+          >
+            Update WLED
+          </UiButton>
+        )}
         <Button
           className="flex-1"
           variant={confirmReboot ? 'danger' : 'default'}
           onBlur={() => setConfirmReboot(false)}
-          onClick={() => { if (confirmReboot) location.href = '/reset'; else setConfirmReboot(true) }}
+          onClick={() => {
+            if (confirmReboot) location.href = '/reset'
+            else setConfirmReboot(true)
+          }}
         >
           {confirmReboot ? 'Confirm reboot' : 'Reboot'}
         </Button>
@@ -178,11 +284,23 @@ function DeviceInfo() {
 function Nodes() {
   const info = useStore((s) => s.info)
   const nodes = useStore((s) => s.nodes)
-  useEffect(() => { if ((info?.ndc ?? -1) >= 0) loadNodes() }, [info?.ndc])
+  useEffect(() => {
+    if ((info?.ndc ?? -1) >= 0) loadNodes()
+  }, [info?.ndc])
   if (!info) return null
   return (
     <section className="flex flex-col gap-2">
-      <SectionTitle right={info.ndc >= 0 && <Button size="sm" variant="ghost" onClick={loadNodes}>Refresh</Button>}>Other WLEDs on this network</SectionTitle>
+      <SectionTitle
+        right={
+          info.ndc >= 0 && (
+            <Button size="sm" variant="ghost" onClick={loadNodes}>
+              Refresh
+            </Button>
+          )
+        }
+      >
+        Other WLEDs on this network
+      </SectionTitle>
       {info.ndc < 0 ? (
         <p className="m-0 text-[13px] text-muted-foreground">Instance list is disabled in settings.</p>
       ) : !nodes?.length ? (
@@ -203,13 +321,17 @@ function NodeRow({ node }: { node: Node }) {
       const res = await fetch(`http://${node.ip}/win&T=2`)
       const xml = new DOMParser().parseFromString(await res.text(), 'text/xml')
       setOn(xml.getElementsByTagName('ac')[0]?.textContent !== '0')
-    } catch { setOn(!on) }
+    } catch {
+      setOn(!on)
+    }
   }
   return (
     <div className="flex min-h-12 items-center gap-3 rounded-lg border px-3">
       <a href={`http://${node.ip}`} className="min-w-0 flex-1 py-2 text-fg no-underline">
         <div className="truncate">{node.name === 'WLED' ? node.ip : node.name}</div>
-        <div className="truncate font-mono text-[11px] text-muted-foreground">{node.ip} · {chip(node.type & 0x7f)} · {node.vid || 'N/A'}</div>
+        <div className="truncate font-mono text-[11px] text-muted-foreground">
+          {node.ip} · {chip(node.type & 0x7f)} · {node.vid || 'N/A'}
+        </div>
       </a>
       {canToggle && <Switch on={on} label={`Power ${node.name}`} onChange={toggle} />}
     </div>
@@ -217,11 +339,18 @@ function NodeRow({ node }: { node: Node }) {
 }
 
 function Links() {
-  const links: [string, string][] = [['#settings', 'Settings'], ['/edit', 'File editor'], ['/cpal.htm', 'Custom palettes'], ['/pixelforge.htm', 'PixelForge']]
+  const links: [string, string][] = [
+    ['#settings', 'Settings'],
+    ['/edit', 'File editor'],
+    ['#palettes', 'Custom palettes'],
+    ['/pixelforge.htm', 'PixelForge'],
+  ]
   return (
     <section className="grid grid-cols-2 gap-2">
       {links.map(([href, label]) => (
-        <UiButton key={href} variant="outline" size="lg" nativeButton={false} render={<a href={href} />}>{label}</UiButton>
+        <UiButton key={href} variant="outline" size="lg" nativeButton={false} render={<a href={href} />}>
+          {label}
+        </UiButton>
       ))}
     </section>
   )

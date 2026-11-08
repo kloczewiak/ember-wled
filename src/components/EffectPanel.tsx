@@ -37,10 +37,14 @@ export function EffectList({ className }: { className?: string }) {
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<string[]>([])
 
-  const withMeta = useMemo(() => effects.map((e) => {
-    const m = parseFxMeta(e.id, fxdata[e.id])
-    return { ...e, flags: m.flags, usesPalette: m.usesPalette, tags: tags(m.flags, m.usesPalette) }
-  }), [effects, fxdata])
+  const withMeta = useMemo(
+    () =>
+      effects.map((e) => {
+        const m = parseFxMeta(e.id, fxdata[e.id])
+        return { ...e, flags: m.flags, usesPalette: m.usesPalette, tags: tags(m.flags, m.usesPalette) }
+      }),
+    [effects, fxdata],
+  )
 
   const selected = main?.fx ?? 0
   // effects that can't run on the selected segments are hidden, as in the stock UI
@@ -65,10 +69,19 @@ export function EffectList({ className }: { className?: string }) {
 
   return (
     <div className={cx('flex min-h-0 flex-col gap-3', className)}>
-      <SearchField value={query} onChange={(q) => { setQuery(q); if (q) setFilters([]) }} placeholder={`Search ${effects.length} effects`} />
+      <SearchField
+        value={query}
+        onChange={(q) => {
+          setQuery(q)
+          if (q) setFilters([])
+        }}
+        placeholder={`Search ${effects.length} effects`}
+      />
       <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
         {FILTERS.filter((f) => f.flag !== '2' || isMatrix).map((f) => (
-          <Chip key={f.flag} on={filters.includes(f.flag)} onClick={() => toggleFilter(f.flag)} title={f.title}>{f.label}</Chip>
+          <Chip key={f.flag} on={filters.includes(f.flag)} onClick={() => toggleFilter(f.flag)} title={f.title}>
+            {f.label}
+          </Chip>
         ))}
       </div>
       <div
@@ -91,7 +104,11 @@ export function EffectList({ className }: { className?: string }) {
             >
               <span className="truncate">{e.name}</span>
               <span className="flex shrink-0 gap-1">
-                {e.tags.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
+                {e.tags.map((t) => (
+                  <Badge key={t} variant="outline">
+                    {t}
+                  </Badge>
+                ))}
               </span>
             </Button>
           )
@@ -111,19 +128,33 @@ export function EffectParams({ className }: { className?: string }) {
     <div className={cx('flex flex-col gap-3', className)}>
       {/* the effect's name is the card title; its options sit on the right like other cards' buttons, and
           those that don't fit wrap below it, starting at the left */}
-      <SectionTitle wrap right={meta.options.map((o) => (
-        <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>{o.label}</Chip>
-      ))}>
+      <SectionTitle
+        wrap
+        right={meta.options.map((o) => (
+          <Chip key={o.key} on={main[o.key]} onClick={() => send({ seg: { [o.key]: !main[o.key] } })}>
+            {o.label}
+          </Chip>
+        ))}
+      >
         {name ?? 'Effect'}
       </SectionTitle>
       {meta.sliders.length > 0 && (
         <div className={sliderGridCls}>
           {meta.sliders.map((s) => (
-            <LabeledSlider key={s.key} grouped label={s.label} value={main[s.key]} max={s.max} onCommit={(v) => send({ seg: { [s.key]: v } })} />
+            <LabeledSlider
+              key={s.key}
+              grouped
+              label={s.label}
+              value={main[s.key]}
+              max={s.max}
+              onCommit={(v) => send({ seg: { [s.key]: v } })}
+            />
           ))}
         </div>
       )}
-      {!meta.sliders.length && !meta.options.length && <p className="m-0 text-[13px] text-muted-foreground">This effect has no settings.</p>}
+      {!meta.sliders.length && !meta.options.length && (
+        <p className="m-0 text-[13px] text-muted-foreground">This effect has no settings.</p>
+      )}
     </div>
   )
 }
@@ -133,10 +164,14 @@ export function EffectPanel({ className }: { className?: string }) {
   return (
     <div className={cx('flex min-h-0 flex-col gap-4', className)}>
       <Card className="min-h-0 flex-1">
-        <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>Effect</SectionTitle>
+        <SectionTitle right={<span className="text-xs text-muted-foreground">{count} effects</span>}>
+          Effect
+        </SectionTitle>
         <EffectList className="flex-1" />
       </Card>
-      <Card className="shrink-0"><EffectParams /></Card>
+      <Card className="shrink-0">
+        <EffectParams />
+      </Card>
     </div>
   )
 }

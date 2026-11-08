@@ -3,7 +3,25 @@ import { useMedia, WIDE } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Bolt, Power, ChevronRight, Clock, Download, ExternalLink, Grid3x3, Layers, Lightbulb, Lock, Palette, Puzzle, RefreshCw, Wifi, type LucideIcon } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bolt,
+  CircleDot,
+  Power,
+  ChevronRight,
+  Clock,
+  Download,
+  ExternalLink,
+  Grid3x3,
+  Layers,
+  Lightbulb,
+  Lock,
+  Palette,
+  Puzzle,
+  RefreshCw,
+  Wifi,
+  type LucideIcon,
+} from 'lucide-react'
 import { useStore } from '../store'
 import { refreshCfg, useCfg } from './config'
 import { confirmLeave, SaveBarSlot } from './shared'
@@ -15,12 +33,20 @@ import { SecSettings } from './SecSettings'
 import { PinInfo } from './PinInfo'
 import { FirmwareUpdate } from './FirmwareUpdate'
 import { LedSettings } from './LedSettings'
+import { ButtonSettings } from './ButtonSettings'
 import { DefaultsSettings } from './DefaultsSettings'
 
 // The settings screen: #settings is the menu, #settings/<page> a page. Pages built here open in the app;
 // the rest link to the firmware's own settings pages until they are rebuilt.
 
-type Page = { id: string; title: string; icon: LucideIcon; render?: () => ReactNode; href?: string; show?: (b: Build) => boolean }
+type Page = {
+  id: string
+  title: string
+  icon: LucideIcon
+  render?: () => ReactNode
+  href?: string
+  show?: (b: Build) => boolean
+}
 type Build = { dmx: boolean; ota: boolean }
 
 const PAGES: Page[] = [
@@ -29,6 +55,7 @@ const PAGES: Page[] = [
   { id: 'sync', title: 'Sync interfaces', icon: RefreshCw, render: () => <SyncSettings /> },
   { id: 'time', title: 'Time and macros', icon: Clock, render: () => <TimeSettings /> },
   { id: 'leds', title: 'LED and hardware', icon: Lightbulb, render: () => <LedSettings /> },
+  { id: 'buttons', title: 'Buttons', icon: CircleDot, render: () => <ButtonSettings /> },
   { id: 'defaults', title: 'Defaults', icon: Power, render: () => <DefaultsSettings /> },
   { id: 'pins', title: 'Pin info', icon: Bolt, render: () => <PinInfo /> },
   // listed on every build: whether 2D is compiled in is only exposed by the settings script (see PARITY.md)
@@ -53,14 +80,43 @@ function Menu({ build, current }: { build: Build; current?: string }) {
       <>
         <Icon className={cx('size-4', p.render ? 'text-primary' : 'text-muted-foreground')} aria-hidden />
         <span className="flex-1 text-left">{p.title}</span>
-        {p.render ? <ChevronRight className="size-4 text-muted-foreground" aria-hidden /> : <ExternalLink className="size-4 text-muted-foreground" aria-hidden />}
+        {p.render ? (
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        ) : (
+          <ExternalLink className="size-4 text-muted-foreground" aria-hidden />
+        )}
       </>
     )
-    return p.render
-      ? <Button key={p.id} variant={active ? 'secondary' : 'ghost'} size="lg" className="h-10 w-full justify-start rounded-full font-normal" aria-current={active ? 'page' : undefined}
-          onClick={() => go(`#settings/${p.id}`)}>{inner}</Button>
-      : <Button key={p.id} variant="ghost" size="lg" className="h-10 w-full justify-start rounded-full font-normal" nativeButton={false}
-          render={<a href={p.href} onClick={(e) => { if (!confirmLeave()) e.preventDefault() }} />}>{inner}</Button>
+    return p.render ? (
+      <Button
+        key={p.id}
+        variant={active ? 'secondary' : 'ghost'}
+        size="lg"
+        className="h-10 w-full justify-start rounded-full font-normal"
+        aria-current={active ? 'page' : undefined}
+        onClick={() => go(`#settings/${p.id}`)}
+      >
+        {inner}
+      </Button>
+    ) : (
+      <Button
+        key={p.id}
+        variant="ghost"
+        size="lg"
+        className="h-10 w-full justify-start rounded-full font-normal"
+        nativeButton={false}
+        render={
+          <a
+            href={p.href}
+            onClick={(e) => {
+              if (!confirmLeave()) e.preventDefault()
+            }}
+          />
+        }
+      >
+        {inner}
+      </Button>
+    )
   }
   return (
     <div className="flex flex-col gap-3">
@@ -75,9 +131,14 @@ export function SettingsScreen({ route }: { route: string }) {
   const wide = useMedia(WIDE)
   // the config only has a dmx section on builds with DMX output
   // and the info says whether it can be updated over the network (OTA)
-  const build: Build = { dmx: useCfg((s) => s.cfg?.dmx !== undefined), ota: useStore((s) => !s.info || (s.info.opt & 0x01) !== 0) }
+  const build: Build = {
+    dmx: useCfg((s) => s.cfg?.dmx !== undefined),
+    ota: useStore((s) => !s.info || (s.info.opt & 0x01) !== 0),
+  }
   // loaded when settings open (shared with the pages, which refresh it in the background)
-  useEffect(() => { refreshCfg() }, [])
+  useEffect(() => {
+    refreshCfg()
+  }, [])
   const page = PAGES.find((p) => p.render && p.id === route)
   const title = page?.title ?? 'Settings'
   // back goes from a page to the menu (on phones) and from the menu to the controls
@@ -88,7 +149,14 @@ export function SettingsScreen({ route }: { route: string }) {
   return (
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-center gap-2 px-4 pt-2.5 pb-1">
-        <Button variant="ghost" size="icon" aria-label={page && !wide ? 'Back to settings' : 'Back to controls'} onClick={back}><ArrowLeft /></Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={page && !wide ? 'Back to settings' : 'Back to controls'}
+          onClick={back}
+        >
+          <ArrowLeft />
+        </Button>
         <h1 className="m-0 text-[15px] font-semibold">{wide ? 'Settings' : title}</h1>
       </header>
       {/* One tree for both layouts, with only the classes changing, so crossing the breakpoint (resizing, rotating
@@ -96,24 +164,54 @@ export function SettingsScreen({ route }: { route: string }) {
           Wide: the menu on the left and only the page scrolling, below its title, like the columns of the main
           desktop layout (p-px keeps the cards' outline ring from being clipped by the scroll area).
           Phones: the menu or a page, with the page's save bar in a footer below its scroll area. */}
-      <div className={wide ? 'mx-auto grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[260px_minmax(0,1fr)] gap-6 px-4 pt-2' : 'flex min-h-0 flex-1 flex-col'}>
-        {wide && <nav aria-label="Settings pages"><Menu build={build} current={page?.id} /></nav>}
+      <div
+        className={
+          wide
+            ? 'mx-auto grid min-h-0 w-full max-w-5xl flex-1 grid-cols-[260px_minmax(0,1fr)] gap-6 px-4 pt-2'
+            : 'flex min-h-0 flex-1 flex-col'
+        }
+      >
+        {wide && (
+          <nav aria-label="Settings pages">
+            <Menu build={build} current={page?.id} />
+          </nav>
+        )}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {wide && page && <h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>}
           {/* a new scroll area for each view, so every page opens at the top: sharing one kept the page's scroll
               position (and iOS's momentum) when going back, leaving the shorter menu scrolled past its end */}
-          <div key={page?.id ?? 'menu'} className={cx('scroll-thin min-h-0 flex-1 overflow-y-auto', wide && 'rounded-xl p-px pb-4')}>
+          <div
+            key={page?.id ?? 'menu'}
+            className={cx('scroll-thin min-h-0 flex-1 overflow-y-auto', wide && 'rounded-xl p-px pb-4')}
+          >
             {/* on phones the menu's bottom padding keeps its end clear of the home indicator; on a page the footer
                 does that */}
-            <div className={wide ? undefined : cx('mx-auto max-w-2xl px-4 pt-2', page ? 'pb-4' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]')}>
-              {page
-                ? <main className="min-w-0"><SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider></main>
-                : wide
-                  ? <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>
-                  : <nav aria-label="Settings pages"><Menu build={build} current={page} /></nav>}
+            <div
+              className={
+                wide
+                  ? undefined
+                  : cx('mx-auto max-w-2xl px-4 pt-2', page ? 'pb-4' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]')
+              }
+            >
+              {page ? (
+                <main className="min-w-0">
+                  <SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider>
+                </main>
+              ) : wide ? (
+                <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>
+              ) : (
+                <nav aria-label="Settings pages">
+                  <Menu build={build} current={page} />
+                </nav>
+              )}
             </div>
           </div>
-          {!wide && page && <div ref={setFooter} className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] empty:hidden" />}
+          {!wide && page && (
+            <div
+              ref={setFooter}
+              className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] empty:hidden"
+            />
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { SegmentsPanel } from './components/SegmentsPanel'
 import { PresetsPanel } from './components/PresetsPanel'
 import { MoreSheet } from './components/MoreSheet'
 import { SettingsScreen } from './settings/SettingsScreen'
+import { PalettesScreen } from './palettes/PalettesScreen'
 import { Card, cx } from './components/controls'
 import { Toaster } from '@/components/ui/toast'
 
@@ -25,19 +26,36 @@ export default function App() {
   const wide = useMedia(WIDE)
   const hash = useHash()
   const settings = /^#settings(\/|$)/.test(hash)
+  const palettes = hash === '#palettes'
 
-  useEffect(() => { init() }, [])
+  useEffect(() => {
+    init()
+  }, [])
   useAccuratePeek()
   // opening settings from the More sheet: don't leave the sheet open to reappear on the way back
-  useEffect(() => { if (settings) useUi.getState().setSheet(null) }, [settings])
+  useEffect(() => {
+    if (settings || palettes) useUi.getState().setSheet(null)
+  }, [settings, palettes])
 
   if (!ready) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
         <span className={cx('size-3 rounded-full', conn === 'error' ? 'bg-danger' : 'animate-pulse bg-primary')} />
-        <p className="m-0 text-muted-foreground">{conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}</p>
+        <p className="m-0 text-muted-foreground">
+          {conn === 'error' ? 'Could not reach WLED. Retrying…' : 'Connecting to WLED…'}
+        </p>
         <Toasts />
       </div>
+    )
+  }
+
+  // #palettes is the custom palette editor
+  if (palettes) {
+    return (
+      <>
+        <PalettesScreen />
+        <Toasts />
+      </>
     )
   }
 
@@ -58,13 +76,29 @@ export default function App() {
           <Header wide />
           {/* vertical spacing between these comes from the gap, not from their own padding */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 pt-4">
-            {peek && <div className="px-4"><LivePreview /></div>}
+            {peek && (
+              <div className="px-4">
+                <LivePreview />
+              </div>
+            )}
             <RealtimeBanner />
             <DesktopLayout />
           </div>
         </>
       ) : (
-        <PhoneLayout top={<><Header wide={false} />{peek && <div className="px-4"><LivePreview className="mx-auto max-w-2xl" /></div>}<RealtimeBanner /></>} />
+        <PhoneLayout
+          top={
+            <>
+              <Header wide={false} />
+              {peek && (
+                <div className="px-4">
+                  <LivePreview className="mx-auto max-w-2xl" />
+                </div>
+              )}
+              <RealtimeBanner />
+            </>
+          }
+        />
       )}
       <MoreSheet />
       <Toasts behindTabBar={!wide} />
@@ -80,8 +114,12 @@ function useRoomBelowFirst(col: HTMLElement | null, min: number) {
     const first = col.firstElementChild
     const check = () => {
       const s = getComputedStyle(col)
-      const room = col.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom) - parseFloat(s.rowGap)
-        - (first?.getBoundingClientRect().height ?? 0)
+      const room =
+        col.clientHeight -
+        parseFloat(s.paddingTop) -
+        parseFloat(s.paddingBottom) -
+        parseFloat(s.rowGap) -
+        (first?.getBoundingClientRect().height ?? 0)
       setRoomy(room >= min)
     }
     const ro = new ResizeObserver(check)
@@ -125,10 +163,23 @@ function PhoneLayout({ top }: { top: ReactNode }) {
 
   const content = (
     <>
-      {tab === 'Colors' && <><ColorPanel className="shrink-0" /><PalettePanel className="shrink-0" /></>}
-      {tab === 'Effects' && (short
-        ? <><Card className="shrink-0"><EffectParams /></Card><EffectList /></>
-        : <EffectList className="flex-1" />)}
+      {tab === 'Colors' && (
+        <>
+          <ColorPanel className="shrink-0" />
+          <PalettePanel className="shrink-0" />
+        </>
+      )}
+      {tab === 'Effects' &&
+        (short ? (
+          <>
+            <Card className="shrink-0">
+              <EffectParams />
+            </Card>
+            <EffectList />
+          </>
+        ) : (
+          <EffectList className="flex-1" />
+        ))}
       {tab === 'Segments' && <SegmentsPanel />}
       {tab === 'Presets' && <PresetsPanel />}
     </>
@@ -156,14 +207,21 @@ function PhoneLayout({ top }: { top: ReactNode }) {
         <main key={tab} className="flex min-h-0 flex-1 flex-col px-4 pb-4">
           {/* only the Effects tab is pinned to the screen height (its list scrolls inside); the others scroll inside
               a rounded area as wide as the content column, so cards keep their rounded corners as they scroll out */}
-          <div className={cx('mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col', tab !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px')}>
+          <div
+            className={cx(
+              'mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col',
+              tab !== 'Effects' && 'scroll-thin overflow-y-auto rounded-xl p-px',
+            )}
+          >
             <div className={cx('flex flex-col gap-4', tab === 'Effects' && 'h-full')}>{content}</div>
           </div>
         </main>
       </div>
       {tab === 'Effects' && (
         <section aria-label="Effect settings" className="shrink-0 px-4 pb-4">
-          <Card className="mx-auto max-w-2xl"><EffectParams /></Card>
+          <Card className="mx-auto max-w-2xl">
+            <EffectParams />
+          </Card>
         </section>
       )}
       <TabBar tab={tab} />
@@ -173,13 +231,19 @@ function PhoneLayout({ top }: { top: ReactNode }) {
 
 function TabBar({ tab }: { tab: Tab }) {
   return (
-    <nav aria-label="Sections" className="grid shrink-0 grid-cols-4 border-t bg-background pb-[max(4px,env(safe-area-inset-bottom))]">
+    <nav
+      aria-label="Sections"
+      className="grid shrink-0 grid-cols-4 border-t bg-background pb-[max(4px,env(safe-area-inset-bottom))]"
+    >
       {TABS.map((t) => (
         <a
           key={t}
           href={`#${t}`}
           aria-current={t === tab ? 'page' : undefined}
-          className={cx('flex h-11 flex-col items-center justify-center gap-1 text-xs font-medium no-underline', t === tab ? 'text-fg' : 'text-muted-foreground')}
+          className={cx(
+            'flex h-11 flex-col items-center justify-center gap-1 text-xs font-medium no-underline',
+            t === tab ? 'text-fg' : 'text-muted-foreground',
+          )}
         >
           <span className={cx('h-1 w-9 rounded-full', t === tab ? 'bg-primary' : 'bg-transparent')} />
           {t === 'Colors' ? 'Color' : t}
@@ -197,9 +261,11 @@ function Toasts({ behindTabBar = false }: { behindTabBar?: boolean }) {
   return (
     <Toaster
       limit={3}
-      viewportClassName={behindTabBar
-        ? 'bottom-[calc(2.75rem+1px+max(4px,env(safe-area-inset-bottom)))] [clip-path:inset(-100vh_-100vw_0_-100vw)] [--toast-inset:1rem] [--toast-fade:1]'
-        : 'max-[1099px]:bottom-[calc(3.75rem+max(4px,env(safe-area-inset-bottom)))]'}
+      viewportClassName={
+        behindTabBar
+          ? 'bottom-[calc(2.75rem+1px+max(4px,env(safe-area-inset-bottom)))] [clip-path:inset(-100vh_-100vw_0_-100vw)] [--toast-inset:1rem] [--toast-fade:1]'
+          : 'max-[1099px]:bottom-[calc(3.75rem+max(4px,env(safe-area-inset-bottom)))]'
+      }
     />
   )
 }

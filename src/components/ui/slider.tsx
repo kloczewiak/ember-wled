@@ -1,5 +1,5 @@
-import { Slider as SliderPrimitive } from "@base-ui/react/slider"
-import { cn } from "cn"
+import { Slider as SliderPrimitive } from '@base-ui/react/slider'
+import { cn } from 'cn'
 
 function Slider({
   className,
@@ -13,15 +13,11 @@ function Slider({
   /** custom track background (e.g. a hue gradient); hides the filled range */
   trackStyle?: React.CSSProperties
 }) {
-  const _values = Array.isArray(value)
-    ? value
-    : Array.isArray(defaultValue)
-      ? defaultValue
-      : [min, max]
+  const _values = Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]
 
   return (
     <SliderPrimitive.Root
-      className={cn("data-horizontal:w-full data-vertical:h-full", className)}
+      className={cn('data-horizontal:w-full data-vertical:h-full', className)}
       data-slot="slider"
       defaultValue={defaultValue}
       value={value}
@@ -37,10 +33,12 @@ function Slider({
           data-slot="slider-track"
           className="relative grow overflow-hidden rounded-2xl bg-input/90 select-none data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
         >
-          {!trackStyle && <SliderPrimitive.Indicator
-            data-slot="slider-range"
-            className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
-          />}
+          {!trackStyle && (
+            <SliderPrimitive.Indicator
+              data-slot="slider-range"
+              className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+            />
+          )}
         </SliderPrimitive.Track>
         {Array.from({ length: _values.length }, (_, index) => (
           <SliderPrimitive.Thumb

@@ -11,7 +11,10 @@ const L_MAX = 0.85
 
 // sRGB (0-255) to OKLCH (Björn Ottosson's OKLab)
 function oklch({ r, g, b }: RGB) {
-  const lin = (v: number) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }
+  const lin = (v: number) => {
+    v /= 255
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }
   const [lr, lg, lb] = [lin(r), lin(g), lin(b)]
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb)
   const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb)
@@ -31,14 +34,18 @@ export function accentVars(rgb: RGB) {
     // dark text on light accents (like the default orange's), white on the rest
     foreground: l >= 0.72 ? `oklch(0.189 0.026 ${f(H)})` : 'oklch(0.985 0 0)',
     // how the colour shown differs from the one picked
-    adjusted: Math.abs(l - L) < 0.005 ? null : l > L ? 'lighter' as const : 'darker' as const,
+    adjusted: Math.abs(l - L) < 0.005 ? null : l > L ? ('lighter' as const) : ('darker' as const),
   }
 }
 
 // Sets the accent on the page; the default leaves index.css's own values.
 export function applyAccent(rgb: RGB | null) {
   const s = document.documentElement.style
-  if (!rgb) { s.removeProperty('--primary'); s.removeProperty('--primary-foreground'); return }
+  if (!rgb) {
+    s.removeProperty('--primary')
+    s.removeProperty('--primary-foreground')
+    return
+  }
   const v = accentVars(rgb)
   s.setProperty('--primary', v.primary)
   s.setProperty('--primary-foreground', v.foreground)

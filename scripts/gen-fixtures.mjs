@@ -13,7 +13,9 @@ const fxcpp = readFileSync(resolve(src, 'FX.cpp'), 'utf8')
 const fxfcn = readFileSync(resolve(src, 'FX_fcn.cpp'), 'utf8')
 
 const ids = Object.fromEntries([...fxh.matchAll(/#define (FX_MODE_\w+)\s+(\d+)/g)].map((m) => [m[1], Number(m[2])]))
-const data = Object.fromEntries([...fxcpp.matchAll(/static const char (_data_\w+)\[\] PROGMEM = "((?:[^"\\]|\\.)*)"/g)].map((m) => [m[1], m[2]]))
+const data = Object.fromEntries(
+  [...fxcpp.matchAll(/static const char (_data_\w+)\[\] PROGMEM = "((?:[^"\\]|\\.)*)"/g)].map((m) => [m[1], m[2]]),
+)
 
 const modes = []
 for (const m of fxcpp.matchAll(/addEffect\((FX_MODE_\w+),\s*&?\w+,\s*(_data_\w+)\)/g)) {

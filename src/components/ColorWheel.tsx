@@ -2,7 +2,12 @@ import { useRef } from 'react'
 import { hsvToRgb, rgbCss, type HSV } from '../lib/color'
 
 // Hue around the circle (red at the top, clockwise), saturation from the centre outwards. Value is a separate slider.
-export function ColorWheel({ hsv, size, onChange, onCommit }: {
+export function ColorWheel({
+  hsv,
+  size,
+  onChange,
+  onCommit,
+}: {
   hsv: HSV
   size: number
   onChange: (hsv: HSV) => void
@@ -52,16 +57,26 @@ export function ColorWheel({ hsv, size, onChange, onCommit }: {
       style={{
         width: size,
         height: size,
-        background: 'radial-gradient(closest-side, #fff, rgba(255,255,255,0)), conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
+        background:
+          'radial-gradient(closest-side, #fff, rgba(255,255,255,0)), conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)',
       }}
-      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e) }}
-      onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e) }}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId)
+        pick(e)
+      }}
+      onPointerMove={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e)
+      }}
       onPointerUp={() => onCommit(last.current)}
       onKeyDown={onKey}
     >
       <div
         className="pointer-events-none absolute size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-[0_1px_6px_rgba(0,0,0,.6)]"
-        style={{ left: size / 2 + Math.cos(rad) * dist, top: size / 2 + Math.sin(rad) * dist, background: rgbCss(marker) }}
+        style={{
+          left: size / 2 + Math.cos(rad) * dist,
+          top: size / 2 + Math.sin(rad) * dist,
+          background: rgbCss(marker),
+        }}
       />
     </div>
   )

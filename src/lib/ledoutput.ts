@@ -16,7 +16,14 @@
 
 import type { Cfg } from '../settings/api'
 
-interface Output { start: number; len: number; digital: boolean; ma: number; limit: number; white: boolean }
+interface Output {
+  start: number
+  len: number
+  digital: boolean
+  ma: number
+  limit: number
+  white: boolean
+}
 
 export interface LedModel {
   gamma: number[] | null // gamma table, null when gamma correction is off
@@ -36,7 +43,11 @@ const isDigital = (t: number) => (t >= 16 && t <= 39) || (t >= 48 && t <= 63)
 // bus_manager.h hasWhite, digital types only (analog outputs aren't quantised here anyway)
 const hasWhite = (t: number) => (t >= 18 && t <= 21) || [28, 29, 30, 31, 32, 34].includes(t)
 
-export function ledModel(cfg: Cfg, bri: number, info: { arch: string; leds: { count: number; matrix?: { w: number; h: number } } }): LedModel {
+export function ledModel(
+  cfg: Cfg,
+  bri: number,
+  info: { arch: string; leds: { count: number; matrix?: { w: number; h: number } } },
+): LedModel {
   const esp8266 = info.arch === 'esp8266'
   const espMa = esp8266 ? 80 : 120 // MA_FOR_ESP
   const gc = cfg.light?.gc?.col ?? 1
@@ -48,7 +59,12 @@ export function ledModel(cfg: Cfg, bri: number, info: { arch: string; leds: { co
   // BusManager::initializeABL
   let abl: LedModel['abl'] = 'off'
   const outputs: Output[] = ins.map((b) => ({
-    start: b.start, len: b.len, digital: isDigital(b.type), ma: b.ledma ?? 0, limit: 0, white: hasWhite(b.type),
+    start: b.start,
+    len: b.len,
+    digital: isDigital(b.type),
+    ma: b.ledma ?? 0,
+    limit: 0,
+    white: hasWhite(b.type),
   }))
   if (globalMa > 0) {
     if (outputs.some((o) => o.digital && o.ma > 0)) abl = 'global'
@@ -71,9 +87,11 @@ export function ledModel(cfg: Cfg, bri: number, info: { arch: string; leds: { co
   const total = info.leds.count
   const matrix = info.leds.matrix
   return {
-    gamma, gammaValue: gc,
+    gamma,
+    gammaValue: gc,
     bri: Math.min(255, Math.floor((bri * (cfg.light?.['scale-bri'] ?? 100)) / 100)),
-    outputs, abl,
+    outputs,
+    abl,
     globalLimit: globalMa > espMa ? globalMa - espMa : 1,
     sampleStep: matrix ? 1 : Math.floor((total - 1) / MAX_LIVE_LEDS(esp8266)) + 1,
     matrixWidth: matrix?.w ?? 0,
@@ -108,7 +126,7 @@ export function ledOutputFrame(frame: Uint8Array, m: LedModel): Uint8Array {
   for (let k = 0; k < count; k++) {
     const i = head + k * 3
     let c: [number, number, number] = [frame[i], frame[i + 1], frame[i + 2]]
-    if (m.gamma && (c[0] | c[1] | c[2])) c = c.map((v) => m.gamma![v]) as [number, number, number]
+    if (m.gamma && c[0] | c[1] | c[2]) c = c.map((v) => m.gamma![v]) as [number, number, number]
     const o = outputOf(ledIndex(k))
     const output = m.outputs[o]
     if (output?.digital) {
@@ -131,16 +149,20 @@ export function ledOutputFrame(frame: Uint8Array, m: LedModel): Uint8Array {
     if (m.abl === 'perOutput') {
       m.outputs.forEach((o, i) => {
         if (!o.digital || o.limit === 0 || used[i] === 0) return
-        if (o.limit > o.len) { if (used[i] > o.limit) limitBri[i] = Math.floor((o.limit * 255) / used[i]) + 1 }
-        else limitBri[i] = 1
+        if (o.limit > o.len) {
+          if (used[i] > o.limit) limitBri[i] = Math.floor((o.limit * 255) / used[i]) + 1
+        } else limitBri[i] = 1
       })
     } else {
       const sum = used.reduce((a, b) => a + b, 0)
       const leds = m.outputs.reduce((a, o) => a + (o.digital ? o.len : 0), 0)
       let bri = 255
-      if (m.globalLimit > leds) { if (sum > m.globalLimit) bri = Math.floor((m.globalLimit * 255) / sum) + 1 }
-      else bri = 1
-      m.outputs.forEach((o, i) => { if (o.digital && o.ma > 0) limitBri[i] = Math.min(255, bri) })
+      if (m.globalLimit > leds) {
+        if (sum > m.globalLimit) bri = Math.floor((m.globalLimit * 255) / sum) + 1
+      } else bri = 1
+      m.outputs.forEach((o, i) => {
+        if (o.digital && o.ma > 0) limitBri[i] = Math.min(255, bri)
+      })
     }
   }
 

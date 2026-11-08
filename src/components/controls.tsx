@@ -10,8 +10,27 @@ import { Slider as UiSlider } from '@/components/ui/slider'
 import { Switch as UiSwitch } from '@/components/ui/switch'
 import { Toggle } from '@/components/ui/toggle'
 import {
-  Check as CheckIcon, ChevronDown, Dices, Ellipsis, Eye, Info, List, Moon, Pencil, Play, Plus, Power, RefreshCw,
-  Repeat, Search, SlidersHorizontal, Snowflake, Square, Star, Trash2, X,
+  Check as CheckIcon,
+  ChevronDown,
+  Dices,
+  Ellipsis,
+  Eye,
+  Info,
+  List,
+  Moon,
+  Pencil,
+  Play,
+  Plus,
+  Power,
+  RefreshCw,
+  Repeat,
+  Search,
+  SlidersHorizontal,
+  Snowflake,
+  Square,
+  Star,
+  Trash2,
+  X,
 } from 'lucide-react'
 
 // The app's controls, built on the shadcn components in ./ui. Panels use these rather than the
@@ -22,7 +41,15 @@ export const cx = cn
 // A slider that shows its value while dragging and reports it once on release, like the stock UI
 // (sending every intermediate value would flood the ESP).
 export function Slider({
-  value, min = 0, max = 255, step = 1, onCommit, onInput, track, label, className,
+  value,
+  min = 0,
+  max = 255,
+  step = 1,
+  onCommit,
+  onInput,
+  track,
+  label,
+  className,
 }: {
   value: number
   min?: number
@@ -45,8 +72,15 @@ export function Slider({
       step={step}
       value={[local ?? value]}
       trackStyle={track ? { background: track } : undefined}
-      onValueChange={(v) => { const n = first(v); setLocal(n); onInput?.(n) }}
-      onValueCommitted={(v) => { setLocal(null); onCommit(first(v)) }}
+      onValueChange={(v) => {
+        const n = first(v)
+        setLocal(n)
+        onInput?.(n)
+      }}
+      onValueCommitted={(v) => {
+        setLocal(null)
+        onCommit(first(v))
+      }}
     />
   )
 }
@@ -58,15 +92,38 @@ export const sliderGridCls = 'grid grid-cols-[max-content_minmax(0,1fr)_auto] it
 
 // A slider with its label on the left and value on the right. On its own it uses fixed columns; `grouped`
 // rows use the columns of a surrounding sliderGridCls grid, and their values are up to 3 digits.
-export function LabeledSlider({ label, display, onInput, onCommit, grouped, ...props }: Parameters<typeof Slider>[0] & { display?: ReactNode; grouped?: boolean }) {
+export function LabeledSlider({
+  label,
+  display,
+  onInput,
+  onCommit,
+  grouped,
+  ...props
+}: Parameters<typeof Slider>[0] & { display?: ReactNode; grouped?: boolean }) {
   const [live, setLive] = useState<number | null>(null)
   return (
-    <div className={cn('items-center gap-3 text-xs text-muted-foreground', grouped ? 'col-span-3 grid grid-cols-subgrid' : 'grid grid-cols-[88px_1fr_52px]')}>
+    <div
+      className={cn(
+        'items-center gap-3 text-xs text-muted-foreground',
+        grouped ? 'col-span-3 grid grid-cols-subgrid' : 'grid grid-cols-[88px_1fr_52px]',
+      )}
+    >
       <span className={grouped ? undefined : 'truncate'}>{label}</span>
-      <Slider label={label} {...props}
-        onInput={(v) => { setLive(v); onInput?.(v) }}
-        onCommit={(v) => { setLive(null); onCommit(v) }} />
-      <span className={cn('text-right font-mono text-foreground', grouped && 'w-[3ch]')}>{display ?? live ?? props.value}</span>
+      <Slider
+        label={label}
+        {...props}
+        onInput={(v) => {
+          setLive(v)
+          onInput?.(v)
+        }}
+        onCommit={(v) => {
+          setLive(null)
+          onCommit(v)
+        }}
+      />
+      <span className={cn('text-right font-mono text-foreground', grouped && 'w-[3ch]')}>
+        {display ?? live ?? props.value}
+      </span>
     </div>
   )
 }
@@ -76,7 +133,11 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (on: bo
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <UiCard className={className}><CardContent className="flex min-h-0 flex-1 flex-col gap-3">{children}</CardContent></UiCard>
+  return (
+    <UiCard className={className}>
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-3">{children}</CardContent>
+    </UiCard>
+  )
 }
 
 // The title sits at the top of its card; buttons on the right hang below it rather than pushing it down.
@@ -85,7 +146,14 @@ export function Card({ children, className }: { children: ReactNode; className?:
 export function SectionTitle({ children, right, wrap }: { children: ReactNode; right?: ReactNode; wrap?: boolean }) {
   return (
     <div className={cn('flex items-start', wrap ? 'flex-wrap gap-1.5' : 'justify-between gap-2')}>
-      <h2 className={cn('m-0 font-heading text-xs font-semibold uppercase tracking-wider text-muted-foreground', wrap && 'grow pr-1')}>{children}</h2>
+      <h2
+        className={cn(
+          'm-0 font-heading text-xs font-semibold uppercase tracking-wider text-muted-foreground',
+          wrap && 'grow pr-1',
+        )}
+      >
+        {children}
+      </h2>
       {right}
     </div>
   )
@@ -100,25 +168,18 @@ const VARIANTS = { default: 'outline', primary: 'default', ghost: 'ghost', dange
 
 export function Button({ variant = 'default', size = 'md', className, ...props }: BtnProps) {
   return (
-    <UiButton
-      variant={VARIANTS[variant]}
-      size={size === 'sm' ? 'default' : 'lg'}
-      className={className}
-      {...props}
-    />
+    <UiButton variant={VARIANTS[variant]} size={size === 'sm' ? 'default' : 'lg'} className={className} {...props} />
   )
 }
 
-export function IconButton({ label, children, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+export function IconButton({
+  label,
+  children,
+  className,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return (
-    <UiButton
-      variant="outline"
-      size="icon-lg"
-      aria-label={label}
-      title={label}
-      className={className}
-      {...props}
-    >
+    <UiButton variant="outline" size="icon-lg" aria-label={label} title={label} className={className} {...props}>
       {children}
     </UiButton>
   )
@@ -129,7 +190,17 @@ export function IconButton({ label, children, className, ...props }: ButtonHTMLA
 // is hard to tell apart when several chips sit side by side.
 export const chipOnCls = 'aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground'
 
-export function Chip({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: ReactNode; title?: string }) {
+export function Chip({
+  on,
+  onClick,
+  children,
+  title,
+}: {
+  on: boolean
+  onClick: () => void
+  children: ReactNode
+  title?: string
+}) {
   return (
     <Toggle
       variant="outline"
@@ -144,7 +215,17 @@ export function Chip({ on, onClick, children, title }: { on: boolean; onClick: (
   )
 }
 
-export function Check({ checked, onChange, children, className }: { checked: boolean; onChange: (v: boolean) => void; children?: ReactNode; className?: string }) {
+export function Check({
+  checked,
+  onChange,
+  children,
+  className,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  children?: ReactNode
+  className?: string
+}) {
   return (
     <Label className={cn('min-h-8 font-normal', className)}>
       <Checkbox checked={checked} onCheckedChange={(v) => onChange(v === true)} />
@@ -155,12 +236,23 @@ export function Check({ checked, onChange, children, className }: { checked: boo
 
 // An input with its unit inside the box, after the value (or before it with `unitStart`), like the hex
 // field's "#". `className` sizes the box, `inputClassName` styles the text.
-export function UnitInput({ unit, unitStart, className, inputClassName, ...props }: Omit<ComponentProps<'input'>, 'className'> & {
-  unit: string; unitStart?: boolean; className?: string; inputClassName?: string
+export function UnitInput({
+  unit,
+  unitStart,
+  className,
+  inputClassName,
+  ...props
+}: Omit<ComponentProps<'input'>, 'className'> & {
+  unit: string
+  unitStart?: boolean
+  className?: string
+  inputClassName?: string
 }) {
   return (
     <InputGroup className={className}>
-      <InputGroupAddon align={unitStart ? 'inline-start' : 'inline-end'}><InputGroupText>{unit}</InputGroupText></InputGroupAddon>
+      <InputGroupAddon align={unitStart ? 'inline-start' : 'inline-end'}>
+        <InputGroupText>{unit}</InputGroupText>
+      </InputGroupAddon>
       <InputGroupInput className={inputClassName} {...props} />
     </InputGroup>
   )
@@ -179,7 +271,15 @@ export function Field({ label, children, className }: { label: ReactNode; childr
   )
 }
 
-export function SearchField({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+}) {
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -191,7 +291,11 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
         className="pr-9 pl-9"
       />
       {value && (
-        <button aria-label="Clear search" onClick={() => onChange('')} className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+        <button
+          aria-label="Clear search"
+          onClick={() => onChange('')}
+          className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        >
           <X className="size-4" />
         </button>
       )}
@@ -203,7 +307,8 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
 
 // data-icon="inline-start" / "inline-end" tells a button its icon leads or trails, for the padding
 type IconProps = { className?: string; 'data-icon'?: 'inline-start' | 'inline-end' }
-const icon = (C: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean; 'data-icon'?: string }>) =>
+const icon =
+  (C: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean; 'data-icon'?: string }>) =>
   ({ className, 'data-icon': dataIcon }: IconProps) => <C className={className} aria-hidden data-icon={dataIcon} />
 
 export const Icon = {

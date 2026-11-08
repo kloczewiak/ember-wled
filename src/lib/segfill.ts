@@ -20,8 +20,10 @@ export function paletteStops(stops: PaletteStop[] | undefined, col: Color[]): St
   return list.map((e, j) => {
     let rgb: Rgb
     let pos: number
-    if (Array.isArray(e)) { pos = Math.round((e[0] / 255) * 100); rgb = [e[1], e[2], e[3]] }
-    else {
+    if (Array.isArray(e)) {
+      pos = Math.round((e[0] / 255) * 100)
+      rgb = [e[1], e[2], e[3]]
+    } else {
       pos = Math.round((j / (list.length - 1)) * 100)
       rgb = e === 'r' ? randomRgb(j) : rgbOf(col[Number(e[1]) - 1])
     }
@@ -31,17 +33,33 @@ export function paletteStops(stops: PaletteStop[] | undefined, col: Color[]): St
 }
 
 export const cssGradient = (stops: Stop[]) =>
-  stops.length ? `linear-gradient(to right, ${stops.map((s) => `rgb(${s.rgb.join(',')}) ${s.pos}%`).join(',')})` : undefined
+  stops.length
+    ? `linear-gradient(to right, ${stops.map((s) => `rgb(${s.rgb.join(',')}) ${s.pos}%`).join(',')})`
+    : undefined
 
 const rgbOf = (c: Color | undefined): Rgb => [c?.[0] ?? 0, c?.[1] ?? 0, c?.[2] ?? 0]
 
-const RAINBOW: Rgb[] = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255], [255, 0, 0]]
+const RAINBOW: Rgb[] = [
+  [255, 0, 0],
+  [255, 255, 0],
+  [0, 255, 0],
+  [0, 255, 255],
+  [0, 0, 255],
+  [255, 0, 255],
+  [255, 0, 0],
+]
 
 // colours spread evenly across the segment
-const evenly = (list: Rgb[]): Stop[] => list.map((rgb, i) => ({ rgb, pos: list.length > 1 ? Math.round((i / (list.length - 1)) * 100) : 0 }))
+const evenly = (list: Rgb[]): Stop[] =>
+  list.map((rgb, i) => ({ rgb, pos: list.length > 1 ? Math.round((i / (list.length - 1)) * 100) : 0 }))
 
 // The colours a segment's effect draws with on a palette (its own by default), at full brightness.
-export function effectStops(seg: Segment, fxdata: string[], palx: Record<number, PaletteStop[]>, pal = seg.pal): Stop[] {
+export function effectStops(
+  seg: Segment,
+  fxdata: string[],
+  palx: Record<number, PaletteStop[]>,
+  pal = seg.pal,
+): Stop[] {
   const solid: Stop[] = [{ rgb: rgbOf(seg.col[0]), pos: 0 }]
   if (!parseFxMeta(seg.fx, fxdata[seg.fx]).usesPalette) return solid
   if (pal === 0) {
@@ -51,7 +69,10 @@ export function effectStops(seg: Segment, fxdata: string[], palx: Record<number,
     if (look === 'rainbow') return evenly(RAINBOW)
     if (Array.isArray(look)) return evenly(look)
     if (look === 'colors' || look === 'colorsIfColor3') {
-      const used = seg.col.slice(0, 3).map(rgbOf).filter(([r, g, b]) => r || g || b)
+      const used = seg.col
+        .slice(0, 3)
+        .map(rgbOf)
+        .filter(([r, g, b]) => r || g || b)
       const third = rgbOf(seg.col[2]).some(Boolean)
       if (look === 'colorsIfColor3' && !third) return solid
       return used.length ? evenly(used) : solid
@@ -66,8 +87,12 @@ export function effectStops(seg: Segment, fxdata: string[], palx: Record<number,
 // sRGB <-> linear light. Gamma-corrected LEDs (WLED's default) put out roughly linear-light sRGB, and
 // brightness scales that output linearly, which the eye sees as a curve: the first steps up from 0 make
 // far more difference than the same steps near full.
-const toLinear = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
-const fromLinear = (l: number) => Math.round(255 * Math.min(1, l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055))
+const toLinear = (v: number) => {
+  const c = v / 255
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+}
+const fromLinear = (l: number) =>
+  Math.round(255 * Math.min(1, l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055))
 
 // CSS background for a segment in the bar, and how to label it: outlined text over several colours,
 // otherwise dark or light text depending on the colour.
@@ -90,4 +115,5 @@ export function segmentFill(seg: Segment, fxdata: string[], palx: Record<number,
 const isSolid = (stops: Stop[]) => stops.every((s) => s.rgb.every((v, i) => v === stops[0].rgb[i]))
 
 // CSS background for stops: a plain colour when they're all the same (a gradient needs two stops)
-export const stopsBackground = (stops: Stop[]) => (isSolid(stops) ? `rgb(${stops[0].rgb.join(',')})` : cssGradient(stops)!)
+export const stopsBackground = (stops: Stop[]) =>
+  isSolid(stops) ? `rgb(${stops[0].rgb.join(',')})` : cssGradient(stops)!

@@ -13,7 +13,11 @@ export function useSelection() {
   const info = useStore((s) => s.info)
   return useMemo(() => {
     let main: Segment | null = null
-    let hasRGB = false, hasWhite = false, hasCCT = false, has2D = false, segLmax = 0
+    let hasRGB = false,
+      hasWhite = false,
+      hasCCT = false,
+      has2D = false,
+      segLmax = 0
     for (const seg of state?.seg ?? []) {
       const w = seg.stop - seg.start
       const h = seg.stopY !== undefined ? seg.stopY - (seg.startY ?? 0) : 1
@@ -48,7 +52,11 @@ export const WIDE = '(min-width: 1140px)'
 
 export function useMedia(query: string) {
   return useSyncExternalStore(
-    (cb) => { const m = matchMedia(query); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) },
+    (cb) => {
+      const m = matchMedia(query)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
     () => matchMedia(query).matches,
   )
 }
@@ -67,7 +75,10 @@ export function useHash() {
 export function useDraft<T>(value: T) {
   const [draft, setDraft] = useState(value)
   const [prev, setPrev] = useState(value)
-  if (value !== prev) { setPrev(value); setDraft(value) }
+  if (value !== prev) {
+    setPrev(value)
+    setDraft(value)
+  }
   return [draft, setDraft] as const
 }
 
@@ -93,7 +104,9 @@ export function useAccuratePeek() {
   const cfg = useCfg((s) => s.cfg)
   const bri = useStore((s) => s.state?.bri ?? 0)
   const info = useStore((s) => s.info)
-  useEffect(() => { if (on) refreshCfg() }, [on])
+  useEffect(() => {
+    if (on) refreshCfg()
+  }, [on])
   useEffect(() => {
     if (!on || !cfg || !info) return
     const model = ledModel(cfg, bri, info)

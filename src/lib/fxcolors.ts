@@ -30,7 +30,12 @@ export const DEFAULT_PALETTE_LOOK: Record<number, DefaultLook> = {
   30: 'rainbow', // Chase Rainbow
   32: 'rainbow', // Chase Flash Rnd
   33: 'rainbow', // Rainbow Runner
-  34: [[255, 0, 0], [238, 187, 0], [0, 238, 0], [0, 119, 204]], // Colorful: its own colours (intensity <= 160)
+  34: [
+    [255, 0, 0],
+    [238, 187, 0],
+    [0, 238, 0],
+    [0, 119, 204],
+  ], // Colorful: its own colours (intensity <= 160)
   36: 'rainbow', // Sweep Random
   38: 'colors', // Aurora: waves pick colour 1, 2 or 3 at random
   48: 'colorsIfColor3', // Rolling Balls
@@ -50,8 +55,24 @@ export const DEFAULT_PALETTE_LOOK: Record<number, DefaultLook> = {
   95: 'colorsIfColor3', // Popcorn: colour 1, 2 or 3 at random
   99: 'rainbow', // Ripple Rainbow
   // Pacifica: its own ocean palette (pacifica_palette_1)
-  101: [[0, 34, 41], [0, 30, 47], [0, 25, 52], [0, 25, 56], [0, 20, 63], [0, 20, 67], [0, 176, 71], [0, 176, 76],
-    [0, 0, 79], [0, 0, 84], [0, 0, 98], [0, 0, 111], [0, 0, 122], [0, 0, 133], [71, 147, 138], [100, 208, 142]],
+  101: [
+    [0, 34, 41],
+    [0, 30, 47],
+    [0, 25, 52],
+    [0, 25, 56],
+    [0, 20, 63],
+    [0, 20, 67],
+    [0, 176, 71],
+    [0, 176, 76],
+    [0, 0, 79],
+    [0, 0, 84],
+    [0, 0, 98],
+    [0, 0, 111],
+    [0, 0, 122],
+    [0, 0, 133],
+    [71, 147, 138],
+    [100, 208, 142],
+  ],
   104: 'palette', // Sunrise
   107: 'rainbow', // Noise Pal: its own random hue palettes on palette 0
   110: 'palette', // Flow

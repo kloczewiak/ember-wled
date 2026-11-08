@@ -2,7 +2,8 @@ export type RGB = { r: number; g: number; b: number }
 export type HSV = { h: number; s: number; v: number } // h 0-360, s/v 0-100
 
 export function hsvToRgb({ h, s, v }: HSV): RGB {
-  s /= 100; v /= 100
+  s /= 100
+  v /= 100
   const f = (n: number) => {
     const k = (n + h / 60) % 6
     return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1))))
@@ -11,8 +12,12 @@ export function hsvToRgb({ h, s, v }: HSV): RGB {
 }
 
 export function rgbToHsv({ r, g, b }: RGB): HSV {
-  r /= 255; g /= 255; b /= 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min
+  r /= 255
+  g /= 255
+  b /= 255
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    d = max - min
   let h = 0
   if (d) {
     if (max === r) h = ((g - b) / d) % 6
@@ -24,7 +29,11 @@ export function rgbToHsv({ r, g, b }: RGB): HSV {
   return { h, s: max ? (d / max) * 100 : 0, v: max * 100 }
 }
 
-export const toHex = ({ r, g, b }: RGB) => [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()
+export const toHex = ({ r, g, b }: RGB) =>
+  [r, g, b]
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()
 
 export function fromHex(hex: string): RGB | null {
   const m = hex.replace(/^#/, '').match(/^([0-9a-f]{6})/i)
@@ -54,7 +63,9 @@ export function kelvinToRgb(kelvin: number): RGB {
 
 // Inverse of kelvinToRgb by binary search on the blue/red ratio.
 export function rgbToKelvin({ r, b }: RGB): number {
-  let lo = 1900, hi = 40000, k = 6550
+  let lo = 1900,
+    hi = 40000,
+    k = 6550
   for (let i = 0; i < 20; i++) {
     k = (lo + hi) / 2
     const c = kelvinToRgb(k)

@@ -41,10 +41,20 @@ export function toast(text: string, error = false) {
 }
 
 const ERRORS: Record<number, string> = {
-  1: 'Denied!', 3: 'Buffer locked!', 7: 'No RAM for buffer!', 8: 'Effect RAM depleted!', 9: 'JSON parsing error!',
-  10: 'Could not mount filesystem!', 11: 'Not enough space to save preset!', 12: 'Preset not found.',
-  13: 'Missing ir.json.', 19: 'A filesystem error has occured.', 90: 'Unexpected Restart.', 91: 'Brownout Restart.',
-  100: 'Please reboot WLED to activate changed settings.', 101: 'Please switch your device off and back on.',
+  1: 'Denied!',
+  3: 'Buffer locked!',
+  7: 'No RAM for buffer!',
+  8: 'Effect RAM depleted!',
+  9: 'JSON parsing error!',
+  10: 'Could not mount filesystem!',
+  11: 'Not enough space to save preset!',
+  12: 'Preset not found.',
+  13: 'Missing ir.json.',
+  19: 'A filesystem error has occured.',
+  90: 'Unexpected Restart.',
+  91: 'Brownout Restart.',
+  100: 'Please reboot WLED to activate changed settings.',
+  101: 'Please switch your device off and back on.',
 }
 
 // ---------------------------------------------------------------- receiving state
@@ -57,7 +67,10 @@ const HEARTBEAT_SLACK_MS = 200
 let responseTimer: ReturnType<typeof setTimeout> | null = null
 
 function receive(json: { state?: State; info?: Info } & Partial<State>) {
-  if (responseTimer) { clearTimeout(responseTimer); responseTimer = null }
+  if (responseTimer) {
+    clearTimeout(responseTimer)
+    responseTimer = null
+  }
   lastUpdate = Date.now()
   if (lostToast) {
     toasts.update(lostToast, { title: 'Reconnected', description: undefined, type: 'success', timeout: 2500 })
@@ -85,7 +98,9 @@ let wsRetries = 0
 const liveListeners = new Set<(frame: Uint8Array) => void>()
 // applied to every live frame before the views get it (accurate Peek, lib/ledoutput.ts)
 let liveFilter: ((frame: Uint8Array) => Uint8Array) | null = null
-export function setLiveFilter(filter: typeof liveFilter) { liveFilter = filter }
+export function setLiveFilter(filter: typeof liveFilter) {
+  liveFilter = filter
+}
 function emitLive(frame: Uint8Array) {
   const shown = liveFilter ? liveFilter(frame) : frame
   liveListeners.forEach((l) => l(shown))
@@ -153,6 +168,22 @@ export async function send(cmd: Command) {
   await request({ ...cmd, v: true, time: Math.floor(Date.now() / 1000) }, info)
 }
 
+// Sends a command without updating the UI first or asking for the state back: for streams of commands such
+// as the palette editor's preview, which would otherwise make the light answer every one of them.
+export async function sendQuiet(cmd: Command) {
+  const body = JSON.stringify(cmd)
+  const arch = get().info?.arch
+  if (wsOpen() && body.length <= 1340 && !(body.length > 500 && arch === 'esp8266')) {
+    ws!.send(body)
+    return
+  }
+  try {
+    await fetch('/json/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
+  } catch {
+    /* the next one tries again */
+  }
+}
+
 // Asks the device for its full state and info.
 export function refresh() {
   return request(null, get().info)
@@ -180,7 +211,13 @@ async function request(cmd: Command | null, info: Info | null, retry = 0): Promi
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
-    if (json.success) { if (responseTimer) { clearTimeout(responseTimer); responseTimer = null } return }
+    if (json.success) {
+      if (responseTimer) {
+        clearTimeout(responseTimer)
+        responseTimer = null
+      }
+      return
+    }
     receive(json)
   } catch (e) {
     if (retry < 10) {
@@ -227,7 +264,13 @@ export function init() {
   // A WebSocket to a light that dropped off Wi-Fi often never closes, so ask for state every few seconds
   // while visible: a missing reply then shows the reconnect toast. It also keeps info (power draw) fresh.
   setInterval(() => {
-    if (!document.hidden && get().info && get().conn === 'ok' && Date.now() - lastUpdate > HEARTBEAT_MS - HEARTBEAT_SLACK_MS) refresh()
+    if (
+      !document.hidden &&
+      get().info &&
+      get().conn === 'ok' &&
+      Date.now() - lastUpdate > HEARTBEAT_MS - HEARTBEAT_SLACK_MS
+    )
+      refresh()
   }, HEARTBEAT_MS)
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && get().info && Date.now() - lastUpdate > 3000) refresh()
@@ -252,13 +295,33 @@ async function load(attempt: number) {
     await loadPresets()
     connectWs()
   } catch (e) {
-    if (attempt === 0) toast(e instanceof DOMException && e.name === 'TimeoutError' ? 'WLED is not responding' : `Could not reach WLED: ${e}`, true)
+    if (attempt === 0)
+      toast(
+        e instanceof DOMException && e.name === 'TimeoutError'
+          ? 'WLED is not responding'
+          : `Could not reach WLED: ${e}`,
+        true,
+      )
     set({ conn: 'error' })
     setTimeout(() => load(attempt + 1), 5000)
   }
 }
 
 const PALX_KEY = 'wledUiPalx'
+
+// Loads the palettes' colours again after a custom palette changed: the cache can't tell when the count stays
+// the same. The stock UI's cache goes too, so it doesn't show the old colours.
+export async function reloadPalx() {
+  try {
+    localStorage.removeItem(PALX_KEY)
+    localStorage.removeItem('wledPalx')
+  } catch {
+    /* storage blocked */
+  }
+  await refresh()
+  await new Promise((r) => setTimeout(r, 300))
+  await loadPalx()
+}
 
 async function loadPalx() {
   const info = get().info
@@ -269,7 +332,9 @@ async function loadPalx() {
       set({ palx: cached.p })
       return
     }
-  } catch { /* no cache */ }
+  } catch {
+    /* no cache */
+  }
   let palx: Record<number, PaletteStop[]> = {}
   for (let page = 0, max = 0; page <= max; page++) {
     const json = await getJson<{ m: number; p: Record<number, PaletteStop[]> }>(`/json/palx?page=${page}`)
@@ -278,8 +343,13 @@ async function loadPalx() {
     set({ palx })
   }
   try {
-    localStorage.setItem(PALX_KEY, JSON.stringify({ p: palx, vid: info.vid, pcount: info.palcount, cpal: info.cpalcount }))
-  } catch { /* storage full or blocked */ }
+    localStorage.setItem(
+      PALX_KEY,
+      JSON.stringify({ p: palx, vid: info.vid, pcount: info.palcount, cpal: info.cpalcount }),
+    )
+  } catch {
+    /* storage full or blocked */
+  }
 }
 
 let presetsPmt: number | null = null
@@ -293,7 +363,11 @@ export async function loadPresets() {
     delete presets['0']
     set({ presets, presetsError: false })
     if (Object.keys(presets).length) {
-      try { localStorage.setItem(PRESETS_BACKUP_KEY, JSON.stringify(presets)) } catch { /* ignore */ }
+      try {
+        localStorage.setItem(PRESETS_BACKUP_KEY, JSON.stringify(presets))
+      } catch {
+        /* ignore */
+      }
     }
   } catch {
     set({ presetsError: true })
@@ -301,7 +375,11 @@ export async function loadPresets() {
 }
 
 export const presetsBackup = () => {
-  try { return localStorage.getItem(PRESETS_BACKUP_KEY) } catch { return null }
+  try {
+    return localStorage.getItem(PRESETS_BACKUP_KEY)
+  } catch {
+    return null
+  }
 }
 
 // Replaces presets.json on the device (used to restore the local backup).
@@ -337,7 +415,10 @@ export function setPeek(on: boolean) {
     ws!.send(on ? '{"lv":true}' : '{"lv":false}')
     return
   }
-  if (livePoll) { clearTimeout(livePoll); livePoll = null }
+  if (livePoll) {
+    clearTimeout(livePoll)
+    livePoll = null
+  }
   if (on) pollLive()
 }
 
@@ -347,19 +428,27 @@ async function pollLive() {
   try {
     const json = await getJson<{ leds: string[] }>('/json/live', 0)
     const frame = new Uint8Array(2 + json.leds.length * 3)
-    frame[0] = 76; frame[1] = 1
+    frame[0] = 76
+    frame[1] = 1
     // /json/live applies master brightness but WebSocket frames don't (ws.cpp); undo it so both look alike
     const gain = 255 / Math.max(1, get().state?.bri ?? 255)
     json.leds.forEach((hex, i) => {
       const n = parseInt(hex.length > 6 ? hex.slice(2) : hex, 16)
-      frame.set([n >> 16, (n >> 8) & 255, n & 255].map((c) => Math.min(255, Math.round(c * gain))), 2 + i * 3)
+      frame.set(
+        [n >> 16, (n >> 8) & 255, n & 255].map((c) => Math.min(255, Math.round(c * gain))),
+        2 + i * 3,
+      )
     })
     emitLive(frame)
-  } catch { /* try again */ }
+  } catch {
+    /* try again */
+  }
   livePoll = setTimeout(pollLive, 100)
 }
 
 export function onLiveFrame(listener: (frame: Uint8Array) => void) {
   liveListeners.add(listener)
-  return () => { liveListeners.delete(listener) }
+  return () => {
+    liveListeners.delete(listener)
+  }
 }

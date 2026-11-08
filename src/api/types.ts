@@ -84,6 +84,7 @@ export interface Info {
   fxcount: number
   palcount: number
   cpalcount?: number
+  cpalmax?: number // custom palette slots: 10 on ESP8266, 129 on ESP32
   umpalcount?: number
   umpalnames?: string[]
   maps?: { id: number; n?: string }[]

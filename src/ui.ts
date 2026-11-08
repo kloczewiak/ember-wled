@@ -22,7 +22,11 @@ interface Ui {
 }
 
 const read = (key: string, fallback: string) => {
-  try { return localStorage.getItem(key) ?? fallback } catch { return fallback }
+  try {
+    return localStorage.getItem(key) ?? fallback
+  } catch {
+    return fallback
+  }
 }
 
 // Settings → User Interface (a firmware page) saves its options under `wledUiCfg` in this origin's
@@ -33,11 +37,26 @@ const read = (key: string, fallback: string) => {
 // writes them on every load (index.js). Since this UI replaces the stock page, it writes them too, or a
 // fresh storage (e.g. an iOS home-screen app) gets an empty, unusable settings page.
 const STOCK_UI_DEFAULTS = {
-  theme: { base: 'dark', bg: { url: '', rnd: false, rndGrayscale: false, rndBlur: false }, alpha: { bg: 0.6, tab: 0.8 }, color: { bg: '' } },
+  theme: {
+    base: 'dark',
+    bg: { url: '', rnd: false, rndGrayscale: false, rndBlur: false },
+    alpha: { bg: 0.6, tab: 0.8 },
+    color: { bg: '' },
+  },
   comp: {
     colors: { picker: true, rgb: false, quick: true, hex: false },
-    labels: true, pcmbot: false, pid: true, seglen: false, segpwr: false, segexp: false,
-    css: true, hdays: false, fxdef: true, on: 0, off: 0, idsort: false,
+    labels: true,
+    pcmbot: false,
+    pid: true,
+    seglen: false,
+    segpwr: false,
+    segexp: false,
+    css: true,
+    hdays: false,
+    fxdef: true,
+    on: 0,
+    off: 0,
+    idsort: false,
   },
 }
 
@@ -47,36 +66,62 @@ const isObj = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.
 function mergeDeep(defaults: Json, saved: unknown): Json {
   if (!isObj(saved)) return structuredClone(defaults)
   const out: Json = { ...saved }
-  for (const [k, v] of Object.entries(defaults)) out[k] = isObj(v) ? mergeDeep(v, saved[k]) : k in saved ? asDefaultType(v, saved[k]) : v
+  for (const [k, v] of Object.entries(defaults))
+    out[k] = isObj(v) ? mergeDeep(v, saved[k]) : k in saved ? asDefaultType(v, saved[k]) : v
   return out
 }
 // The stock settings page saves its number fields as strings (settings_ui.htm stores each input's .value),
 // so "0" or "0.6" are read back as numbers where the default is one.
 function asDefaultType(def: unknown, value: unknown) {
-  return typeof def === 'number' && typeof value === 'string' && value.trim() !== '' && isFinite(Number(value)) ? Number(value) : value
+  return typeof def === 'number' && typeof value === 'string' && value.trim() !== '' && isFinite(Number(value))
+    ? Number(value)
+    : value
 }
 
 // The full stock UI settings object (saved values over defaults), for Settings → User interface.
 export function readStockUiCfg(): Json {
   let saved: unknown = null
-  try { saved = JSON.parse(localStorage.getItem('wledUiCfg') ?? 'null') } catch { /* corrupt: replaced by defaults */ }
+  try {
+    saved = JSON.parse(localStorage.getItem('wledUiCfg') ?? 'null')
+  } catch {
+    /* corrupt: replaced by defaults */
+  }
   return mergeDeep(STOCK_UI_DEFAULTS, saved)
 }
 export function writeStockUiCfg(cfg: Json) {
   localStorage.setItem('wledUiCfg', JSON.stringify(cfg))
 }
 
-export interface StockComp { pid: boolean; fxdef: boolean; on: number; off: number; seglen: boolean; segpwr: boolean; segexp: boolean; idsort: boolean }
+export interface StockComp {
+  pid: boolean
+  fxdef: boolean
+  on: number
+  off: number
+  seglen: boolean
+  segpwr: boolean
+  segexp: boolean
+  idsort: boolean
+}
 function stockUiCfg(): StockComp {
   const cfg = readStockUiCfg()
-  try { writeStockUiCfg(cfg) } catch { /* storage unavailable */ }
+  try {
+    writeStockUiCfg(cfg)
+  } catch {
+    /* storage unavailable */
+  }
   return toComp(cfg)
 }
 function toComp(cfg: Json): StockComp {
   const comp = cfg.comp as Json
   return {
-    pid: comp.pid !== false, fxdef: comp.fxdef !== false, seglen: comp.seglen === true, segpwr: comp.segpwr === true,
-    segexp: comp.segexp === true, idsort: comp.idsort === true, on: Number(comp.on) || 0, off: Number(comp.off) || 0,
+    pid: comp.pid !== false,
+    fxdef: comp.fxdef !== false,
+    seglen: comp.seglen === true,
+    segpwr: comp.segpwr === true,
+    segexp: comp.segexp === true,
+    idsort: comp.idsort === true,
+    on: Number(comp.on) || 0,
+    off: Number(comp.off) || 0,
   }
 }
 
@@ -92,7 +137,11 @@ export const useUi = create<Ui>((set) => ({
   sheet: null,
   setCsel: (csel) => set({ csel }),
   setColorMode: (colorMode) => {
-    try { localStorage.setItem('wledUiColorMode', colorMode) } catch { /* ignore */ }
+    try {
+      localStorage.setItem('wledUiColorMode', colorMode)
+    } catch {
+      /* ignore */
+    }
     set({ colorMode })
   },
   setSheet: (sheet) => set({ sheet }),

@@ -21,7 +21,9 @@ function wledOutput(): Plugin {
       const html = readFileSync(resolve(__dirname, 'dist/index.html'))
       const gz = gzipSync(html, { level: 9 })
       writeFileSync(resolve(__dirname, 'dist/index.htm.gz'), gz)
-      console.log(`index.htm.gz: ${(gz.length / 1024).toFixed(1)} kB (${(html.length / 1024).toFixed(1)} kB uncompressed)`)
+      console.log(
+        `index.htm.gz: ${(gz.length / 1024).toFixed(1)} kB (${(html.length / 1024).toFixed(1)} kB uncompressed)`,
+      )
     },
   }
 }
@@ -29,13 +31,28 @@ function wledOutput(): Plugin {
 export default defineConfig({
   resolve: { alias: { '@': resolve(__dirname, 'src') } },
   plugins: [react(), tailwindcss(), viteSingleFile(), wledOutput(), ...(mock ? [mockWled()] : [])],
-  server: mock ? undefined : {
-    proxy: {
-      ...Object.fromEntries(
-        ['/json', '/presets.json', '/cfg.json', '/upload', '/reset', '/win', '/edit', '/settings', '/update', '/cpal.htm', '/pixelforge.htm']
-          .map((p) => [p, { target: `http://${host}`, changeOrigin: true }]),
-      ),
-      '/ws': { target: `ws://${host}`, ws: true, changeOrigin: true },
-    },
-  },
+  server: mock
+    ? undefined
+    : {
+        proxy: {
+          ...Object.fromEntries(
+            [
+              '/json',
+              '/presets.json',
+              '/cfg.json',
+              '/upload',
+              '/reset',
+              '/win',
+              '/edit',
+              '/settings',
+              '/update',
+              '/cpal.htm',
+              '/pixelforge.htm',
+            ].map((p) => [p, { target: `http://${host}`, changeOrigin: true }]),
+          ),
+          // custom palette files (palette0.json, palette1.json, …)
+          '^/palette\\d+\\.json$': { target: `http://${host}`, changeOrigin: true },
+          '/ws': { target: `ws://${host}`, ws: true, changeOrigin: true },
+        },
+      },
 })

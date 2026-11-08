@@ -2,14 +2,30 @@ import { useEffect, useState } from 'react'
 import { Card, cx } from '../components/controls'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Cable, Cpu, Lightbulb, Puzzle, ToggleRight, type LucideIcon } from 'lucide-react'
-import { BUTTON_TYPES, capNotes, FreeMarks, kind, KINDS, LegendItem, legendRow, pinNotes, short, Tile, tileGrid, usePinName, type Kind, type Pin } from './pins'
+import {
+  BUTTON_TYPES,
+  capNotes,
+  FreeMarks,
+  kind,
+  KINDS,
+  LegendItem,
+  legendRow,
+  pinNotes,
+  short,
+  Tile,
+  tileGrid,
+  usePinName,
+  type Kind,
+  type Pin,
+} from './pins'
 
 // Settings → Pin info: which GPIOs are used and by what, like the firmware's page in WLED v16.0.1
 // (data/settings_pininfo.htm), refreshed 4 times a second so button and relay states show live. Three
 // styles: a table like the stock page, the pins grouped by use, and a map of every GPIO. Touch capability and
 // pins reserved by usermods come only from the settings script, so they aren't shown.
 
-const stateText = (p: Pin) => (p.s === undefined ? '' : p.o === 0x85 ? (p.s ? 'Pressed' : 'Released') : p.s ? 'On' : 'Off')
+const stateText = (p: Pin) =>
+  p.s === undefined ? '' : p.o === 0x85 ? (p.s ? 'Pressed' : 'Released') : p.s ? 'On' : 'Off'
 
 // runs of three or more pins as "6–11", the rest one by one
 function ranges(nums: number[]) {
@@ -27,7 +43,12 @@ function ranges(nums: number[]) {
 type Style = 'table' | 'use' | 'map'
 const STYLE_KEY = 'wledUiPinStyle'
 const readStyle = (): Style => {
-  try { const s = localStorage.getItem(STYLE_KEY); return s === 'use' || s === 'map' ? s : 'table' } catch { return 'table' }
+  try {
+    const s = localStorage.getItem(STYLE_KEY)
+    return s === 'use' || s === 'map' ? s : 'table'
+  } catch {
+    return 'table'
+  }
 }
 
 export function PinInfo() {
@@ -42,22 +63,33 @@ export function PinInfo() {
     const load = async () => {
       try {
         const j = await fetch('/json/pins', { signal: AbortSignal.timeout(3000) }).then((r) => r.json())
-        if (!stop) { setPins(j.pins ?? []); setFailed(false) }
+        if (!stop) {
+          setPins(j.pins ?? [])
+          setFailed(false)
+        }
       } catch {
         if (!stop) setFailed(true)
       }
       if (!stop) timer = window.setTimeout(load, 250)
     }
     load()
-    return () => { stop = true; clearTimeout(timer) }
+    return () => {
+      stop = true
+      clearTimeout(timer)
+    }
   }, [])
 
   const pick = (s: Style) => {
     setStyle(s)
-    try { localStorage.setItem(STYLE_KEY, s) } catch { /* storage unavailable: just this visit */ }
+    try {
+      localStorage.setItem(STYLE_KEY, s)
+    } catch {
+      /* storage unavailable: just this visit */
+    }
   }
 
-  if (!pins) return <p className="text-sm text-muted-foreground">{failed ? 'Couldn\'t load the pin info.' : 'Loading pins…'}</p>
+  if (!pins)
+    return <p className="text-sm text-muted-foreground">{failed ? "Couldn't load the pin info." : 'Loading pins…'}</p>
   if (!pins.length) return <p className="text-sm text-muted-foreground">No pins available.</p>
 
   return (
@@ -82,7 +114,12 @@ export function PinInfo() {
 type Named = { pins: Pin[]; name: (p: Pin) => string }
 
 const StateDot = ({ p }: { p: Pin }) =>
-  p.s === undefined ? null : <span className={cx('inline-block size-2 shrink-0 rounded-full', p.s ? 'bg-green-500' : 'bg-muted-foreground/50')} aria-hidden />
+  p.s === undefined ? null : (
+    <span
+      className={cx('inline-block size-2 shrink-0 rounded-full', p.s ? 'bg-green-500' : 'bg-muted-foreground/50')}
+      aria-hidden
+    />
+  )
 
 // Every pin on its own row, as on the stock page.
 function PinTable({ pins, name }: Named) {
@@ -105,10 +142,14 @@ function PinTable({ pins, name }: Named) {
                   <span className="flex flex-wrap items-center gap-x-2">
                     <StateDot p={p} />
                     {name(p)}
-                    {p.t !== undefined && <span className="text-xs text-muted-foreground">{BUTTON_TYPES[p.t] ?? '?'}</span>}
+                    {p.t !== undefined && (
+                      <span className="text-xs text-muted-foreground">{BUTTON_TYPES[p.t] ?? '?'}</span>
+                    )}
                     {p.r !== undefined && <span className="font-mono text-xs text-muted-foreground">{p.r}</span>}
                   </span>
-                ) : <span className="text-primary">Available</span>}
+                ) : (
+                  <span className="text-primary">Available</span>
+                )}
               </td>
               <td className="border-l px-3 py-2 text-xs text-muted-foreground">{capNotes(p.c).join(', ')}</td>
             </tr>
@@ -119,7 +160,13 @@ function PinTable({ pins, name }: Named) {
   )
 }
 
-const ICONS: Record<Exclude<Kind, 'free'>, LucideIcon> = { led: Lightbulb, io: ToggleRight, hw: Cable, um: Puzzle, sys: Cpu }
+const ICONS: Record<Exclude<Kind, 'free'>, LucideIcon> = {
+  led: Lightbulb,
+  io: ToggleRight,
+  hw: Cable,
+  um: Puzzle,
+  sys: Cpu,
+}
 
 // What uses which pins, then the free ones.
 function ByUse({ pins, name }: Named) {
@@ -134,7 +181,9 @@ function ByUse({ pins, name }: Named) {
     groups.set(title, g)
   }
   const order: Kind[] = ['led', 'io', 'hw', 'um', 'sys']
-  const used = [...groups.values()].sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k) || a.title.localeCompare(b.title, undefined, { numeric: true }))
+  const used = [...groups.values()].sort(
+    (a, b) => order.indexOf(a.k) - order.indexOf(b.k) || a.title.localeCompare(b.title, undefined, { numeric: true }),
+  )
   const free = pins.filter((p) => !p.a)
 
   return (
@@ -143,18 +192,40 @@ function ByUse({ pins, name }: Named) {
         {used.map((g) => {
           const Icon = ICONS[g.k as Exclude<Kind, 'free'>]
           const p = g.pins[0]
-          const hint = g.k === 'led' ? [...new Set(g.pins.map((q) => q.n?.replace(/^LED /, '')))].join(', ')
-            : g.k === 'sys' ? 'Flash and internal'
-            : [stateText(p), p.t !== undefined && BUTTON_TYPES[p.t], p.r !== undefined && `Reading ${p.r}`].filter(Boolean).join(' · ')
+          const hint =
+            g.k === 'led'
+              ? [...new Set(g.pins.map((q) => q.n?.replace(/^LED /, '')))].join(', ')
+              : g.k === 'sys'
+                ? 'Flash and internal'
+                : [stateText(p), p.t !== undefined && BUTTON_TYPES[p.t], p.r !== undefined && `Reading ${p.r}`]
+                    .filter(Boolean)
+                    .join(' · ')
           return (
-            <div key={g.title} className={cx('flex items-center gap-3 border-t py-2 first:border-t-0', g.k === 'sys' && 'text-muted-foreground')}>
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted"><Icon className="size-4" aria-hidden /></span>
+            <div
+              key={g.title}
+              className={cx(
+                'flex items-center gap-3 border-t py-2 first:border-t-0',
+                g.k === 'sys' && 'text-muted-foreground',
+              )}
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Icon className="size-4" aria-hidden />
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm">{g.title}</div>
-                {hint && <div className="flex items-center gap-1.5 text-xs text-muted-foreground">{g.pins.length === 1 && <StateDot p={p} />}{hint}</div>}
+                {hint && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {g.pins.length === 1 && <StateDot p={p} />}
+                    {hint}
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap justify-end gap-1">
-                {ranges(g.pins.map((q) => q.p)).map((r) => <span key={r} className="rounded-md border px-1.5 font-mono text-xs">{r}</span>)}
+                {ranges(g.pins.map((q) => q.p)).map((r) => (
+                  <span key={r} className="rounded-md border px-1.5 font-mono text-xs">
+                    {r}
+                  </span>
+                ))}
               </div>
             </div>
           )
@@ -162,10 +233,22 @@ function ByUse({ pins, name }: Named) {
       </div>
       <div className="flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
         <span className="font-semibold tracking-wider uppercase">Free</span>
-        <span>{free.length} {free.length === 1 ? 'pin' : 'pins'}</span>
+        <span>
+          {free.length} {free.length === 1 ? 'pin' : 'pins'}
+        </span>
       </div>
-      {free.length ? <div className={tileGrid}>{free.map((p) => <Tile key={p.p} p={p} />)}</div> : <p className="m-0 text-sm text-muted-foreground">No free pins.</p>}
-      <div className={legendRow}><FreeMarks /></div>
+      {free.length ? (
+        <div className={tileGrid}>
+          {free.map((p) => (
+            <Tile key={p.p} p={p} />
+          ))}
+        </div>
+      ) : (
+        <p className="m-0 text-sm text-muted-foreground">No free pins.</p>
+      )}
+      <div className={legendRow}>
+        <FreeMarks />
+      </div>
     </>
   )
 }
@@ -179,18 +262,40 @@ function PinMap({ pins, name }: Named) {
     <>
       <p className="m-0 text-xs text-muted-foreground">Select a pin to see what uses it and if it's free.</p>
       <div className={tileGrid}>
-        {pins.map((q) => <Tile key={q.p} p={q} label={short(q)} selected={q.p === sel} onClick={() => setSel(q.p === sel ? null : q.p)} />)}
+        {pins.map((q) => (
+          <Tile
+            key={q.p}
+            p={q}
+            label={short(q)}
+            selected={q.p === sel}
+            onClick={() => setSel(q.p === sel ? null : q.p)}
+          />
+        ))}
       </div>
       <div className={legendRow}>
-        {(Object.keys(KINDS) as Kind[]).filter((k) => kinds.has(k)).map((k) => <LegendItem key={k} tile={KINDS[k].tile}>{KINDS[k].label}</LegendItem>)}
+        {(Object.keys(KINDS) as Kind[])
+          .filter((k) => kinds.has(k))
+          .map((k) => (
+            <LegendItem key={k} tile={KINDS[k].tile}>
+              {KINDS[k].label}
+            </LegendItem>
+          ))}
       </div>
       <div className={legendRow}>
-        {pins.some((q) => q.s !== undefined) && <LegendItem tile={KINDS.io.tile} mark="state">Pressed or on</LegendItem>}
+        {pins.some((q) => q.s !== undefined) && (
+          <LegendItem tile={KINDS.io.tile} mark="state">
+            Pressed or on
+          </LegendItem>
+        )}
         <FreeMarks />
       </div>
       {/* tall enough for a pin's details with three notes, so going from pin to pin doesn't resize it */}
       <div className="min-h-24 border-t pt-3" aria-live="polite">
-        {p ? <PinDetails p={p} name={name(p)} /> : <p className="m-0 text-sm text-muted-foreground">No pin selected.</p>}
+        {p ? (
+          <PinDetails p={p} name={name(p)} />
+        ) : (
+          <p className="m-0 text-sm text-muted-foreground">No pin selected.</p>
+        )}
       </div>
     </>
   )
@@ -202,10 +307,19 @@ function PinDetails({ p, name }: { p: Pin; name: string }) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 text-sm">
         GPIO {p.p}
-        {stateText(p) && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><StateDot p={p} />{stateText(p)}</span>}
+        {stateText(p) && (
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <StateDot p={p} />
+            {stateText(p)}
+          </span>
+        )}
         {p.r !== undefined && <span className="font-mono text-xs text-muted-foreground">Reading {p.r}</span>}
       </div>
-      {lines.map((l) => <p key={l} className="m-0 text-xs text-muted-foreground">{l}</p>)}
+      {lines.map((l) => (
+        <p key={l} className="m-0 text-xs text-muted-foreground">
+          {l}
+        </p>
+      ))}
     </div>
   )
 }

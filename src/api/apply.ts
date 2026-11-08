@@ -20,7 +20,8 @@ export function applyCommand(state: State, cmd: Command): State {
     if (typeof sc.id === 'number') applySeg(s, sc)
     else {
       const targets = s.seg.filter((g) => g.sel)
-      for (const g of targets.length ? targets : s.seg.filter((g) => g.id === s.mainseg)) applySeg(s, { ...sc, id: g.id })
+      for (const g of targets.length ? targets : s.seg.filter((g) => g.id === s.mainseg))
+        applySeg(s, { ...sc, id: g.id })
     }
   }
   return s
@@ -44,11 +45,13 @@ function applySeg(s: State, sc: Command) {
   for (const [k, v] of Object.entries(sc)) {
     if (k === 'id' || k === 'fxdef' || k === 'rpt') continue
     if (k === 'col' && Array.isArray(v)) {
-      v.forEach((c, i) => { if (Array.isArray(c) && c.length) g.col[i] = c as Segment['col'][number] })
+      v.forEach((c, i) => {
+        if (Array.isArray(c) && c.length) g.col[i] = c as Segment['col'][number]
+      })
     } else if ((k === 'frz' || k === 'on' || k === 'sel') && v === 't') {
       g[k] = !g[k]
     } else {
-      (g as unknown as Record<string, unknown>)[k] = v
+      ;(g as unknown as Record<string, unknown>)[k] = v
     }
   }
   g.len = g.stop - g.start
@@ -56,10 +59,39 @@ function applySeg(s: State, sc: Command) {
 
 function newSegment(id: number, template?: Segment): Segment {
   return {
-    id, start: 0, stop: 0, grp: 1, spc: 0, of: 0, on: true, frz: false, bri: 255, cct: 127, set: 0,
-    lc: template?.lc ?? 1, col: [[255, 160, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], fx: 0, sx: 128, ix: 128,
-    pal: 0, c1: 128, c2: 128, c3: 16, sel: false, rev: false, mi: false, o1: false, o2: false, o3: false,
-    si: 0, m12: 0, bm: 0,
+    id,
+    start: 0,
+    stop: 0,
+    grp: 1,
+    spc: 0,
+    of: 0,
+    on: true,
+    frz: false,
+    bri: 255,
+    cct: 127,
+    set: 0,
+    lc: template?.lc ?? 1,
+    col: [
+      [255, 160, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    fx: 0,
+    sx: 128,
+    ix: 128,
+    pal: 0,
+    c1: 128,
+    c2: 128,
+    c3: 16,
+    sel: false,
+    rev: false,
+    mi: false,
+    o1: false,
+    o2: false,
+    o3: false,
+    si: 0,
+    m12: 0,
+    bm: 0,
   }
 }
 
