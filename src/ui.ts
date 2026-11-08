@@ -150,9 +150,11 @@ export const useUi = create<Ui>((set) => ({
     writeStockUiCfg(cfg) // throws if storage is unavailable; the caller reports it
     set({ stock: toComp(cfg) })
   },
-  accuratePeek: read('wledUiAccuratePeek', '') === '1',
+  // on unless turned off: no key yet (a new device, or one that only used the stock UI) or storage that can't be
+  // read means on; '0', or '' from builds that stored off that way, means off
+  accuratePeek: !['0', ''].includes(read('wledUiAccuratePeek', '1')),
   setAccuratePeek: (accuratePeek) => {
-    localStorage.setItem('wledUiAccuratePeek', accuratePeek ? '1' : '') // throws if storage is unavailable; the caller reports it
+    localStorage.setItem('wledUiAccuratePeek', accuratePeek ? '1' : '0') // throws if storage is unavailable; the caller reports it
     set({ accuratePeek })
   },
   accent,
