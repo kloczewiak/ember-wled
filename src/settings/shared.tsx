@@ -523,6 +523,14 @@ export function useSaver(page: string, onSaved: () => void, quiet = false) {
   return { save: run, saving: busy, dialog }
 }
 
+// On wide screens the settings screen shows a page's intro under its title, outside the scroll area: the area's
+// rounded corners (made to fit the cards) would cut into text at its top. Phones keep it at the top of the page.
+export const IntroSlot = createContext<HTMLElement | null>(null)
+export function PageIntro({ children }: { children: ReactNode }) {
+  const slot = useContext(IntroSlot)
+  return slot ? createPortal(children, slot) : children
+}
+
 // On phones the settings screen puts a footer below the page's scroll area (like the tab bar on the controls)
 // and passes it here; the save bar is drawn there, so it stays put instead of moving with the end of the page.
 export const SaveBarSlot = createContext<HTMLElement | null>(null)

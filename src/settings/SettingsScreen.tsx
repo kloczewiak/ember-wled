@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '../store'
 import { refreshCfg, useCfg } from './config'
-import { confirmLeave, SaveBarSlot } from './shared'
+import { confirmLeave, IntroSlot, SaveBarSlot } from './shared'
 import { UiSettings } from './UiSettings'
 import { SyncSettings } from './SyncSettings'
 import { TimeSettings } from './TimeSettings'
@@ -145,6 +145,8 @@ export function SettingsScreen({ route }: { route: string }) {
   const back = page && !wide ? () => go('#settings') : () => go('#')
   // phones: the footer below a page's scroll area that holds its save bar
   const [footer, setFooter] = useState<HTMLDivElement | null>(null)
+  // wide screens: where a page's intro goes, under its title
+  const [intro, setIntro] = useState<HTMLDivElement | null>(null)
 
   return (
     <div className="flex h-full flex-col">
@@ -178,6 +180,7 @@ export function SettingsScreen({ route }: { route: string }) {
         )}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {wide && page && <h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>}
+          {wide && page && <div ref={setIntro} className="mb-4 empty:hidden" />}
           {/* a new scroll area for each view, so every page opens at the top: sharing one kept the page's scroll
               position (and iOS's momentum) when going back, leaving the shorter menu scrolled past its end */}
           <div
@@ -195,7 +198,9 @@ export function SettingsScreen({ route }: { route: string }) {
             >
               {page ? (
                 <main className="min-w-0">
-                  <SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider>
+                  <IntroSlot.Provider value={wide ? intro : null}>
+                    <SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider>
+                  </IntroSlot.Provider>
                 </main>
               ) : wide ? (
                 <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>

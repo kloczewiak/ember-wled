@@ -19,7 +19,7 @@ import { uploadFile, type Cfg } from './api'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { intIn, NumberInput, Row, SaveBar, Section, usePinAction } from './shared'
+import { intIn, NumberInput, PageIntro, Row, SaveBar, Section, usePinAction } from './shared'
 import { PinPicker, usePins } from './pins'
 import {
   AUTO_WHITE,
@@ -227,31 +227,33 @@ export function LedSettings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
-          What's wired to the controller: LED outputs and their power, the IR receiver and the relay. Buttons have{' '}
-          <a href="#settings/buttons">their own page</a>.
-        </p>
-        <input
-          ref={file}
-          type="file"
-          accept=".json"
-          className="hidden"
-          onChange={(e) => {
-            const x = e.target.files?.[0]
-            e.target.value = ''
-            if (x) loadTemplate(x)
-          }}
-        />
-        <Button
-          variant="outline"
-          title="Fills in the outputs and hardware from a board's cfg.json"
-          onClick={() => file.current?.click()}
-        >
-          <Upload data-icon="inline-start" />
-          Load board template
-        </Button>
-      </div>
+      <PageIntro>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
+            What's wired to the controller: LED outputs and their power, the IR receiver and the relay. Buttons have{' '}
+            <a href="#settings/buttons">their own page</a>.
+          </p>
+          <input
+            ref={file}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              const x = e.target.files?.[0]
+              e.target.value = ''
+              if (x) loadTemplate(x)
+            }}
+          />
+          <Button
+            variant="outline"
+            title="Fills in the outputs and hardware from a board's cfg.json"
+            onClick={() => file.current?.click()}
+          >
+            <Upload data-icon="inline-start" />
+            Load board template
+          </Button>
+        </div>
+      </PageIntro>
 
       <Section
         title="LED outputs"

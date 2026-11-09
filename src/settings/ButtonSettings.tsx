@@ -15,7 +15,7 @@ import {
 import { NativeSelect } from '@/components/ui/native-select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCfgForm } from './config'
-import { intIn, NumberInput, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
+import { intIn, NumberInput, PageIntro, PresetSelect, Row, SaveBar, Section, useLeaveGuard, useSaver } from './shared'
 import { OWNER, PinPicker, usePins, type Pin } from './pins'
 import {
   BUTTON_OPTIONS,
@@ -478,12 +478,14 @@ export function ButtonSettings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
-          Buttons, switches, motion sensors and potentiometers wired to the controller, and what each one does.
-        </p>
-        <ButtonHelp />
-      </div>
+      <PageIntro>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
+            Buttons, switches, motion sensors and potentiometers wired to the controller, and what each one does.
+          </p>
+          <ButtonHelp />
+        </div>
+      </PageIntro>
       <Section
         title="Buttons"
         action={f.btns.length > 0 && <span className="text-xs text-muted-foreground">Live: press one to test it</span>}
