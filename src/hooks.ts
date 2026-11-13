@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { setLiveFilter, useStore } from './store'
 import { useUi } from './ui'
 import { refreshCfg, useCfg } from './settings/config'
+import { confirmLeave } from './settings/shared'
 import { ledModel, ledOutputFrame } from './lib/ledoutput'
 import { parseFxMeta } from './api/fxmeta'
 import type { Segment } from './api/types'
@@ -61,12 +62,46 @@ export function useMedia(query: string) {
   )
 }
 
+// The app's pages are #hashes (#Effects, #settings/leds…). Moving between them goes through the History API
+// instead of a hash navigation: iOS Safari reloads the whole page on some hash navigations (seen on iOS 27 when
+// the light is opened by its IP address, for links and for setting location.hash alike), and pushState isn't a
+// navigation at all. Back and forward still work, and useHash hears both.
+export function navigate(hash: string) {
+  const to = hash.startsWith('#') ? hash : `#${hash}`
+  if (to === location.hash || (to === '#' && !location.hash)) return
+  const oldURL = location.href
+  // '#' (the controls) drops the hash entirely, like a fresh load of the page
+  history.pushState(null, '', to === '#' ? location.pathname + location.search : to)
+  dispatchEvent(new HashChangeEvent('hashchange', { oldURL, newURL: location.href }))
+}
+
+// Clicks on #links anywhere in the app go through navigate(), asking first when the open settings page has
+// unsaved changes (a handler that already called preventDefault keeps the link from being followed at all).
+export function useHashLinks() {
+  useEffect(() => {
+    const on = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const a = (e.target as Element | null)?.closest?.('a[href^="#"]')
+      if (!a || a.hasAttribute('target') || a.hasAttribute('download')) return
+      e.preventDefault()
+      if (confirmLeave()) navigate(a.getAttribute('href')!)
+    }
+    document.addEventListener('click', on)
+    return () => document.removeEventListener('click', on)
+  }, [])
+}
+
 export function useHash() {
   const [hash, setHash] = useState(location.hash)
   useEffect(() => {
     const on = () => setHash(location.hash)
     addEventListener('hashchange', on)
-    return () => removeEventListener('hashchange', on)
+    // going back or forward between pushState entries
+    addEventListener('popstate', on)
+    return () => {
+      removeEventListener('hashchange', on)
+      removeEventListener('popstate', on)
+    }
   }, [])
   return hash
 }

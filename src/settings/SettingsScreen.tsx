@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useMedia, WIDE } from '../hooks'
+import { navigate, useMedia, WIDE } from '../hooks'
 import { cx } from '../components/controls'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -68,7 +68,7 @@ const PAGES: Page[] = [
 
 // navigates within the app, asking first if the open page has unsaved changes
 function go(hash: string) {
-  if (confirmLeave()) location.hash = hash
+  if (confirmLeave()) navigate(hash)
 }
 
 function Menu({ build, current }: { build: Build; current?: string }) {

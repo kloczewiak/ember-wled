@@ -13,7 +13,7 @@ import {
   ArrowLeftRight,
 } from 'lucide-react'
 import { send, sendQuiet, reloadPalx, toast, useStore } from '../store'
-import { useDraft, useMedia, WIDE } from '../hooks'
+import { navigate, useDraft, useMedia, WIDE } from '../hooks'
 import { fromHex, hsvToRgb, rgbCss, rgbToHsv, toHex, type HSV, type RGB } from '../lib/color'
 import { Card, cx, Switch } from '../components/controls'
 import { ColorControls, HexRow } from '../components/ColorPicker'
@@ -256,7 +256,7 @@ export function PalettesScreen() {
       {right}
     </header>
   )
-  const toControls = () => guard(() => (location.hash = '#'))
+  const toControls = () => guard(() => navigate('#'))
 
   const list = (
     <PaletteList

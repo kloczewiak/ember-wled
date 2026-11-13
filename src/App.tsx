@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { init, useStore } from './store'
-import { useAccuratePeek, useHash, useMedia, WIDE } from './hooks'
+import { useAccuratePeek, useHash, useHashLinks, useMedia, WIDE } from './hooks'
 import { useUi } from './ui'
 import { Header } from './components/Header'
 import { LivePreview, RealtimeBanner } from './components/Live'
@@ -34,6 +34,7 @@ export default function App() {
     document.getElementById('ember-boot')?.remove()
   }, [])
   useAccuratePeek()
+  useHashLinks()
   // opening settings from the More sheet: don't leave the sheet open to reappear on the way back
   useEffect(() => {
     if (settings || palettes) useUi.getState().setSheet(null)
