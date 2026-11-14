@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { rgbCss, toHex } from '../lib/color'
 import { cx } from '../components/controls'
-import { addColour, gradientCss, lanes, MAX_COLOURS, moveTo, onTheLight, type Stop } from './palettes'
+import { addColour, gradientCss, lanes, lightColours, MAX_COLOURS, moveTo, type Stop } from './palettes'
 
 // The gradient with a pin under each colour. Clicking the bar adds a colour there; only the pins move colours
 // (dragging, or the arrow keys once one is selected). Pins too close to share a row drop to a row below with a
@@ -45,7 +45,6 @@ export function GradientEditor({
       ? stops.map((_, k) => (k === drag.i ? drag.own : drag.others[k < drag.i ? k : k - 1]))
       : lanes(stops, gap)
   const rowCount = Math.max(...rows) + 1
-  const leds = onTheLight(stops, Math.max(8, Math.floor(width / 14)))
   const dragged = drag ? stops[drag.i] : null
 
   const add = (t?: number) => {
@@ -214,23 +213,63 @@ export function GradientEditor({
         </span>
       </p>
 
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="mt-4 flex flex-col gap-2.5">
         <p className="m-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
           <span className="text-[13px] font-semibold text-soft">On the light</span>
-          {compact
-            ? '16 colours, blended'
-            : 'WLED keeps 16 colours of every palette and blends between them, so fine details soften.'}
+          WLED keeps 16 colours of every palette and blends between them, so fine details soften.
         </p>
-        <div aria-hidden className="flex justify-between rounded-xl bg-black/40 px-3.5 py-3">
-          {leds.map((c, i) => (
-            <span
-              key={i}
-              className="size-2 rounded-full"
-              style={{ background: rgbCss(c), boxShadow: `0 0 6px ${rgbCss(c)}` }}
-            />
-          ))}
-        </div>
+        <LightSamples stops={stops} compact={compact} />
       </div>
+    </div>
+  )
+}
+
+// The 16 colours the light keeps, each as a dot above the gradient at the spot it's taken from, joined to it by
+// a short line. The outline and line are translucent white over the dot's own colour, so they read the same
+// over the bar (which has that colour there) and over the card.
+function LightSamples({ stops, compact }: { stops: Stop[]; compact: boolean }) {
+  const dot = compact ? 10 : 14
+  const gap = compact ? 1.5 : 2 // between a dot and its outline
+  const ring = gap + 1
+  const barH = compact ? 22 : 28
+  const top = ring + dot + ring + gap // the bar's top: the dots' outlines end `gap` above it
+  const white = 'rgba(255,255,255,0.7)'
+  return (
+    <div aria-hidden className="relative" style={{ paddingTop: top }}>
+      <span
+        className={cx('block shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]', compact ? 'rounded-md' : 'rounded-lg')}
+        style={{ height: barH, background: gradientCss(stops) }}
+      />
+      {lightColours(stops).map((c, k) => {
+        const left = `${(k / 15) * 100}%`
+        const col = rgbCss(c)
+        return (
+          <span key={k}>
+            <span
+              className="absolute rounded-full"
+              style={{
+                top: ring,
+                left,
+                width: dot,
+                height: dot,
+                marginLeft: -dot / 2,
+                background: col,
+                boxShadow: `0 0 0 ${gap}px var(--card), 0 0 0 ${ring}px ${white}, 0 0 0 ${ring}px ${col}`,
+              }}
+            />
+            {/* from the outline's bottom into the top third of the bar */}
+            <span
+              className="absolute w-px -translate-x-1/2 rounded-b-full"
+              style={{
+                top: top - gap,
+                left,
+                height: gap + barH / 3,
+                background: `linear-gradient(${white}, ${white}), ${col}`,
+              }}
+            />
+          </span>
+        )
+      })}
     </div>
   )
 }

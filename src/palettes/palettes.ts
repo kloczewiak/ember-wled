@@ -72,10 +72,13 @@ const mix = (a: RGB, b: RGB, f: number): RGB => ({
   b: Math.round(a.b + (b.b - a.b) * f),
 })
 
+// The 16 colours the light keeps of a palette: the gradient's colour at positions 0, 17, 34 … 255.
+export const lightColours = (stops: Stop[]): RGB[] => Array.from({ length: 16 }, (_, k) => sample(stops, k * 17))
+
 // What the light shows for `n` LEDs across the palette: it keeps 16 colours (one every 17 positions) and
 // blends between them, so a band narrower than that softens or disappears.
 export function onTheLight(stops: Stop[], n: number): RGB[] {
-  const entries = Array.from({ length: 16 }, (_, k) => sample(stops, k * 17))
+  const entries = lightColours(stops)
   return Array.from({ length: n }, (_, j) => {
     const p = n > 1 ? (j * 15) / (n - 1) : 0
     const a = Math.floor(p)
