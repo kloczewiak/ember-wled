@@ -224,9 +224,10 @@ export function GradientEditor({
   )
 }
 
-// The 16 colours the light keeps, each as a dot above the gradient at the spot it's taken from, joined to it by
-// a short line. The outline and line are translucent white over the dot's own colour, so they read the same
-// over the bar (which has that colour there) and over the card.
+// What the light makes of the palette: its 16 colours (lib/palette16.ts) as dots, each joined by a short line
+// to the bar of them blended, as a still palette spreads them along a segment (slot k at about position
+// k × 17). The outline and line are translucent white over the dot's own colour, so they read the same over
+// the bar (which has that colour there) and over the card.
 function LightSamples({ stops, compact }: { stops: Stop[]; compact: boolean }) {
   const dot = compact ? 10 : 14
   const gap = compact ? 1.5 : 2 // between a dot and its outline
@@ -234,13 +235,15 @@ function LightSamples({ stops, compact }: { stops: Stop[]; compact: boolean }) {
   const barH = compact ? 22 : 28
   const top = ring + dot + ring + gap // the bar's top: the dots' outlines end `gap` above it
   const white = 'rgba(255,255,255,0.7)'
+  const slots = lightColours(stops)
+  const blend = `linear-gradient(to right, ${slots.map((c, k) => `${rgbCss(c)} ${((k / 15) * 100).toFixed(2)}%`).join(', ')})`
   return (
     <div aria-hidden className="relative" style={{ paddingTop: top }}>
       <span
         className={cx('block shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]', compact ? 'rounded-md' : 'rounded-lg')}
-        style={{ height: barH, background: gradientCss(stops) }}
+        style={{ height: barH, background: blend }}
       />
-      {lightColours(stops).map((c, k) => {
+      {slots.map((c, k) => {
         const left = `${(k / 15) * 100}%`
         const col = rgbCss(c)
         return (

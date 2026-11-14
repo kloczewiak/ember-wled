@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fixtures from './fixtures.json'
 import { applyCommand, isObj } from '../src/api/apply'
+import { paletteSlots } from '../src/lib/palette16'
 import type { Command, Info, Presets, State } from '../src/api/types'
 import { cfg, cfgJson, checkPin, ledScript, pins, postSettings, scan, settingsUnlocked } from './settings'
 
@@ -178,24 +179,18 @@ const palFiles: (string | null)[] = [
 for (let n = Number(process.env.MOCK_CUSTOM_PALETTES) || 0, i = palFiles.length; i < Math.min(n, 129); i++)
   palFiles.push(palFiles[i % 2])
 const palCount = () => palFiles.reduce((n, f, i) => (f ? i + 1 : n), 0)
-// a custom palette's 16 entries in the /json/palx format (a gap is the firmware's grey placeholder)
+// a custom palette's 16 entries in the /json/palx format, as the light keeps them (src/lib/palette16.ts), at
+// positions 0, 16 … 240 like the firmware's (a gap is the firmware's grey placeholder)
 function customPalx(slot: number) {
   const f = palFiles[slot]
-  if (!f) return Array.from({ length: 16 }, (_, k) => [k * 17, 128, 128, 128])
+  if (!f) return Array.from({ length: 16 }, (_, k) => [k * 16, 128, 128, 128])
   const a = JSON.parse(f).palette as (number | string)[]
-  const stops: [number, number, number, number][] = []
+  const stops: { t: number; rgb: { r: number; g: number; b: number } }[] = []
   for (let i = 0; i + 1 < a.length; i += 2) {
     const n = parseInt(String(a[i + 1]), 16)
-    stops.push([Number(a[i]), n >> 16, (n >> 8) & 255, n & 255])
+    stops.push({ t: Number(a[i]), rgb: { r: n >> 16, g: (n >> 8) & 255, b: n & 255 } })
   }
-  return Array.from({ length: 16 }, (_, k) => {
-    const t = k * 17
-    const j = Math.max(0, stops.findIndex((x) => x[0] >= t) - 1)
-    const lo = stops[j],
-      hi = stops[Math.min(stops.length - 1, j + 1)]
-    const f2 = hi[0] === lo[0] ? 0 : Math.min(1, Math.max(0, (t - lo[0]) / (hi[0] - lo[0])))
-    return [t, ...[1, 2, 3].map((c) => Math.round(lo[c] + (hi[c] - lo[c]) * f2))]
-  })
+  return paletteSlots(stops).map((c, k) => [k * 16, c.r, c.g, c.b])
 }
 
 function currentInfo(): Info {

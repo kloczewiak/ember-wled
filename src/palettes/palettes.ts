@@ -1,4 +1,5 @@
 import { fromHex, rgbCss, toHex, type RGB } from '../lib/color'
+import { paletteSlots, stripColours } from '../lib/palette16'
 import type { Color, PaletteStop, Preset, Presets } from '../api/types'
 import { uploadFile, type SaveResult } from '../settings/api'
 
@@ -72,19 +73,11 @@ const mix = (a: RGB, b: RGB, f: number): RGB => ({
   b: Math.round(a.b + (b.b - a.b) * f),
 })
 
-// The 16 colours the light keeps of a palette: the gradient's colour at positions 0, 17, 34 … 255.
-export const lightColours = (stops: Stop[]): RGB[] => Array.from({ length: 16 }, (_, k) => sample(stops, k * 17))
+// The 16 colours the light keeps of a palette, made the way the firmware makes them (lib/palette16.ts).
+export const lightColours = (stops: Stop[]): RGB[] => paletteSlots(stops)
 
-// What the light shows for `n` LEDs across the palette: it keeps 16 colours (one every 17 positions) and
-// blends between them, so a band narrower than that softens or disappears.
-export function onTheLight(stops: Stop[], n: number): RGB[] {
-  const entries = lightColours(stops)
-  return Array.from({ length: n }, (_, j) => {
-    const p = n > 1 ? (j * 15) / (n - 1) : 0
-    const a = Math.floor(p)
-    return mix(entries[a], entries[Math.min(15, a + 1)], p - a)
-  })
-}
+// What the light shows for `n` LEDs across the palette: its 16 colours, blended along the segment.
+export const onTheLight = (stops: Stop[], n: number): RGB[] => stripColours(paletteSlots(stops), n)
 
 export const gradientCss = (stops: Stop[]) =>
   `linear-gradient(to right, ${stops.map((s) => `${rgbCss(s.rgb)} ${((s.t / 255) * 100).toFixed(2)}%`).join(', ')})`
