@@ -181,6 +181,8 @@ export function SettingsScreen({ route }: { route: string }) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {wide && page && <h2 className="mt-0 mb-3 text-lg font-semibold">{title}</h2>}
           {wide && page && <div ref={setIntro} className="mb-4 empty:hidden" />}
+          {/* outside the scroll area, like a page's intro: its rounded corner would cut into the text */}
+          {wide && !page && <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>}
           {/* a new scroll area for each view, so every page opens at the top: sharing one kept the page's scroll
               position (and iOS's momentum) when going back, leaving the shorter menu scrolled past its end */}
           <div
@@ -202,9 +204,7 @@ export function SettingsScreen({ route }: { route: string }) {
                     <SaveBarSlot.Provider value={wide ? null : footer}>{page.render!()}</SaveBarSlot.Provider>
                   </IntroSlot.Provider>
                 </main>
-              ) : wide ? (
-                <p className="m-0 text-sm text-muted-foreground">Choose a page on the left.</p>
-              ) : (
+              ) : wide ? null : (
                 <nav aria-label="Settings pages">
                   <Menu build={build} current={page} />
                 </nav>
