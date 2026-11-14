@@ -139,13 +139,15 @@ export function useAccuratePeek() {
   const cfg = useCfg((s) => s.cfg)
   const bri = useStore((s) => s.state?.bri ?? 0)
   const info = useStore((s) => s.info)
+  // where segments are, their white balance and whether their colours have white (see lib/ledoutput.ts)
+  const segs = useStore((s) => s.state?.seg)
   useEffect(() => {
     if (on) refreshCfg()
   }, [on])
   useEffect(() => {
     if (!on || !cfg || !info) return
-    const model = ledModel(cfg, bri, info)
+    const model = ledModel(cfg, bri, info, segs)
     setLiveFilter((frame) => ledOutputFrame(frame, model))
     return () => setLiveFilter(null)
-  }, [on, cfg, bri, info])
+  }, [on, cfg, bri, info, segs])
 }

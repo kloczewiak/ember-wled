@@ -64,7 +64,7 @@ export const cfg = {
           order: 0,
           rev: false,
           skip: 0,
-          type: 22,
+          type: process.env.MOCK_RGBW ? 30 : 22, // MOCK_RGBW: an SK6812 RGBW strip
           ref: false,
           rgbwm: 0,
           freq: 0,

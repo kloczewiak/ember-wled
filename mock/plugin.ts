@@ -285,7 +285,35 @@ function hsv(h: number, s: number): [number, number, number] {
   return [f(5), f(3), f(1)]
 }
 
-// A moving gradient of each segment's colours, so the live preview has something to show.
+// MOCK_RGBW: the output is an SK6812 RGBW strip (mock/settings.ts), and each segment's capabilities follow the
+// LED settings as the firmware works them out (Segment::refreshLightCapabilities in FX_fcn.cpp), so changing an
+// output's auto white mode or white balance correction shows or hides the white and white balance sliders.
+const RGBW = !!process.env.MOCK_RGBW
+// bus_manager.h hasRGB, hasWhite, hasCCT
+const typeRGB = (t: number) => !((t >= 18 && t <= 21) || t === 40 || t === 41 || t === 42)
+const typeWhite = (t: number) =>
+  (t >= 18 && t <= 21) || [28, 29, 30, 31, 32, 34, 41, 42, 44, 45, 46, 88, 89].includes(t)
+const typeCCT = (t: number) => [21, 34, 42, 45, 28, 32].includes(t)
+function capabilities(start: number, stop: number) {
+  const led = cfg.hw.led
+  let lc = 0
+  for (const b of led.ins) {
+    if (b.start >= stop || b.start + b.len <= start) continue
+    if (typeRGB(b.type) || (led.cr && typeCCT(b.type))) lc |= 1
+    if (!led.cr && typeCCT(b.type)) lc |= 4
+    if (led.cct && (typeRGB(b.type) || typeCCT(b.type))) lc |= 4
+    if (typeWhite(b.type)) {
+      const aw = led.rgbwm === 255 ? b.rgbwm : led.rgbwm
+      lc |= aw === 0 || aw === 3 ? 2 : 1 // None and Dual have the white slider; the others work white out
+    }
+  }
+  return lc
+}
+const withCaps = (s: State): State =>
+  RGBW ? { ...s, seg: s.seg.map((g) => ({ ...g, lc: capabilities(g.start, g.stop) })) } : s
+
+// A moving gradient of each segment's colours, so the live preview has something to show. Like /json/live
+// (json.cpp serveLiveLeds), white is added into red, green and blue.
 function live() {
   const t = (Date.now() - start) / 1000
   const leds: string[] = []
@@ -299,7 +327,8 @@ function live() {
     const a = g.col[0],
       b = g.col[1]
     const k = (state.bri / 255) * (g.bri / 255)
-    const c = [0, 1, 2].map((j) => Math.round((a[j]! * wave + b[j]! * (1 - wave)) * k))
+    const w = (a[3] ?? 0) * wave + (b[3] ?? 0) * (1 - wave)
+    const c = [0, 1, 2].map((j) => Math.round(Math.min(255, a[j]! * wave + b[j]! * (1 - wave) + w) * k))
     leds.push(c.map((v) => v.toString(16).padStart(2, '0')).join(''))
   }
   return { leds, n: 1 }
@@ -411,7 +440,7 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
     } catch {
       return send(res, { error: 9 }, 400)
     }
-    return send(res, path === '/json/state' ? state : { state, info: currentInfo() })
+    return send(res, path === '/json/state' ? withCaps(state) : { state: withCaps(state), info: currentInfo() })
   }
   if (req.method === 'POST' && path.startsWith('/settings/')) {
     const status = postSettings(path.slice('/settings/'.length), new URLSearchParams(await readBody(req)))
@@ -452,9 +481,9 @@ const middleware: Connect.NextHandleFunction = async (req, res, next) => {
   switch (path) {
     case '/json':
     case '/json/si':
-      return send(res, { state, info: currentInfo() })
+      return send(res, { state: withCaps(state), info: currentInfo() })
     case '/json/state':
-      return send(res, state)
+      return send(res, withCaps(state))
     case '/json/info':
       return send(res, currentInfo())
     case '/json/effects':
