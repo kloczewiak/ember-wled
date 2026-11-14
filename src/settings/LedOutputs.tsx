@@ -70,7 +70,13 @@ export const AUTO_WHITE_HINTS = [
   'Like Brighter, until you use the white slider; then the slider sets white.',
   'White follows the brightest channel. For white-only LEDs.',
 ]
-const SWAPS = ['Last, as usual', 'Swapped with blue', 'Swapped with green', 'Swapped with red', 'Warm and cold swapped']
+export const SWAPS = [
+  'Last, as usual',
+  'Swapped with blue',
+  'Swapped with green',
+  'Swapped with red',
+  'Warm and cold swapped',
+]
 // the LED type picker's groups, by the type's pin letters
 const GROUPS: [string, string, (x: LedType) => boolean][] = [
   ['Digital', '1 data pin, the usual addressable strips', (x) => x.t === 'D'],

@@ -31,6 +31,7 @@ import {
   OrderDots,
   OutBadge,
   OutputCard,
+  SWAPS,
   type Picker,
 } from './LedOutputs'
 import {
@@ -43,6 +44,7 @@ import {
   isAna,
   isDig,
   isHub75,
+  isTouch,
   isVir,
   ledFields,
   newOutput,
@@ -92,7 +94,9 @@ const IR_TYPES = [
 const SWAP_OVERRIDE = ['As the output', 'Swapped with blue', 'Swapped with green', 'Swapped with red']
 
 // A config template (a cfg.json, e.g. from a board's maker), applied like the stock page's loadCfg(): its LED
-// outputs, colour order overrides, buttons, IR, relay and "a segment for each output".
+// outputs, colour order overrides, buttons, IR, relay and "a segment for each output". It sets up the board, so
+// buttons get their pins and types but keep their presets (those are this light's own, and the firmware keeps
+// them by button number); a button without a pin, other than the first, is dropped as the light would.
 function applyTemplate(f: LedForm, c: Partial<Cfg>): LedForm {
   const hw = c.hw
   if (!hw) return f
@@ -110,7 +114,10 @@ function applyTemplate(f: LedForm, c: Partial<Cfg>): LedForm {
   if (hw.com) next.com = hw.com.map((x) => ({ start: x.start, len: x.len, order: x.order & 0x0f, swap: x.order >> 4 }))
   if (hw.btn?.ins)
     Object.assign(next, {
-      btns: hw.btn.ins.map((x) => ({ pin: x.pin?.[0] ?? -1, type: x.type, macros: x.macros ?? [0, 0, 0] })),
+      btns: hw.btn.ins
+        .map((x) => ({ pin: x.pin?.[0] ?? -1, type: x.type }))
+        .filter((b, i) => i === 0 || b.pin >= 0)
+        .map((b, i) => ({ ...b, macros: f.btns[i]?.macros ?? [0, 0, 0] })),
       tt: hw.btn.tt ?? f.tt,
     })
   if (hw.ir && f.ir) next.ir = { pin: hw.ir.pin ?? -1, type: hw.ir.type ?? 0 }
@@ -127,42 +134,124 @@ const ampsUp = (a: number) => amps(Math.ceil(Math.round(a * 1000) / 100) / 10)
 const gpio = (p: number) => (p >= 0 ? `GPIO ${p}` : 'none')
 const count = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
 
-// What applying a template changes on this page, as [what, before → after] lines.
-function templateChanges(f: LedForm, next: LedForm, T: Types): [string, string][] {
+// What applying a template changes, as diff rows grouped by the card they're on (this page's, in its order, then
+// the Buttons page's): a setting that changes is a removed row with its old value and an added row with the new
+// one, something new only an added row, something that goes only a removed row, and items that stay (the buttons
+// around a changed one) plain rows for context.
+type ChangeRow = { kind: 'del' | 'add' | 'ctx'; label: string; text: string }
+type ChangeGroup = { card: string; rows: ChangeRow[] }
+function templateChanges(f: LedForm, next: LedForm, T: Types): ChangeGroup[] {
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
-  const outs = (l: Output[]) =>
-    l
-      .map((o) => {
-        const x = T(o.type)
-        const p = o.pins.slice(0, pinFields(x)).filter((q) => q >= 0)
-        return `${x.n}${p.length && !isVir(x) && !isHub75(x) ? ` on GPIO ${p.join(', ')}` : ''}${isAna(x) || isHub75(x) ? '' : `, ${o.len} LEDs`}`
-      })
-      .join('; ') || 'none'
-  const btns = (l: ButtonCfg[]) =>
-    l
-      .filter((b) => b.type)
-      .map((b) => `${BUTTON_OPTIONS.find(([v]) => v === b.type)?.[1] ?? 'Button'} on ${gpio(b.pin)}`)
-      .join('; ') || 'none'
-  const lines: [string, string][] = []
-  if (!same(f.outs, next.outs)) lines.push(['LED outputs', `${count(f.outs.length, 'output')} → ${outs(next.outs)}`])
-  if (!same(f.com, next.com)) lines.push(['Colour order overrides', `${f.com.length} → ${next.com.length}`])
+  // `label`'s value from `before` to `after`; null is "not there"
+  const change = (rows: ChangeRow[], label: string, before: string | null, after: string | null) => {
+    if (before === after) return
+    if (before !== null) rows.push({ kind: 'del', label, text: before })
+    if (after !== null) rows.push({ kind: 'add', label, text: after })
+  }
+  const onOff = (v: boolean) => (v ? 'on' : 'off')
+  const ma = (v: number) => (v === 255 ? '12 mA' : `${v} mA`)
+
+  // an output as its card shows it: type, pins and length, then the other settings that differ from `other`
+  const describe = (o: Output, other?: Output) => {
+    const x = T(o.type)
+    const p = o.pins.slice(0, pinFields(x)).filter((q) => q >= 0)
+    const parts = [
+      `${x.n}${p.length && !isVir(x) && !isHub75(x) ? ` on GPIO ${p.join(', ')}` : ''}${isAna(x) || isHub75(x) ? '' : `, ${o.len} LEDs`}`,
+    ]
+    if (other) {
+      if (o.order !== other.order) parts.push(`colour order ${ORDERS[o.order]}`)
+      if (o.start !== other.start) parts.push(`starts at LED ${o.start}`)
+      if (o.rev !== other.rev) parts.push(o.rev ? 'reversed' : 'not reversed')
+      if (o.skip !== other.skip) parts.push(`skips ${o.skip} LEDs`)
+      if (o.swap !== other.swap) parts.push(`white ${SWAPS[o.swap]?.toLowerCase() ?? o.swap}`)
+      if (o.ref !== other.ref) parts.push(`off refresh ${onOff(o.ref)}`)
+      if (o.freq !== other.freq) parts.push(`speed ${o.freq}`)
+      if (o.drv !== other.drv) parts.push(o.drv ? 'I2S driver' : 'RMT driver')
+      if (o.text !== other.text) parts.push(`host ${o.text || 'none'}`)
+    }
+    return parts.join(', ')
+  }
+
+  const outputs: ChangeRow[] = []
+  for (let i = 0; i < Math.max(f.outs.length, next.outs.length); i++) {
+    const a = f.outs[i],
+      b = next.outs[i]
+    change(outputs, `Output ${i + 1}`, a ? describe(a, b) : null, b ? describe(b, a) : null)
+  }
+  change(outputs, 'A segment for each output', onOff(f.autoSeg), onOff(next.autoSeg))
+
+  const order: ChangeRow[] = []
+  const override = (c: LedForm['com'][number]) => `LEDs ${c.start}–${c.start + c.len - 1}`
+  if (!same(f.com, next.com)) {
+    f.com
+      .filter((c) => !next.com.some((d) => same(c, d)))
+      .forEach((c) => change(order, override(c), ORDERS[c.order], null))
+    next.com.forEach((c) =>
+      f.com.some((d) => same(c, d))
+        ? order.push({ kind: 'ctx', label: override(c), text: ORDERS[c.order] })
+        : change(order, override(c), null, ORDERS[c.order]),
+    )
+  }
+
+  const power: ChangeRow[] = []
+  const limiter = (x: LedForm) => (x.abl ? `${amps(x.maxpwr / 1000)} supply` : 'off')
+  change(power, 'Limiter', limiter(f), limiter(next))
+  next.outs.forEach((b, i) => {
+    const a = f.outs[i]
+    if (a && isDig(T(b.type))) change(power, `Output ${i + 1}`, `${ma(a.ledma)} per LED`, `${ma(b.ledma)} per LED`)
+  })
+
+  const white: ChangeRow[] = []
+  next.outs.forEach((b, i) => {
+    const a = f.outs[i]
+    if (a && hasW(T(b.type)))
+      change(white, `Output ${i + 1}`, `auto white ${AUTO_WHITE[a.aw]}`, `auto white ${AUTO_WHITE[b.aw]}`)
+  })
+
+  const ir: ChangeRow[] = []
+  const receiver = (x: LedForm) => (x.ir && x.ir.pin >= 0 ? `GPIO ${x.ir.pin}, ${IR_TYPES[x.ir.type]}` : 'none')
+  if (f.ir && next.ir) change(ir, 'Receiver', receiver(f), receiver(next))
+
+  const relay: ChangeRow[] = []
+  change(relay, 'Pin', gpio(f.relay.pin), gpio(next.relay.pin))
+  change(relay, 'On while pin is', f.relay.inverted ? 'Low' : 'High', next.relay.inverted ? 'Low' : 'High')
+  change(
+    relay,
+    'Pin output',
+    f.relay.odrain ? 'open drain' : 'push-pull',
+    next.relay.odrain ? 'open drain' : 'push-pull',
+  )
+
+  const buttons: ChangeRow[] = []
+  const button = (x?: ButtonCfg) =>
+    x && x.type ? `${BUTTON_OPTIONS.find(([v]) => v === x.type)?.[1] ?? 'Button'} on ${gpio(x.pin)}` : null
   if (
     !same(
-      f.btns.map((b) => [b.pin, b.type]),
-      next.btns.map((b) => [b.pin, b.type]),
+      f.btns.map((x) => [x.pin, x.type]),
+      next.btns.map((x) => [x.pin, x.type]),
     )
   )
-    lines.push(['Buttons', `${count(f.btns.filter((b) => b.type).length, 'button')} → ${btns(next.btns)}`])
-  if (!same(f.ir, next.ir))
-    lines.push([
-      'IR receiver',
-      `${gpio(f.ir?.pin ?? -1)} → ${gpio(next.ir?.pin ?? -1)}${next.ir?.type ? `, ${IR_TYPES[next.ir.type]}` : ''}`,
-    ])
-  if (!same(f.relay, next.relay)) lines.push(['Relay', `${gpio(f.relay.pin)} → ${gpio(next.relay.pin)}`])
-  if (f.autoSeg !== next.autoSeg) lines.push(['A segment for each output', next.autoSeg ? 'off → on' : 'on → off'])
-  const limiter = (x: LedForm) => (x.abl ? `${amps(x.maxpwr / 1000)} supply` : 'off')
-  if (limiter(f) !== limiter(next)) lines.push(['Brightness limiter', `${limiter(f)} → ${limiter(next)}`])
-  return lines
+    for (let i = 0; i < Math.max(f.btns.length, next.btns.length); i++) {
+      const a = button(f.btns[i]),
+        b = button(next.btns[i])
+      if (a !== null && a === b) buttons.push({ kind: 'ctx', label: `Button ${i + 1}`, text: a })
+      else change(buttons, `Button ${i + 1}`, a, b)
+    }
+  if (next.btns.some((x) => isTouch(x.type))) change(buttons, 'Touch threshold', String(f.tt), String(next.tt))
+
+  return (
+    [
+      ['LED outputs', outputs],
+      ['Colour order overrides', order],
+      ['Power', power],
+      ['Colour and white', white],
+      ['IR remote', ir],
+      ['Relay', relay],
+      ['Buttons', buttons],
+    ] as [string, ChangeRow[]][]
+  )
+    .filter(([, rows]) => rows.some((r) => r.kind !== 'ctx'))
+    .map(([card, rows]) => ({ card, rows }))
 }
 
 export function LedSettings() {
@@ -224,35 +313,27 @@ export function LedSettings() {
     }
   }
   const changes = template ? templateChanges(f, template.next, T) : []
+  const changed = changes.length > 0
+  // a template's settings go to the light at once (the Buttons page's pins and types are in the same form, so one
+  // save covers both pages), unless they need fixing first: then they fill in the page to fix and save
+  const applyTemplateNow = () => {
+    if (!template) return
+    const next = template.next
+    setTemplate(null)
+    setOpen(null)
+    setDraft(next)
+    const problems = pageErrors(validate(next, T, info, summary(next, T, info)).leds, [], 'Defaults')
+    if (problems.length) toast('The template needs fixing before it can be saved. See the outputs below.', true)
+    else save(ledFields(next, T, info))
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <PageIntro>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
-            What's wired to the controller: LED outputs and their power, the IR receiver and the relay. Buttons have{' '}
-            <a href="#settings/buttons">their own page</a>.
-          </p>
-          <input
-            ref={file}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={(e) => {
-              const x = e.target.files?.[0]
-              e.target.value = ''
-              if (x) loadTemplate(x)
-            }}
-          />
-          <Button
-            variant="outline"
-            title="Fills in the outputs and hardware from a board's cfg.json"
-            onClick={() => file.current?.click()}
-          >
-            <Upload data-icon="inline-start" />
-            Load board template
-          </Button>
-        </div>
+        <p className="m-0 text-sm text-muted-foreground">
+          What's wired to the controller: LED outputs and their power, the IR receiver and the relay. Buttons have{' '}
+          <a href="#settings/buttons">their own page</a>.
+        </p>
       </PageIntro>
 
       <Section
@@ -344,6 +425,30 @@ export function LedSettings() {
         {f.ir && <IrRemote f={f} set={set} picker={picker} />}
         <Relay f={f} set={set} picker={picker} />
       </div>
+      {/* last on the page, like the stock page's "Config template" */}
+      <Section title="Config template">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="m-0 min-w-0 flex-1 basis-64 text-sm text-muted-foreground">
+            Sets up the LED outputs, buttons, IR receiver and relay from a cfg.json, such as a board maker's. You see
+            what changes before it's saved.
+          </p>
+          <input
+            ref={file}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              const x = e.target.files?.[0]
+              e.target.value = ''
+              if (x) loadTemplate(x)
+            }}
+          />
+          <Button variant="outline" onClick={() => file.current?.click()}>
+            <Upload data-icon="inline-start" />
+            Load config template
+          </Button>
+        </div>
+      </Section>
 
       <SaveBar
         dirty={dirty}
@@ -359,37 +464,79 @@ export function LedSettings() {
           if (!o) setTemplate(null)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto]">
           <AlertDialogHeader>
             <AlertDialogTitle>Apply {template?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              {changes.length
-                ? 'It replaces these settings on this page. Nothing changes on the light until you save.'
-                : 'It matches the settings on this page already.'}
+              {changed
+                ? `It changes these settings and saves them right away; the LED outputs restart.${dirty ? ' Your other unsaved changes on this page are saved with it.' : ''}`
+                : 'It matches the settings on this light already.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {changes.length > 0 && (
-            <div className="flex flex-col rounded-2xl bg-muted/50 px-3 py-1">
-              {changes.map(([what, change]) => (
-                <div key={what} className="flex gap-3 border-b py-2.5 text-sm last:border-b-0">
-                  <span className="w-28 shrink-0 text-muted-foreground">{what}</span>
-                  <span className="min-w-0">{change}</span>
+          {/* every card can change, so the list scrolls on its own between the title and the buttons */}
+          <div className="scroll-thin -mx-1 flex min-h-0 flex-col gap-4 overflow-y-auto px-1">
+            {changes.map(({ card, rows }) => (
+              <div key={card} className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{card}</span>
+                <div className="flex flex-col overflow-hidden rounded-xl shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]">
+                  {rows.map((r, k) => (
+                    <div
+                      key={k}
+                      className={cx(
+                        'grid grid-cols-[1rem_6rem_minmax(0,1fr)] gap-2 px-2.5 py-1.5 text-[13px]',
+                        r.kind === 'del' && 'bg-[rgb(248_81_73/0.14)]',
+                        r.kind === 'add' && 'bg-[rgb(46_160_67/0.16)]',
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className={cx(
+                          'font-mono',
+                          r.kind === 'del' && 'text-[#ff7b72]',
+                          r.kind === 'add' && 'text-[#56d364]',
+                        )}
+                      >
+                        {r.kind === 'del' ? '−' : r.kind === 'add' ? '+' : ''}
+                      </span>
+                      <span
+                        className={cx(
+                          r.kind === 'del'
+                            ? 'text-[#f0a8a3]'
+                            : r.kind === 'add'
+                              ? 'text-[#9be9a8]'
+                              : 'text-muted-foreground',
+                        )}
+                      >
+                        {r.label}
+                      </span>
+                      <span
+                        className={cx(
+                          r.kind === 'del'
+                            ? 'text-[#ffd1cc]'
+                            : r.kind === 'add'
+                              ? 'text-[#d2f7d9]'
+                              : 'text-muted-foreground',
+                        )}
+                      >
+                        {/* read out as a removed or added value, not only by colour */}
+                        <span className="sr-only">
+                          {r.kind === 'del' ? 'Was: ' : r.kind === 'add' ? 'Becomes: ' : 'Stays: '}
+                        </span>
+                        {r.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+            {changes.some((g) => g.card === 'Buttons') && (
+              <p className="m-0 text-xs text-muted-foreground">The buttons keep their presets.</p>
+            )}
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={!changes.length}
-              onClick={() => {
-                if (template) setDraft(template.next)
-                setTemplate(null)
-                setOpen(null)
-                toast('Template applied. Check the outputs, then save.')
-              }}
-            >
-              Apply template
+            <AlertDialogAction disabled={!changed || saving} onClick={applyTemplateNow}>
+              Apply and save
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
