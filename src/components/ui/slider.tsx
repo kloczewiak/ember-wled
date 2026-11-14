@@ -1,5 +1,7 @@
 import { Slider as SliderPrimitive } from '@base-ui/react/slider'
+import { useContext } from 'react'
 import { cn } from 'cn'
+import { PaneShown } from '@/lib/pane'
 
 function Slider({
   className,
@@ -14,9 +16,14 @@ function Slider({
   trackStyle?: React.CSSProperties
 }) {
   const _values = Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]
+  // thumbAlignment="edge" keeps the thumb and fill hidden until the slider has measured itself. In a hidden phone
+  // tab it measures zero and waits for a resize when the tab opens, which iOS Safari doesn't report, so the slider
+  // stayed empty until its value changed. Mounting it anew when its tab opens measures it then.
+  const shown = useContext(PaneShown)
 
   return (
     <SliderPrimitive.Root
+      key={shown ? 'shown' : 'hidden'}
       className={cn('data-horizontal:w-full data-vertical:h-full', className)}
       data-slot="slider"
       defaultValue={defaultValue}

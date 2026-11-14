@@ -14,6 +14,7 @@ import { SettingsScreen } from './settings/SettingsScreen'
 import { PalettesScreen } from './palettes/PalettesScreen'
 import { Card, cx } from './components/controls'
 import { Toaster } from '@/components/ui/toast'
+import { PaneShown } from './lib/pane'
 
 // Tab names match the stock UI's location hashes, so existing bookmarks keep working.
 const TABS = ['Colors', 'Effects', 'Segments', 'Presets'] as const
@@ -210,7 +211,9 @@ function PhoneLayout({ top }: { top: ReactNode }) {
                 !short && t !== 'Effects' && 'scroll-thin overflow-y-auto rounded-card-area p-px',
               )}
             >
-              <div className={cx('flex flex-col gap-4', !short && t === 'Effects' && 'h-full')}>{panels[t]}</div>
+              <div className={cx('flex flex-col gap-4', !short && t === 'Effects' && 'h-full')}>
+                <PaneShown.Provider value={t === tab}>{panels[t]}</PaneShown.Provider>
+              </div>
             </div>
           ))}
         </main>
