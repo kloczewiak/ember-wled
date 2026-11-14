@@ -150,7 +150,8 @@ export function SettingsScreen({ route }: { route: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 items-center gap-2 px-4 pt-2.5 pb-1">
+      {/* wide screens: lined up with the menu and page below, like the palette editor's header */}
+      <header className={cx('flex shrink-0 items-center gap-2 px-4 pt-2.5 pb-1', wide && 'mx-auto w-full max-w-5xl')}>
         <Button
           variant="ghost"
           size="icon"
