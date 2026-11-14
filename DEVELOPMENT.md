@@ -36,7 +36,7 @@ WLED serves files on its filesystem in place of its built-in pages, so Ember rep
 
 ## Versions
 
-Ember's own version is `version` in `package.json` (0.1.0 while it's pre-release; 1.0.0 is the first public release). It's bumped by hand when a release is ready, not with every change (`AGENTS.md` has the checklist). Each build also gets a hash of `ui.bin`, so two builds of the same version can be told apart. Both show in the More sheet ("Interface") and in Settings → Security and updates → About.
+Ember's own version is `version` in `package.json` (0.x while it's pre-release; 1.0.0 is the first public release). It's bumped by hand when a release is ready, not with every change (`AGENTS.md` has the checklist). Each build also gets a hash of `ui.bin`, so two builds of the same version can be told apart. Both show in the More sheet ("Interface") and in Settings → Security and updates → About.
 
 The WLED release Ember is built and tested for is in `WLED-VERSION`, set by hand (see below). The app, the start page's version check and the mock all read it. The More sheet shows it as "Built for".
 
