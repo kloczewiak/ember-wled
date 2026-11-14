@@ -21,7 +21,8 @@ import {
 
 // Settings → Pin info: which GPIOs are used and by what, like the firmware's page in WLED v16.0.1
 // (data/settings_pininfo.htm), refreshed 4 times a second so button and relay states show live. Three
-// styles: a table like the stock page, the pins grouped by use, and a map of every GPIO. Touch capability and
+// styles: a map of every GPIO (the default), the pins grouped by use, and a table like the stock page; the
+// last one picked is remembered. Touch capability and
 // pins reserved by usermods come only from the settings script, so they aren't shown.
 
 const stateText = (p: Pin) =>
@@ -45,9 +46,9 @@ const STYLE_KEY = 'wledUiPinStyle'
 const readStyle = (): Style => {
   try {
     const s = localStorage.getItem(STYLE_KEY)
-    return s === 'use' || s === 'map' ? s : 'table'
+    return s === 'use' || s === 'table' ? s : 'map'
   } catch {
-    return 'table'
+    return 'map'
   }
 }
 
@@ -97,9 +98,9 @@ export function PinInfo() {
       <div className="flex items-center gap-3">
         <Tabs value={style} onValueChange={(s) => pick(s as Style)}>
           <TabsList aria-label="Pin info style">
-            <TabsTrigger value="table">Table</TabsTrigger>
-            <TabsTrigger value="use">By use</TabsTrigger>
             <TabsTrigger value="map">Map</TabsTrigger>
+            <TabsTrigger value="use">By use</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
           </TabsList>
         </Tabs>
         {failed && <span className="ml-auto text-xs text-destructive">Not updating</span>}
