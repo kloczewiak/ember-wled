@@ -23,6 +23,8 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -790,20 +792,8 @@ function Editor({
             : `${presetNames.length > 1 ? 'They show' : 'It shows'} grey until you save another palette in its place, which keeps the name Custom ${slot + 1}.`
         }`
       : 'No preset uses it. Its slot stays free for your next new palette.'
-  const deleteRow = confirmDelete ? (
-    <div role="alert" className="flex flex-col gap-2.5 rounded-2xl bg-destructive/10 p-3.5 ring-1 ring-destructive/30">
-      <div className="font-semibold">Delete Custom {slot + 1}?</div>
-      <div className="text-[13px] text-soft">{deleteText}</div>
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => onAskDelete(false)}>
-          Cancel
-        </Button>
-        <Button variant="destructive" onClick={onDelete}>
-          Delete
-        </Button>
-      </div>
-    </div>
-  ) : (
+  // the confirmation is a dialog, so asking doesn't push the rest of the editor around
+  const deleteRow = (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
       <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => onAskDelete(true)}>
         <Trash2 data-icon="inline-start" />
@@ -814,6 +804,20 @@ function Editor({
           {presetNames.length ? `Used in ${andList(presetNames)}.` : 'No preset uses it.'}
         </span>
       )}
+      <AlertDialog open={confirmDelete} onOpenChange={onAskDelete}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Custom {slot + 1}?</AlertDialogTitle>
+            <AlertDialogDescription>{deleteText}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 
