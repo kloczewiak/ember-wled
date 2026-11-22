@@ -49,6 +49,8 @@ Ember targets **WLED v16.0.1** (`WLED-VERSION`). Some of it is copied or derived
 | Effect colours on the Default palette (`src/lib/fxcolors.ts`), used by the segment bar | v16.0.1 | Follow `src/lib/fxcolors.md` (`npm run audit:fx-colors` lists what to review) |
 | Mock effect and palette lists (`mock/fixtures.json`) | v16.0.1 | `npm run gen:fixtures` |
 | Settings pages and the rest of the stock UI's behaviour | v16.0.1 | Diff `wled00/data` and `wled00/set.cpp` against the previous release; gaps go in `PARITY.md` |
+| Palette slots, used by the palette editor's "On the light" and the mock (`src/lib/palette16.ts`) | v16.0.1 | Compare with `loadDynamicGradientPalette` and `fill_gradient_RGB` (`src/dependencies/fastled_slim/`), `ColorFromPalette` (`colors.cpp`) and `color_from_palette` (`FX_fcn.cpp`) |
+| Accurate Peek (`src/lib/ledoutput.ts`) and the mock's segment capabilities (`mock/plugin.ts`) | v16.0.1 | Compare with `WS2812FX::show()`, `blendSegment()` and `refreshLightCapabilities()` (`FX_fcn.cpp`), the buses (`bus_manager.cpp`: auto white and the current limiter), and `color_fade` and `colorBalanceFromKelvin` (`colors.cpp`) |
 | The version Ember says it's built for: the start page's warning, the Firmware update page, "Built for" (`WLED-VERSION`) | v16.0.1 | Set it once the rows above are checked |
 
 ## Layout
