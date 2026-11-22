@@ -82,4 +82,4 @@ See [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Licence
 
-Not chosen yet.
+Ember is released under the [MIT License](LICENSE).
